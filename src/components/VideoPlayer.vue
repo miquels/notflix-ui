@@ -7,7 +7,7 @@
     @click="container_clicked"
     ref="el"
   >
-    <video :src="this.url" class="video" ref="video"></video>
+    <video :src="this.url" class="video" ref="video_el"></video>
     <q-slide-transition appear :duration="50">
     <div class="controls" v-if="showcontrols" @click.stop="" @mousemove="mouse(2, $event)">
         <div class="row q-mx-md">
@@ -30,15 +30,15 @@
         <div class="col"></div>
         <div class="col-auto q-mr-sm">
 
-          <q-icon name="language" size="24px" class="on-right" v-if="audiotracks.length > 1">
+          <q-icon name="language" size="24px" class="on-right" v-if="audioTracks.length > 1">
             <q-menu anchor="top end" self="bottom right">
               <q-list style="min-width: 10em" bordered dense>
                 <q-item
-                  v-for="a in audiotracks"
+                  v-for="a in audioTracks"
                   :key="a.idx"
                   v-close-popup
                   clickable
-                  :active="audiotrack === a.idx"
+                  :active="audioTrack === a.idx"
                   @click="audiotrack_activate(a.idx)"
                 >
                   {{a.label}}
@@ -47,24 +47,24 @@
             </q-menu>
           </q-icon>
 
-          <q-icon name="closed_caption" size="24px" class="on-right" v-if="subtitles.length">
+          <q-icon name="closed_caption" size="24px" class="on-right" v-if="textTracks.length">
             <q-menu anchor="top end" self="bottom right">
               <q-list style="min-width: 10em" bordered dense>
                 <q-item
-                  v-for="s in subtitles"
+                  v-for="s in textTracks"
                   :key="s.idx"
                   v-close-popup
                   clickable
-                  :active="subtitle === s.idx"
-                  @click="subtitle_activate(s.idx)"
+                  :active="textTrack === s.idx"
+                  @click="texttrack_activate(s.idx)"
                 >
                   {{s.label}}
                 </q-item>
                 <q-item
                   v-close-popup
                   clickable
-                  :active="subtitle === null"
-                  @click="subtitle_activate(null)"
+                  :active="textTrack === null"
+                  @click="texttrack_activate(null)"
                 >
                   Off
                 </q-item>
@@ -112,8 +112,123 @@ import {
   getCurrentInstance,
   onMounted,
   ref,
+  watch,
 } from 'vue';
 import { useQuasar } from 'quasar';
+
+class Html5Video {
+  constructor(element) {
+    this.el = element;
+    this.currentAudioTrack = 1;
+
+    // When we have loaded the metadata,
+    this.el.addEventListener('loadedmetadata', () => {
+      this.metadata_loaded = true;
+      if (this.hls_metadata_loaded && this.metadata_loaded_cb) {
+        this.metadata_loaded_cb();
+      }
+    });
+  }
+
+  // Callback for when video has ended.
+  onEnded(cb) {
+    this.el.addEventListener('ended', () => cb());
+  }
+
+  // Callback for when all metadata has been loaded.
+  onMetadataLoaded(cb) {
+    this.metadata_loaded_cb = cb;
+  }
+
+  // pediodic callback.
+  onTimeupdate(cb) {
+    this.el.addEventListener('timeupdate', () => cb(this.el.currentTime));
+  }
+
+  // Private function, called when HLS manifest is loaded.
+  onManifestLoaded() {
+    this.hls_metadata_loaded = true;
+    if (this.metadata_loaded && this.metadata_loaded_cb) {
+      this.metadata_loaded_cb();
+    }
+  }
+
+  // Load a new .mp4 or .m3u8 video.
+  load(url) {
+    if (this.hls) {
+      this.hls.destroy();
+      this.hls = null;
+    }
+    if (url.endsWith('.m3u8')) {
+      this.hls = new Hls();
+      this.hls.attachMedia(this.el);
+      this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.onManifestLoaded());
+      this.hls.loadSource(url);
+    } else {
+      this.hls_metadata_loaded = true;
+      this.el.load(url);
+    }
+    this.url = url;
+  }
+
+  // Play video.
+  play() {
+    this.el.play();
+  }
+
+  // Pause video.
+  pause() {
+    this.el.pause();
+  }
+
+  get currentTime() {
+    return this.el.currentTime;
+  }
+
+  set currentTime(val) {
+    this.el.currentTime = val;
+  }
+
+  get duration() {
+    return this.el.duration;
+  }
+
+  get audioTracks() {
+    if (this.hls) {
+      return this.hls.audioTracks;
+    }
+    return [];
+  }
+
+  get audioTrack() {
+    return this.currentAudioTrack;
+  }
+
+  set audioTrack(val) {
+    if (this.hls) {
+      this.hls.audioTrack = val;
+    }
+    this.currentAudioTrack = val;
+  }
+
+  get textTracks() {
+    return this.el.textTracks;
+  }
+
+  get textTrack() {
+    return this.currentTextTrack || null;
+  }
+
+  set textTrack(val) {
+    for (let i = 0; i < this.el.textTracks.length; i += 1) {
+      this.el.textTracks[i].mode = 'disabled';
+    }
+    if (val !== null) {
+      this.el.textTracks[val].mode = 'showing';
+    }
+    this.currentTextTrack = val;
+  }
+}
 
 function hhmmss(seconds) {
   const d = new Date(seconds * 1000).toISOString();
@@ -128,10 +243,10 @@ export default defineComponent({
   props: {
     url: {
       type: String,
-      default: '#',
+      default: null,
     },
   },
-  setup() {
+  setup(props) {
     onMounted(() => {
       const instance = getCurrentInstance();
       instance.ctx.init_video();
@@ -140,8 +255,15 @@ export default defineComponent({
     const hls = new Hls();
     window.hls = hls;
 
+    const instance = getCurrentInstance();
+
+    watch(props, (newProps) => {
+      instance.ctx.load(newProps.url);
+    });
+
     return {
-      video: ref(null),
+      video_el: ref(null),
+      video: null,
       showcontrols: ref(2),
       slider: ref(0),
       moved_timer: null,
@@ -150,11 +272,10 @@ export default defineComponent({
       ended: false,
       duration: ref(null),
       current: ref(0),
-      hls,
-      subtitles: ref([]),
-      subtitle: ref(null),
-      audiotracks: ref([]),
-      audiotrack: ref(0),
+      textTracks: ref([]),
+      textTrack: ref(null),
+      audioTracks: ref([]),
+      audioTrack: ref(0),
       el: ref(null),
       quasar: useQuasar(),
       fullscreen_icon: ref('fullscreen'),
@@ -174,6 +295,7 @@ export default defineComponent({
         if (ev.layerX >= 0 && ev.layerX < this.el.clientWidth
             && ev.layerY >= 0 && ev.layerY < this.el.clientHeight) {
           // spurious mouseleave event, because of teleported elements.. :(
+          // eslint-disable-next-line
           console.log('bad mouseleave', ev);
           return;
         }
@@ -189,50 +311,44 @@ export default defineComponent({
 
     // Add all the event listeners we need to the <video> element.
     init_video() {
-      this.video.addEventListener('ended', () => { this.playing = false; this.showcontrols = 2; });
-      this.video.addEventListener('canplay', () => {
-        this.current = this.video.currentTime || 0;
-        this.duration = this.video.duration;
-        this.slider = (this.current / this.duration) * 100;
-      });
-      this.video.addEventListener('timeupdate', () => {
-        this.current = this.video.currentTime;
-        this.slider = (this.current / this.duration) * 100;
-      });
-      this.video.addEventListener('ended', () => {
+      this.video = new Html5Video(this.video_el);
+      this.video.onMetadataLoaded(() => this.on_metadata_loaded());
+      this.video.onEnded(() => {
         this.ended = true;
         this.playing = false;
         this.play_icon = 'replay';
       });
-      this.video.textTracks.addEventListener('addtrack', () => this.on_subtitles());
-      this.hls.attachMedia(this.video);
-      this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.on_manifest());
-      this.hls.loadSource(this.url);
+      this.video.onTimeupdate((val) => { this.current = val; });
+      if (this.url) {
+        this.video.load(this.url);
+      }
       window.video = this.video;
     },
 
-    on_subtitles() {
-      this.subtitles.length = 0;
+    on_metadata_loaded() {
+      this.current = this.video.currentTime || 0;
+      this.duration = this.video.duration;
+      this.slider = (this.current / this.duration) * 100;
       for (let i = 0; i < this.video.textTracks.length; i += 1) {
         const t = this.video.textTracks[i];
         if (t.kind === 'subtitles') {
-          this.subtitles.push({
+          this.textTracks.push({
             idx: i,
             label: t.label,
           });
         }
       }
-    },
-
-    on_manifest() {
-      this.audiotracks.length = 0;
-      for (let i = 0; i < this.hls.audioTracks.length; i += 1) {
-        const t = this.hls.audioTracks[i];
-        this.audiotracks.push({
+      for (let i = 0; i < this.video.audioTracks.length; i += 1) {
+        const t = this.video.audioTracks[i];
+        this.audioTracks.push({
           idx: i,
           label: t.name,
         });
       }
+    },
+
+    load(url) {
+      this.video.load(url);
     },
 
     // current time and duration info: 00:08:51 / 20:00:00.
@@ -272,26 +388,18 @@ export default defineComponent({
         this.ended = false;
         this.play_icon = 'play_arrow';
       }
-      console.log('slider updated', pct);
       this.current = (this.duration * pct) / 100;
       this.video.currentTime = this.current;
     },
 
-    subtitle_activate(idx) {
-      console.log('idx', idx);
-      if (this.subtitle !== null) {
-        this.video.textTracks[this.subtitle].mode = 'disabled';
-      }
-      if (idx != null) {
-        this.video.textTracks[idx].mode = 'showing';
-      }
-      this.subtitle = idx;
+    texttrack_activate(idx) {
+      this.video.textTrack = idx;
+      this.textTrack = idx;
     },
 
     audiotrack_activate(idx) {
-      console.log('idx', idx);
-      this.audiotrack = idx;
-      this.hls.audioTrack = idx;
+      this.audioTrack = idx;
+      this.video.audioTrack = idx;
     },
 
     toggle_fullscreen() {
