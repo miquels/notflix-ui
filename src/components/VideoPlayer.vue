@@ -7,7 +7,7 @@
     @click="container_clicked"
     ref="el"
   >
-    <video :src="this.url" class="video" ref="video_el"></video>
+    <video class="video" ref="video_el"></video>
     <q-slide-transition appear :duration="50">
     <div class="controls" v-if="showcontrols" @click.stop="" @mousemove="mouse(2, $event)">
         <div class="row q-mx-md">
@@ -159,16 +159,18 @@ class Html5Video {
       this.hls.destroy();
       this.hls = null;
     }
+    this.el.src = null;
     if (url.endsWith('.m3u8')) {
+      console.log('creating new hls', this.el);
       this.hls = new Hls();
-      this.hls.attachMedia(this.el);
       this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.onManifestLoaded());
-      this.hls.loadSource(url);
+      this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { console.log('attached', url); this.hls.loadSource(url); });
+      this.hls.attachMedia(this.el);
     } else {
+      console.log('plain video load', url);
       this.hls_metadata_loaded = true;
       this.el.load(url);
     }
-    this.url = url;
   }
 
   // Play video.
@@ -246,19 +248,10 @@ export default defineComponent({
       default: null,
     },
   },
-  setup(props) {
+  setup() {
     onMounted(() => {
       const instance = getCurrentInstance();
-      instance.ctx.init_video();
-    });
-
-    const hls = new Hls();
-    window.hls = hls;
-
-    const instance = getCurrentInstance();
-
-    watch(props, (newProps) => {
-      instance.ctx.load(newProps.url);
+      instance.ctx.on_mounted();
     });
 
     return {
@@ -309,8 +302,8 @@ export default defineComponent({
       this.showcontrols = showcontrols;
     },
 
-    // Add all the event listeners we need to the <video> element.
-    init_video() {
+    // Initialize.
+    on_mounted() {
       this.video = new Html5Video(this.video_el);
       this.video.onMetadataLoaded(() => this.on_metadata_loaded());
       this.video.onEnded(() => {
@@ -319,6 +312,11 @@ export default defineComponent({
         this.play_icon = 'replay';
       });
       this.video.onTimeupdate((val) => { this.current = val; });
+      watch(() => this.url, (newUrl, oldUrl) => {
+        if (newUrl !== oldUrl) {
+          this.load(newUrl);
+        }
+      });
       if (this.url) {
         this.video.load(this.url);
       }
@@ -327,7 +325,10 @@ export default defineComponent({
 
     on_metadata_loaded() {
       this.current = this.video.currentTime || 0;
-      this.duration = this.video.duration;
+      console.log('duration now', this.duration, this.video.duration);
+      if (!this.duration) {
+        this.duration = this.video.duration;
+      }
       this.slider = (this.current / this.duration) * 100;
       for (let i = 0; i < this.video.textTracks.length; i += 1) {
         const t = this.video.textTracks[i];
@@ -348,6 +349,7 @@ export default defineComponent({
     },
 
     load(url) {
+      console.log('load method called', url);
       this.video.load(url);
     },
 
