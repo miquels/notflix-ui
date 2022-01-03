@@ -1,0 +1,176 @@
+<template>
+
+    <div class=videocontrols-container>
+      <div class="row q-mx-md">
+        <q-slider
+           :modelValue="currentTime"
+           @update:modelValue="seek"
+           :min="0"
+           :max="duration || 0"
+           :step="0"
+           color="red"
+           dark
+       />
+      </div>
+      <div class="row q-pb-sm">
+        <div class="col-auto q-ml-sm">
+          <q-icon :name="play_icon()" size="24px" class="on-left" @click="$emit('play')"/>
+          <q-icon name="volume_up" size="24px" class="on-left"/>
+          <span class="on-left" v-if="duration">{{ time_info() }}</span>
+        </div>
+        <div class="col"></div>
+        <div class="col-auto q-mr-sm">
+
+          <q-icon name="language" size="24px" class="on-right" v-if="audioTracks.length > 1">
+            <q-menu anchor="top end" self="bottom right">
+              <q-list style="min-width: 10em" bordered dense>
+                <q-item
+                  v-for="a in audioTracks"
+                  :key="a.idx"
+                  v-close-popup
+                  clickable
+                  :active="audioTrack === a.idx"
+                  @click="$emit('audiotrack', a.idx)"
+                >
+                  {{a.label}}
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-icon>
+
+          <q-icon name="closed_caption" size="24px" class="on-right" v-if="textTracks.length">
+            <q-menu anchor="top end" self="bottom right">
+              <q-list style="min-width: 10em" bordered dense>
+                <q-item
+                  v-for="s in textTracks"
+                  :key="s.idx"
+                  v-close-popup
+                  clickable
+                  :active="textTrack === s.idx"
+                  @click="$emit('texttrack', s.idx)"
+                >
+                  {{s.label}}
+                </q-item>
+                <q-item
+                  v-close-popup
+                  clickable
+                  :active="textTrack === null"
+                  @click="$emit('texttrack', null)"
+                >
+                  Off
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-icon>
+
+          <q-icon name="cast" size="24px" class="on-right"/>
+          <q-icon
+            :name="fullscreen_icon()"
+            size="24px"
+            class="on-right"
+            @click="$emit('fullscreen')"
+          />
+        </div>
+      </div>
+    </div>
+</template>
+
+<style>
+.videocontrols-container {
+  width: 100%;
+}
+</style>
+
+<script>
+import {
+  defineComponent,
+} from 'vue';
+
+function hhmmss(seconds) {
+  const d = new Date(seconds * 1000).toISOString();
+  if (seconds < 3600) {
+    return d.substr(11, 8);
+  }
+  return d.substr(14, 5);
+}
+
+export default defineComponent({
+  name: 'VideoControls',
+  emits: ['play', 'seek', 'volume', 'texttrack', 'audiotrack', 'fullscreen'],
+
+  props: {
+    currentTime: Number,
+    playState: String,
+    volume: Number,
+    duration: Number,
+    textTrack: {
+      type: Number,
+      default: 0,
+    },
+    textTracks: {
+      type: Array,
+      default: () => [],
+    },
+    audioTrack: {
+      type: Number,
+      default: 0,
+    },
+    audioTracks: {
+      type: Array,
+      default: () => [],
+    },
+    castState: String,
+    fullScreenState: String,
+  },
+
+  setup() {
+    return {
+      cur_play_icon: 'play_arrow',
+    };
+  },
+
+  methods: {
+
+    // current time and duration info: 00:08:51 / 20:00:00.
+    time_info() {
+      if (!this.duration) {
+        return '';
+      }
+      return `${hhmmss(this.currentTime)} / ${hhmmss(this.duration)}`;
+    },
+
+    play_icon() {
+      switch (this.playState) {
+        case 'playing':
+          this.cur_play_icon = 'pause';
+          break;
+        case 'paused':
+          this.cur_play_icon = 'play_arrow';
+          break;
+        case 'ended':
+          this.cur_play_icon = 'replay';
+          break;
+        default:
+          break;
+      }
+      return this.cur_play_icon;
+    },
+
+    fullscreen_icon() {
+      switch (this.fullScreenState) {
+        case 'on':
+          return 'fullscreen_exit';
+        default:
+      }
+      return 'fullscreen';
+    },
+
+    seek(newTime) {
+      this.$emit('seek', newTime);
+      if (this.playState === 'ended') {
+        this.$emit('play');
+      }
+    },
+  },
+});
+</script>
