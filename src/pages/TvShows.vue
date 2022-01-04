@@ -37,7 +37,6 @@ export default defineComponent({
       const config = new Config();
       this.api = new API({ url: `${config.apiUrl}/` });
       this.api.getItems('TV%20Shows').then((items) => {
-        console.log(items);
         this.items = items;
       });
     },
