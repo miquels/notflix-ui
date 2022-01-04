@@ -2,8 +2,8 @@
   <q-page class="flex flex-center">
     <div class="q-pa-md">
       <div class="row">
-        <div class="col">
-          <VideoPlayer :url="url" />
+        <div class="col-12 window-width">
+          <Chromecast :src="src" />
         </div>
       </div>
     </div>
@@ -11,33 +11,31 @@
 </template>
 
 <script>
-import VideoPlayer from 'components/VideoPlayer.vue';
+import Chromecast from 'components/Chromecast.vue';
 import {
   defineComponent,
   getCurrentInstance,
   onMounted,
   ref,
 } from 'vue';
+import Config from '../lib/config.js';
 
 export default defineComponent({
   name: 'PageIndex',
   setup() {
+    const config = new Config();
     onMounted(() => {
       const instance = getCurrentInstance();
-      instance.ctx.updateUrl('https://mx2.high5.nl/data/tv-series/The%20Expanse/S06/the.expanse.s06e03.720p.web.h264-glhf.mp4');
+      const src = config.samples[0];
+      console.log('updating src to', src);
+      instance.ctx.src = src;
     });
     return {
-      videoPlayer: ref(null),
-      url: ref(null),
+      src: ref(config.samples[0]),
     };
   },
   components: {
-    VideoPlayer,
-  },
-  methods: {
-    updateUrl(url) {
-      this.url = url;
-    },
+    Chromecast,
   },
 });
 </script>

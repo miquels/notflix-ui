@@ -2,7 +2,7 @@
   "name": "notflix-ui",
   "version": "0.0.1",
   "description": "Notflix UI",
-  "productName": "Quasar App",
+  "productName": "Notflix",
   "author": "Miquel van Smoorenburg <mike@langeraar.net>",
   "private": true,
   "scripts": {

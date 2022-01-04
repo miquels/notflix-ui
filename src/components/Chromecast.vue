@@ -19,6 +19,7 @@
        @texttrack="on_texttrack"
        @audiotrack="on_audiotrack"
        @muted="on_muted"
+       @cast="on_cast"
     />
   </div>
 </template>
@@ -27,9 +28,11 @@
 .chromecast-container {
   position: relative;
   background: black;
+  width: 100%;
 }
 .chromecast-controls {
   width: 100%;
+  color: white;
 }
 </style>
 
@@ -70,9 +73,10 @@ export default defineComponent({
     });
 
     return {
+      playState: ref('idle'),
       currentTime: ref(0),
       duration: ref(null),
-      volume: ref(0.5),
+      volume: ref(1),
       muted: ref(false),
       textTracks: ref([]),
       textTrack: ref(null),
@@ -89,65 +93,86 @@ export default defineComponent({
     on_mounted() {
       console.log('on_mounted');
 
-      // eslint-disable-next-line
-      this.cast = window.chrome.cast;
+      if (!window.chrome || !chrome.cast || !chrome.cast.isAvailable) {
+        window.__onGCastApiAvailable = (isAvailable) => {
+          if (isAvailable) {
+            this.init_player();
+          }
+        };
+        return;
+      }
+      delete window.__onGCastApiAvailable;
+      this.init_player();
+    },
 
-      let options = {};
+    init_player() {
+      console.log('init_player');
+
+      const options = {};
       options.receiverApplicationId = 'CC1AD845';
-      options.autoJoinPolicy = this.cast.AutoJoinPolicy.TAB_AND_ORIGIN_SCOPED;
-      this.cast.framework.CastContext.getInstance().setOptions(options);
+      options.autoJoinPolicy = chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED;
+      window.cast.framework.CastContext.getInstance().setOptions(options);
 
-      this._player = new this.cast.framework.RemotePlayer();
-      this._controller = new this.cast.framework.RemotePlayerController(this._player);
+      this._player = new window.cast.framework.RemotePlayer();
+      this._controller = new window.cast.framework.RemotePlayerController(this._player);
+
+      // Add a listener for cast-device events (if there are any, etc)
+      const instance = window.cast.framework.CastContext.getInstance();
+      const CastEvent = window.cast.framework.CastContextEventType.CAST_STATE_CHANGED;
+      instance.addEventListener(CastEvent, (state) => {
+        // eslint-disable-next-line
+        const CastState = window.cast.framework.CastState;
+        switch (state) {
+          case CastState.NO_DEVICES_AVAILABLE:
+            this.castState = 'no_devices';
+            break;
+          case CastState.NOT_CONNECTED:
+            this.castState = 'disconnected';
+            break;
+          case CastState.CONNECTED:
+            this.castState = 'connected';
+            break;
+          default:
+            break;
+        }
+      });
 
       const handleEvent = (eventType, func) => {
-        this._controller.addEventListener(this.cast.framework.RemotePlayerEventType[eventType], func);
+        const t = window.cast.framework.RemotePlayerEventType[eventType];
+        this._controller.addEventListener(t, func);
       };
 
       handleEvent('IS_CONNECTED_CHANGED', () => {
         const session = this.getSession();
         const connected = this._player.isConnected && session !== null;
-        const state = this.state.castState;
+        const state = this.castState;
 
+        this.castState = connected ? 'connected' : 'disconnected';
         if (session) {
           this.deviceName = session.getCastDevice().friendlyName || this.deviceName;
         }
-        this.castState = connected ? 'connected' : 'disconnected';
+        // eslint-disable-next-line
+        if (connected && session.getSessionState() === window.cast.framework.SessionState.SESSION_RESUMED) {
+          this.mediaInfoChanged();
+          return;
+        }
         if (connected && state === 'disconnected') {
+          // Initial connected. If we have a src, play it.
           if (this.src) {
-            // XXX FIXME either attach to existing session, or load + play
-            this.load(this.src);
+            this.load(this.src, this.startAt);
           }
         }
       });
 
-      handleEvent('MEDIA_LOADED_CHANGED', () => {
-        const session = this.getSession();
-        if (!session) {
-          return;
-        }
-
-        const media = session.getMediaSession();
-        if (!media) {
-          this.resetState('idle');
-          return;
-        }
-        const mediaInfo = media.media;
-        // this.currentSrc = mediaInfo.contentId;
-        // this.currentTitle = mediaInfo.metadata.title;
-        // this.currentDescription = mediaInfo.metadata.subtitle;
-        this.duration = mediaInfo.duration;
-        // this.canseek = this._player.canSeek;
-
-        this.textTracks = this.getTracks('TEXT');
-        this.textTrack = this.getActiveTrack('TEXT');
-        this.audioTracks = this.getTracks('AUDIO');
-        this.audioTrack = this.getActiveTrack('AUDIO');
-      });
+      handleEvent('MEDIA_INFO_CHANGED', () => this.mediaInfoChanged());
 
       // handleEvent('CAN_SEEK_CHANGED', () => {
       //   this.canseek = this._player.canseek;
       // });
+
+      handleEvent('CURRENT_TIME_CHANGED', () => {
+        this.currentTime = this._player.currentTime;
+      });
 
       handleEvent('IS_PAUSED_CHANGED', () => {
         this.updateState();
@@ -161,12 +186,39 @@ export default defineComponent({
         this.volume = this._player.volumeLevel;
       });
 
-      // watch(() => this.src, (newSrc, oldSrc) => {
-      //   console.log('watch -> load', this.src, newSrc, oldSrc);
-      //   if (newSrc !== oldSrc) {
-      //     this.load(newSrc);
-      //   }
-      // });
+      watch(() => this.src, (newSrc, oldSrc) => {
+        console.log('watch -> load', this.src, newSrc, oldSrc);
+        if (newSrc !== oldSrc) {
+          this.load(newSrc);
+        }
+      });
+    },
+
+    mediaInfoChanged() {
+      console.log('media_info_changed');
+      const session = this.getSession();
+      if (!session) {
+        return;
+      }
+
+      const media = session.getMediaSession();
+      if (!media) {
+        this.resetState('idle');
+        return;
+      }
+      const mediaInfo = media.media;
+      // this.currentSrc = mediaInfo.contentId;
+      // this.currentTitle = mediaInfo.metadata.title;
+      // this.currentDescription = mediaInfo.metadata.subtitle;
+      this.duration = mediaInfo.duration;
+      // this.canseek = this._player.canSeek;
+
+      this.textTracks = this.getTracks('TEXT');
+      this.textTrack = this.getActiveTrack('TEXT');
+      this.audioTracks = this.getTracks('AUDIO');
+      this.audioTrack = this.getActiveTrack('AUDIO');
+
+      this.updateState();
     },
 
     on_play() {
@@ -198,25 +250,54 @@ export default defineComponent({
 
     on_volume(val) {
       this._player.volumeLevel = val;
-    }
- 
+    },
+
+    on_audiotrack(val) {
+      this.setActiveTrack('AUDIO', val);
+    },
+
+    on_texttrack(val) {
+      this.setActiveTrack('TEXT', val);
+    },
+
+    resetState() {
+      // TODO
+      console.log('TODO: resetState');
+    },
+
+    on_cast() {
+      const instance = window.cast.framework.CastContext.getInstance();
+      instance.requestSession();
+    },
+
     load(src, startAt) {
-      const mediaInfo = new this.cast.media.MediaInfo(src, 'video/mp4');
-      mediaInfo.streamType = this.cast.media.StreamType.BUFFERED;
+      const mediaInfo = new chrome.cast.media.MediaInfo(src, 'video/mp4');
+      mediaInfo.streamType = chrome.cast.media.StreamType.BUFFERED;
 
       if (src.endsWith('.m3u8')) {
         // These must be set to FMP4, or the chromecast will hang.
-        mediaInfo.hlsSegmentFormat = this.cast.media.HlsSegmentFormat.FMP4;
-        mediaInfo.hlsVideoSegmentFormat = this.cast.media.HlsVideoSegmentFormat.FMP4;
+        mediaInfo.hlsSegmentFormat = chrome.cast.media.HlsSegmentFormat.FMP4;
+        mediaInfo.hlsVideoSegmentFormat = chrome.cast.media.HlsVideoSegmentFormat.FMP4;
         // StreamType must be LIVE or OTHER, not BUFFERED.
-        mediaInfo.streamType = this.cast.media.StreamType.OTHER;
+        mediaInfo.streamType = chrome.cast.media.StreamType.OTHER;
         // And ofcourse the MIME type.
         mediaInfo.contentType = 'application/x-mpegURL';
       }
 
-      mediaInfo.metadata = new this.cast.media.GenericMediaMetadata();
+      mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
 
-      const request = new this.cast.media.LoadRequest(mediaInfo);
+      // Netflix subtitle styling
+      // chrome.cast.media.TextTrackFontGenericFamily.CASUAL
+      // chrome.cast.media.TextTrackEdgeType.DROP_SHADOW
+      mediaInfo.textTrackStyle = new chrome.cast.media.TextTrackStyle();
+      mediaInfo.textTrackStyle.backgroundColor = '#00000000';
+      mediaInfo.textTrackStyle.edgeColor = '#00000016';
+      mediaInfo.textTrackStyle.edgeType = 'DROP_SHADOW';
+      mediaInfo.textTrackStyle.fontFamily = 'CASUAL';
+      mediaInfo.textTrackStyle.fontScale = 1.0;
+      mediaInfo.textTrackStyle.foregroundColor = '#FFFFFF';
+
+      const request = new chrome.cast.media.LoadRequest(mediaInfo);
       request.currentTime = startAt || 0;
       request.autoplay = this.playState !== 'paused';
 
@@ -242,7 +323,7 @@ export default defineComponent({
     // Get the current session. If we cannot, and are not disconnected,
     // treat this is a disconnection event.
     getSession() {
-      const instance = this.cast.framework.CastContext.getInstance();
+      const instance = window.cast.framework.CastContext.getInstance();
       if (instance) {
         const session = instance.getCurrentSession();
         if (session) {
@@ -251,7 +332,7 @@ export default defineComponent({
       }
       this.castState = 'disconnected';
       return null;
-    }
+    },
 
     // Update the current playerState.
     updateState() {
@@ -274,7 +355,7 @@ export default defineComponent({
         default:
           break;
       }
-    }
+    },
 
     // Get all the tracks of a type ('AUDIO' or 'TEXT').
     getTracks(type) {
@@ -288,18 +369,21 @@ export default defineComponent({
       }
       const mediaInfo = media.media;
       const tracks = [];
+      if (!mediaInfo.tracks) {
+        return [];
+      }
       // eslint-disable-next-line
-      for (let i in mediaInfo.tracks.values) {
+      for (let i in mediaInfo.tracks) {
         const t = mediaInfo.tracks[i];
         if (t.type === type) {
           tracks.push({
             label: t.name,
-            id: t.id,
+            id: t.trackId,
           });
         }
       }
       return tracks;
-    }
+    },
 
     // Get the active tracks of a type ('AUDIO' or 'TEXT').
     getActiveTrack(type) {
@@ -316,12 +400,12 @@ export default defineComponent({
       // eslint-disable-next-line
       for (let i in mediaInfo.tracks) {
         const t = mediaInfo.tracks[i];
-        if (t.type === type && active.includes(t.id)) {
-          return t.id;
+        if (t.type === type && active.includes(t.trackId)) {
+          return t.trackId;
         }
       }
       return null;
-    }
+    },
 
     // Set the active track.
     setActiveTrack(type, id) {
@@ -337,30 +421,31 @@ export default defineComponent({
       const active = session.getSessionObj().media[0].activeTrackIds;
       const newActive = [];
       // eslint-disable-next-line
-      for (let i in active) {
-        if (mediaInfo.tracks[i].type !== type) {
-          newActive.push(i);
+      for (let i in mediaInfo.tracks) {
+        const t = mediaInfo.tracks[i];
+        if (active.includes(t.trackId) && t.type !== type) {
+          newActive.push(t.trackId);
         }
       }
-      newActive.push(parseInt(id, 10));
-      const request = new this.cast.media.EditTracksInfoRequest(newActive);
+      if (id !== null) {
+        newActive.push(parseInt(id, 10));
+      }
+      const request = new chrome.cast.media.EditTracksInfoRequest(newActive);
       session.getSessionObj().media[0].editTracksInfo(request, () => {
         switch (type) {
           case 'AUDIO':
-            this.state.audioTrack = this.getActiveTrack(type);
-            this.trigger('audiochanged', this.state.audioTrack);
+            this.audioTrack = this.getActiveTrack(type);
             break;
           case 'TEXT':
-            this.state.textTrack = this.getActiveTrack(type);
-            this.trigger('subtitlechanged', this.state.textTrack);
+            this.textTrack = this.getActiveTrack(type);
             break;
           default:
             break;
         }
       });
-    }
+    },
 
-    static getErrorMessage(error) {
+    getErrorMessage(error) {
       // eslint-disable-next-line
       const chrome = chrome;
       switch (error.code) {
@@ -392,6 +477,7 @@ export default defineComponent({
           break;
       }
       return error;
-    }
+    },
+  },
 });
 </script>

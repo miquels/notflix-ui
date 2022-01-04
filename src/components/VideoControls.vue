@@ -6,7 +6,7 @@
            :modelValue="currentTime"
            @update:modelValue="seek"
            :min="0"
-           :max="duration || 0"
+           :max="duration || 1"
            :step="0"
            color="red"
            dark
@@ -26,11 +26,11 @@
               <q-list style="min-width: 10em" bordered dense>
                 <q-item
                   v-for="a in audioTracks"
-                  :key="a.idx"
+                  :key="a.id"
                   v-close-popup
                   clickable
-                  :active="audioTrack === a.idx"
-                  @click="$emit('audiotrack', a.idx)"
+                  :active="audioTrack === a.id"
+                  @click="$emit('audiotrack', a.id)"
                 >
                   {{a.label}}
                 </q-item>
@@ -43,11 +43,11 @@
               <q-list style="min-width: 10em" bordered dense>
                 <q-item
                   v-for="s in textTracks"
-                  :key="s.idx"
+                  :key="s.id"
                   v-close-popup
                   clickable
-                  :active="textTrack === s.idx"
-                  @click="$emit('texttrack', s.idx)"
+                  :active="textTrack === s.id"
+                  @click="$emit('texttrack', s.id)"
                 >
                   {{s.label}}
                 </q-item>
@@ -63,11 +63,18 @@
             </q-menu>
           </q-icon>
 
-          <q-icon name="cast" size="24px" class="on-right"/>
+          <q-icon
+            :name="cast_icon()"
+            size="24px"
+            class="on-right"
+            v-if="castState && castState !== 'no_devices'"
+            @click="$emit('cast')"
+          />
           <q-icon
             :name="fullscreen_icon()"
             size="24px"
             class="on-right"
+            v-if="!!fullScreenState"
             @click="$emit('fullscreen')"
           />
         </div>
@@ -96,7 +103,7 @@ function hhmmss(seconds) {
 
 export default defineComponent({
   name: 'VideoControls',
-  emits: ['play', 'seek', 'volume', 'texttrack', 'audiotrack', 'fullscreen'],
+  emits: ['play', 'seek', 'volume', 'texttrack', 'audiotrack', 'fullscreen', 'cast'],
 
   props: {
     currentTime: Number,
@@ -157,12 +164,17 @@ export default defineComponent({
     },
 
     fullscreen_icon() {
-      switch (this.fullScreenState) {
-        case 'on':
-          return 'fullscreen_exit';
-        default:
+      if (this.fullScreenState === 'on') {
+        return 'fullscreen_exit';
       }
       return 'fullscreen';
+    },
+
+    cast_icon() {
+      if (this.castState === 'connected') {
+        return 'cast_connected';
+      }
+      return 'cast';
     },
 
     seek(newTime) {

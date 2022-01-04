@@ -161,7 +161,7 @@ export default defineComponent({
           const t = this.video.textTracks[i];
           if (t.kind === 'subtitles') {
             this.textTracks.push({
-              idx: i,
+              id: i,
               label: t.label,
             });
           }
@@ -171,7 +171,7 @@ export default defineComponent({
         for (let i = 0; i < this.hls.audioTracks.length; i += 1) {
           const t = this.hls.audioTracks[i];
           this.audioTracks.push({
-            idx: i,
+            id: i,
             label: t.name,
           });
         }

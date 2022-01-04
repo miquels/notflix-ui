@@ -76,7 +76,7 @@ module.exports = configure((ctx) => ({
   // Full list of options: https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-devServer
   devServer: {
     server: {
-      type: 'http',
+      type: 'https',
     },
     port: 8080,
     open: true, // opens browser window automatically
@@ -143,8 +143,8 @@ module.exports = configure((ctx) => ({
     },
 
     manifest: {
-      name: 'Quasar App',
-      short_name: 'Quasar App',
+      name: 'Notflix UI',
+      short_name: 'Notflix UI',
       description: 'Notflix UI',
       display: 'standalone',
       orientation: 'portrait',

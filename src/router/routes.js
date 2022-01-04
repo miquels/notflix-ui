@@ -4,6 +4,7 @@ const routes = [
     component: () => import('layouts/Notflix.vue'),
     children: [
       { path: '', component: () => import('pages/Index.vue') },
+      { path: '/tv-shows/', component: () => import('pages/TvShows.vue') },
     ],
   },
 
