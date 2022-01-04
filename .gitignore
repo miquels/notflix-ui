@@ -34,4 +34,4 @@ yarn-error.log*
 
 # Other stuff
 src/store/module-example
-lib/config.js
+src/lib/config.js
