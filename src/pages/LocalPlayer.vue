@@ -1,13 +1,16 @@
 <template>
-  <div class="allout">
-    <Html5Video :src="src"/>
-  </div>
+  <teleport to="body">
+    <div class="local-player-container z-top flex-center fit">
+      <Html5Video :src="src"/>
+    </div>
+  </teleport>
 </template>
 
 <style>
-.allout {
-  width: 100%;
-  height: 100%;
+.local-player-container {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background-color: black;
 }
 </style>
 

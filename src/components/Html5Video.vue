@@ -42,12 +42,17 @@
 .html5video-container {
   position: relative;
   background: black;
+  width: 100%;
+  height: 100%;
 }
 .html5video-video {
-  object-fit: contain;
+  position: absolute;
+  right: 0;
+  bottom: 0;
   width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
-  border: 2px yellow;
 }
 .html5video-controls {
   position: absolute;
@@ -156,6 +161,7 @@ export default defineComponent({
       if (!this.duration) {
         this.duration = this.video.duration;
       }
+      console.log(this.video);
       if (this.video.textTracks) {
         for (let i = 0; i < this.video.textTracks.length; i += 1) {
           const t = this.video.textTracks[i];
@@ -165,6 +171,7 @@ export default defineComponent({
               label: t.label,
             });
           }
+          console.log(this.textTracks);
         }
       }
       if (this.hls && this.hls.audioTracks) {
@@ -195,7 +202,7 @@ export default defineComponent({
       } else {
         console.log('plain video load', src);
         this.hls_loaded_metadata = true;
-        this.video.load(src);
+        this.video.src = src;
       }
     },
 

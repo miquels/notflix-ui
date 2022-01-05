@@ -1,6 +1,6 @@
 <template>
   <q-page class="flex flex-center">
-    <Thumbs :items="items" class="fit" @select="show_clicked"/>
+    <Thumbs :items="items" class="fit" @select="movie_clicked"/>
   </q-page>
 </template>
 
@@ -16,7 +16,7 @@ import API from '../lib/api.js';
 import Config from '../lib/config.js';
 
 export default defineComponent({
-  name: 'PageTvShows',
+  name: 'PageMovies',
   components: {
     Thumbs,
   },
@@ -36,15 +36,15 @@ export default defineComponent({
     on_mounted() {
       const config = new Config();
       this.api = new API({ url: `${config.apiUrl}/` });
-      this.api.getItems('TV%20Shows').then((items) => {
+      this.api.getItems('Movies').then((items) => {
         this.items = items;
       });
     },
 
-    show_clicked(item) {
+    movie_clicked(item) {
       const itemName = this.items[item].name;
       console.log('clicked on', item, itemName);
-      this.$router.push(`/tv-shows/TV Shows/${itemName}`);
+      this.$router.push(`/movies/Movies/${itemName}`);
     },
   },
 });

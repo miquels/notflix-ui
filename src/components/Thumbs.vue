@@ -95,13 +95,15 @@ export default defineComponent({
       }
       this.calcSizes();
       console.log('thumbsPerRow', this.thumbsPerRow);
-
+      if (!this.thumbsPerRow) {
+        return [];
+      }
       const { thumbsPerRow } = this;
       const rows = [];
       for (let i = 0; i < this.items.length; i += thumbsPerRow) {
         const row = [];
         for (let r = 0; r < thumbsPerRow && r + i < this.items.length; r += 1) {
-          row.push({ item: this.items[r + i], key: i });
+          row.push({ item: this.items[r + i], key: r + i });
         }
         rows.push({ row, key: `${i}.${thumbsPerRow}` });
       }
@@ -119,22 +121,31 @@ export default defineComponent({
       this.imgWidth = sizing.imgWidth[psz];
       this.imgHeight = sizing.imgHeight[psz];
       if (this.el) {
+        const width = scroll.getScrollWidth(this.el);
+        if (width < 100) {
+          return;
+        }
         this.el.style.setProperty('--image-width', `${sizing.imgWidth[psz]}px`);
         this.el.style.setProperty('--image-height', `${sizing.imgHeight[psz]}px`);
         this.el.style.setProperty('--thumbPadding', `${sizing.thumbPadding[psz]}px`);
         this.el.style.setProperty('--font-size', `${sizing.fontSize[psz]}px`);
-        const width = scroll.getScrollWidth(this.el);
         const thumbWidth = sizing.imgWidth[psz] + 2 * sizing.thumbPadding[psz];
         this.thumbsPerRow = parseInt((width - 20) / thumbWidth, 10);
       }
     },
 
     onResize(ev) {
+      if (ev.Width < 200 || ev.Height < 200) {
+        return;
+      }
       console.log('resize', ev);
       this.calcSizes();
     },
 
     img_url(item) {
+      if (!item.poster) {
+        return '';
+      }
       const w = this.imgWidth;
       const h = this.imgHeight;
       const url = `${this.apiUrl}${item.baseurl}/${item.path}/${item.poster}`;

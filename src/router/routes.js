@@ -1,12 +1,15 @@
 const routes = [
   {
     path: '/',
-    component: () => import('layouts/Notflix.vue'),
+    component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/Index.vue') },
+      // { path: '', component: () => import('pages/Index.vue') },
+      { path: '', redirect: '/tv-shows/' },
       { path: '/tv-shows/:collection/:name', component: () => import('pages/TvShow.vue') },
       { path: '/tv-shows/', component: () => import('pages/TvShows.vue') },
-      { path: '/local-player/:src', component: () => import('pages/LocalPlayer.vue') },
+      { path: '/movies/:collection/:name', component: () => import('pages/Movie.vue') },
+      { path: '/movies/', component: () => import('pages/Movies.vue') },
+      { path: '/local-player/:src(.*)', component: () => import('pages/LocalPlayer.vue') },
     ],
   },
 

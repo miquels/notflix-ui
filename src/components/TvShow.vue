@@ -1,5 +1,5 @@
 <template>
-  <div class="tv-show-container">
+  <div class="tv-show-container q-pt-md">
   <q-resize-observer @resize="onResize"/>
     <div class="tv-show-header">
       <div class="tv-show-header-img" :style="bgImage()"/>
@@ -8,10 +8,13 @@
       </div>
       <div class="row text-h6">
         <div class="col" v-if="show">
-          <q-btn-dropdown :label="`Season ${show.seasons[currentSeason].seasonno}`">
+          <q-btn-dropdown
+            class="tv-show-season-menu"
+            :label="`Season ${show.seasons[currentSeason].seasonno}`"
+          >
             <q-list v-if="show">
-              <template v-for="season in show.seasons" :key="season.name">
-                <q-item clickable v-close-popup @click="selectSeason(index)">
+              <template v-for="(season, index) in show.seasons" :key="season.name">
+                <q-item clickable v-close-popup @click="currentSeason = index">
                   <q-item-section>
                     <q-item-label>Season {{season.seasonno}}</q-item-label>
                   </q-item-section>
@@ -68,6 +71,9 @@
   background-color: #000000;
   background-size: cover;
 }
+.tv-show-season-menu {
+  background: #444466;
+}
 .table {
   display: table;
 }
@@ -112,13 +118,16 @@ function updateNfo(show, nfo) {
 
 function updateEpisode(show, episode) {
   updateNfo(show, episode.nfo);
-  if (episode.video) episode.video = joinpath(show.path, episode.video);
   if (episode.thumb) episode.thumb = joinpath(show.path, episode.thumb);
+  if (episode.video) {
+    episode.video = joinpath(show.path, episode.video);
+    episode.video = Config.fixupEpisodeUrl(episode.video);
+  }
 }
 
 function updateShow(apiUrl, theShow) {
   console.log('updateShow', apiUrl, theShow);
-  const show = { ...theShow };
+  const show = JSON.parse(JSON.stringify(theShow));
   show.name = escapeHtml(show.name);
   show.path = joinpath(apiUrl, show.baseurl, show.path);
   console.log('show.path us now', show.path);
@@ -174,7 +183,7 @@ export default defineComponent({
       plot: ref(null),
       bgimage: ref(null),
       show: ref(null),
-      currentSeason: ref(1),
+      currentSeason: ref(0),
       api,
       apiUrl: config.apiUrl,
     };
@@ -185,6 +194,14 @@ export default defineComponent({
       this.api.getShow(this.collection, this.name).then((item) => {
         console.log(item);
         this.show = updateShow(this.apiUrl, item);
+        if (!this.show.fanart && this.show.poster) {
+          this.show.fanart = this.show.poster;
+        }
+        if (!this.show.poster && this.show.fanart) {
+          this.show.poster = this.show.fanart;
+        }
+        if (!this.show.fanart) this.show.fanart = '#';
+        if (!this.show.poster) this.show.poster = '#';
         this.bgimage = this.show.fanart;
         console.log('setting bgimage to', this.bgimage);
         this.title = this.show.nfo.title;
@@ -215,7 +232,7 @@ export default defineComponent({
 
     onResize(ev) {
       console.log(ev);
-      if (this.show && (1.8 * ev.height > ev.width)) {
+      if (this.show && this.show.fanart && this.show.poster && (1.8 * ev.height > ev.width)) {
         this.bgimage = this.show.poster;
       } else {
         this.bgimage = this.show.fanart;

@@ -1,6 +1,6 @@
 <template>
 
-    <div class=videocontrols-container>
+    <div class=videocontrols-container ref="el">
       <div class="row q-mx-md">
         <q-slider
            :modelValue="currentTime"
@@ -22,7 +22,7 @@
         <div class="col-auto q-mr-sm">
 
           <q-icon name="language" size="24px" class="on-right" v-if="audioTracks.length > 1">
-            <q-menu anchor="top end" self="bottom right">
+            <q-menu anchor="top end" self="bottom right" class="videocontrols-fix-zindex">
               <q-list style="min-width: 10em" bordered dense>
                 <q-item
                   v-for="a in audioTracks"
@@ -39,7 +39,7 @@
           </q-icon>
 
           <q-icon name="closed_caption" size="24px" class="on-right" v-if="textTracks.length">
-            <q-menu anchor="top end" self="bottom right">
+            <q-menu anchor="top end" self="bottom right" class="videocontrols-fix-zindex">
               <q-list style="min-width: 10em" bordered dense>
                 <q-item
                   v-for="s in textTracks"
@@ -84,13 +84,17 @@
 
 <style>
 .videocontrols-container {
+  position: relative;
   width: 100%;
 }
+.videocontrols-fix-zindex {
+  z-index: 8000;
+}
 </style>
-
 <script>
 import {
   defineComponent,
+  ref,
 } from 'vue';
 
 function hhmmss(seconds) {
@@ -131,13 +135,14 @@ export default defineComponent({
   },
 
   setup() {
+    const el = ref(null);
     return {
       cur_play_icon: 'play_arrow',
+      el,
     };
   },
 
   methods: {
-
     // current time and duration info: 00:08:51 / 20:00:00.
     time_info() {
       if (!this.duration) {
