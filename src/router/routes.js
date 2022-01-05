@@ -6,6 +6,7 @@ const routes = [
       { path: '', component: () => import('pages/Index.vue') },
       { path: '/tv-shows/:collection/:name', component: () => import('pages/TvShow.vue') },
       { path: '/tv-shows/', component: () => import('pages/TvShows.vue') },
+      { path: '/local-player/:src', component: () => import('pages/LocalPlayer.vue') },
     ],
   },
 

@@ -38,6 +38,11 @@
         <div class="col-2 col-sm-6"></div>
       </div>
     </div>
+    <div v-if="show && show.seasons && show.seasons[currentSeason]" class="tv-show-episodes">
+      <template v-for="episode in show.seasons[currentSeason].episodes" :key="episode.name">
+        <Episode :episode="episode" @play="playEpisode"/>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -84,6 +89,7 @@ import {
 import Config from '../lib/config.js';
 import Api from '../lib/api.js';
 import { joinpath } from '../lib/util.js';
+import Episode from './Episode.vue';
 
 function escapeHtml(html) {
   const text = document.createTextNode(html);
@@ -99,6 +105,15 @@ function updateNfo(show, nfo) {
   if (nfo.plot) {
     nfo.plot = escapeHtml(nfo.plot);
   }
+  if (nfo.thumb) {
+    nfo.thumb = joinpath(show.path, nfo.thumb);
+  }
+}
+
+function updateEpisode(show, episode) {
+  updateNfo(show, episode.nfo);
+  if (episode.video) episode.video = joinpath(show.path, episode.video);
+  if (episode.thumb) episode.thumb = joinpath(show.path, episode.thumb);
 }
 
 function updateShow(apiUrl, theShow) {
@@ -123,6 +138,10 @@ function updateShow(apiUrl, theShow) {
     if (season.poster) {
       season.poster = joinpath(show.path, season.poster);
     }
+    // eslint-disable-next-line
+    for (const episode of season.episodes) {
+      updateEpisode(show, episode);
+    }
   }
   console.log('show is now xyzzy', show);
   return show;
@@ -134,6 +153,10 @@ export default defineComponent({
   props: {
     collection: String,
     name: String,
+  },
+
+  components: {
+    Episode,
   },
 
   setup() {
@@ -192,11 +215,16 @@ export default defineComponent({
 
     onResize(ev) {
       console.log(ev);
-      if (1.8 * ev.height > ev.width) {
+      if (this.show && (1.8 * ev.height > ev.width)) {
         this.bgimage = this.show.poster;
       } else {
         this.bgimage = this.show.fanart;
       }
+    },
+
+    playEpisode(url) {
+      console.log('playEpisode', url);
+      this.$router.push(`/local-player/${url}`);
     },
   },
 });
