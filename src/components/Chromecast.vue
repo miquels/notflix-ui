@@ -45,10 +45,12 @@
 import {
   defineComponent,
   getCurrentInstance,
+  inject,
   onMounted,
   ref,
   watch,
 } from 'vue';
+import { useStore } from 'vuex';
 import VideoControls from 'components/VideoControls.vue';
 
 export default defineComponent({
@@ -71,6 +73,8 @@ export default defineComponent({
       const instance = getCurrentInstance();
       instance.ctx.on_mounted();
     });
+    const emitter = inject('emitter');
+    const store = useStore();
 
     return {
       playState: ref('idle'),
@@ -84,6 +88,8 @@ export default defineComponent({
       audioTrack: ref(0),
       castState: ref('disconnected'),
       buffering: ref(false),
+      emitter,
+      store,
     };
   },
 
@@ -91,7 +97,7 @@ export default defineComponent({
 
     // Initialize.
     on_mounted() {
-      console.log('on_mounted');
+      console.log('chromecast on_mounted');
 
       if (!window.chrome || !chrome.cast || !chrome.cast.isAvailable) {
         window.__onGCastApiAvailable = (isAvailable) => {

@@ -16,7 +16,7 @@
           <q-route-tab name="movies" label="Movies" to="/movies/" />
       </q-tabs>
       <div class="col"/>
-      <q-icon name="cast" size="24px" @click="toggleCast" />
+      <CastButton />
       </q-toolbar>
     </q-header>
 
@@ -32,7 +32,7 @@
       </router-view>
     </q-page-container>
 
-    <q-footer :modelValue="castOn" elevated class="bg-grey-10 text-white">
+    <q-footer :modelValue="this.castActive" elevated class="bg-grey-10 text-white">
       <Chromecast/>
     </q-footer>
 
@@ -41,24 +41,24 @@
 
 <script>
 import { ref } from 'vue';
+import { useStore } from 'vuex';
 import Chromecast from 'components/Chromecast.vue';
+import CastButton from 'components/CastButton.vue';
 
 export default {
   components: {
     Chromecast,
+    CastButton,
   },
   setup() {
     const leftDrawerOpen = ref(false);
-    const castOn = ref(false);
+    const store = useStore();
 
     return {
       leftDrawerOpen,
-      castOn,
+      castActive: store.castActive,
       toggleLeftDrawer() {
         leftDrawerOpen.value = !leftDrawerOpen.value;
-      },
-      toggleCast() {
-        castOn.value = !castOn.value;
       },
     };
   },

@@ -232,10 +232,12 @@ export default defineComponent({
 
     onResize(ev) {
       console.log(ev);
-      if (this.show && this.show.fanart && this.show.poster && (1.8 * ev.height > ev.width)) {
-        this.bgimage = this.show.poster;
-      } else {
-        this.bgimage = this.show.fanart;
+      if (this.show && this.show.poster && this.show.fanart) {
+        if (1.8 * ev.height > ev.width) {
+          this.bgimage = this.show.poster;
+        } else {
+          this.bgimage = this.show.fanart;
+        }
       }
     },
 
