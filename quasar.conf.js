@@ -24,6 +24,7 @@ module.exports = configure((ctx) => ({
   // https://quasar.dev/quasar-cli/boot-files
   boot: [
     'emitter.js',
+    'chromecast.js',
   ],
 
   // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-css
@@ -48,7 +49,6 @@ module.exports = configure((ctx) => ({
   // Full list of options: https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
   build: {
     vueRouterMode: 'hash', // available values: 'hash', 'history'
-
     // transpile: false,
     // publicPath: '/',
 
@@ -71,6 +71,12 @@ module.exports = configure((ctx) => ({
     chainWebpack(chain) {
       chain.plugin('eslint-webpack-plugin')
         .use(ESLintPlugin, [{ extensions: ['js', 'vue'] }]);
+    },
+	vueCompiler: true,
+    vueLoaderOptions: {
+	  compilerOptions: {
+	    isCustomElement: tag => tag === 'google-cast-launcher',
+	  },
     },
   },
 

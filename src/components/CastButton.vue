@@ -1,29 +1,22 @@
 <template>
-  <q-icon
-    name="cast"
-        v-if="castState === 'disconnected'"
-        :size="size || '24px'"
-        @click="emitter.emit('cast')"
-  />
+  <google-cast-launcher :style="castClass"></google-cast-launcher>
 </template>
 
 <script>
-import {
-  defineComponent,
-  inject,
-} from 'vue';
-import { useStore } from 'vuex';
+import { defineComponent, ref } from 'vue';
 
 export default defineComponent({
   name: 'CastButton',
-  setup() {
-    const emitter = inject('emitter');
-    const store = useStore();
-    const { castState } = store.getters;
-
+  props: {
+    size: ref(24),
+  },
+  setup(props) {
+    const sizing = {
+      width: props.size || '32px',
+      height: props.size || '32px',
+    };
     return {
-      emitter,
-      castState,
+      castClass: sizing,
     };
   },
 });

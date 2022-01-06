@@ -6,9 +6,6 @@
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
 
         <q-toolbar-title class="col-auto">
-          <q-avatar>
-            <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg">
-          </q-avatar>
           Notflix
         </q-toolbar-title>
         <q-tabs shrink class="col">

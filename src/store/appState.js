@@ -1,6 +1,7 @@
 export default {
   state: () => ({
-    cast: 'no_devices',
+    castState: 'no_devices',
+    castActive: false,
   }),
 
   /*
@@ -15,14 +16,16 @@ export default {
   */
 
   mutations: {
-    setCastState(state, cast) {
-      state.cast = cast;
+    castState(state, cast) {
+      state.castState = cast;
     },
   },
 
+  /*
   getters: {
     getCastState(state) {
       return state.cast;
     },
   },
+  */
 };

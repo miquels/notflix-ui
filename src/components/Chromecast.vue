@@ -12,7 +12,6 @@
        :textTracks="textTracks"
        :audioTrack="audioTrack"
        :audioTracks="audioTracks"
-       :castState="castState"
        @play="on_play"
        @seek="on_seek"
        @volume="on_volume"
@@ -86,7 +85,6 @@ export default defineComponent({
       textTrack: ref(null),
       audioTracks: ref([]),
       audioTrack: ref(0),
-      castState: ref('disconnected'),
       buffering: ref(false),
       emitter,
       store,
@@ -111,8 +109,26 @@ export default defineComponent({
       this.init_player();
     },
 
+    initPlayerDebug() {
+      const { cast } = window.chrome;
+      const sessionRequest =
+        new cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID);
+      const argh = new cast.ApiConfig(sessionRequest,
+        (session) => {
+          console.log('got session', session);
+          cast.session = session;
+        },
+        (e) => {
+          if (e === chrome.cast.ReceiverAvailability.AVAILABLE) {
+            console.log('receiver is available :)');
+          }
+        });
+      return argh;
+    },
+
     init_player() {
       console.log('init_player');
+      this.initPlayerDebug();
 
       const options = {};
       options.receiverApplicationId = 'CC1AD845';
@@ -125,23 +141,10 @@ export default defineComponent({
       // Add a listener for cast-device events (if there are any, etc)
       const instance = window.cast.framework.CastContext.getInstance();
       const CastEvent = window.cast.framework.CastContextEventType.CAST_STATE_CHANGED;
-      instance.addEventListener(CastEvent, (state) => {
-        // eslint-disable-next-line
-        const CastState = window.cast.framework.CastState;
-        switch (state) {
-          case CastState.NO_DEVICES_AVAILABLE:
-            this.castState = 'no_devices';
-            break;
-          case CastState.NOT_CONNECTED:
-            this.castState = 'disconnected';
-            break;
-          case CastState.CONNECTED:
-            this.castState = 'connected';
-            break;
-          default:
-            break;
-        }
-      });
+      instance.addEventListener(CastEvent, (state) => this.setCastStateNative(state));
+      const castState = window.cast.framework.CastContext.getInstance().getCastState();
+      console.log('casState now', castState);
+      // this.setCastStateNative(castState);
 
       const handleEvent = (eventType, func) => {
         const t = window.cast.framework.RemotePlayerEventType[eventType];
@@ -151,9 +154,9 @@ export default defineComponent({
       handleEvent('IS_CONNECTED_CHANGED', () => {
         const session = this.getSession();
         const connected = this._player.isConnected && session !== null;
-        const state = this.castState;
+        const state = this.getCastState;
 
-        this.castState = connected ? 'connected' : 'disconnected';
+        this.setCastState(connected ? 'connected' : 'disconnected');
         if (session) {
           this.deviceName = session.getCastDevice().friendlyName || this.deviceName;
         }
@@ -198,6 +201,33 @@ export default defineComponent({
           this.load(newSrc);
         }
       });
+    },
+
+    setCastStateNative(state) {
+      // eslint-disable-next-line
+      const CastState = window.cast.framework.CastState;
+      switch (state) {
+        case CastState.NO_DEVICES_AVAILABLE:
+          this.setCastState('no_devices');
+          break;
+        case CastState.NOT_CONNECTED:
+          this.setCastState('disconnected');
+          break;
+        case CastState.CONNECTED:
+          this.setCastState('connected');
+          break;
+        default:
+          break;
+      }
+    },
+
+    setCastState(newState) {
+      console.log('setCastState', newState);
+      this.store.commit('castState', newState);
+    },
+
+    getCastState() {
+      return this.store.castState;
     },
 
     mediaInfoChanged() {
@@ -336,7 +366,7 @@ export default defineComponent({
           return session;
         }
       }
-      this.castState = 'disconnected';
+      this.setCastState('disconnected');
       return null;
     },
 
