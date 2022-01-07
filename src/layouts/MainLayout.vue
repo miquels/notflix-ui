@@ -29,7 +29,7 @@
       </router-view>
     </q-page-container>
 
-    <q-footer :modelValue="this.castActive" elevated class="bg-grey-10 text-white">
+    <q-footer :modelValue="castActive()" elevated class="bg-grey-10 text-white">
       <Chromecast/>
     </q-footer>
 
@@ -53,11 +53,17 @@ export default {
 
     return {
       leftDrawerOpen,
-      castActive: store.castActive,
+      store,
       toggleLeftDrawer() {
         leftDrawerOpen.value = !leftDrawerOpen.value;
       },
     };
+  },
+  methods: {
+    castActive() {
+      console.log('mainLayout: castActive:', this.store.state.castActive);
+      return this.store.state.castActive;
+    },
   },
 };
 </script>

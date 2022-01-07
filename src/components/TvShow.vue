@@ -7,8 +7,10 @@
         <div class="col">{{ title }}</div>
       </div>
       <div class="row text-h6">
-        <div class="col" v-if="show">
+        <div class="col" v-if="show && show.seasons && show.seasons[currentSeason]">
+          <div v-if="show.seasons.length === 1">Season {{ currentSeason + 1 }}</div>
           <q-btn-dropdown
+            v-else
             class="tv-show-season-menu"
             :label="`Season ${show.seasons[currentSeason].seasonno}`"
           >
@@ -89,9 +91,11 @@
 import {
   defineComponent,
   getCurrentInstance,
+  inject,
   onBeforeMount,
   ref,
 } from 'vue';
+import { useStore } from 'vuex';
 import Config from '../lib/config.js';
 import Api from '../lib/api.js';
 import { joinpath } from '../lib/util.js';
@@ -175,6 +179,8 @@ export default defineComponent({
     });
     const config = new Config();
     const api = new Api({ url: config.apiUrl });
+    const store = useStore();
+    const emitter = inject('emitter');
     return {
       fanart: ref(null),
       poster: ref(null),
@@ -186,6 +192,8 @@ export default defineComponent({
       currentSeason: ref(0),
       api,
       apiUrl: config.apiUrl,
+      store,
+      emitter,
     };
   },
 
@@ -243,7 +251,11 @@ export default defineComponent({
 
     playEpisode(url) {
       console.log('playEpisode', url);
-      this.$router.push(`/local-player/${url}`);
+      if (this.store.state.castState === 'connected') {
+        this.emitter.emit('playCast', url);
+      } else {
+        this.$router.push(`/local-player/${url}`);
+      }
     },
   },
 });

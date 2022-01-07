@@ -1,7 +1,7 @@
 <template>
   <div class="row items-stretch episode-container">
     <div class="col-xs-12 col-md-3 episode-left">
-      <img :src="episode.thumb">
+      <img :src="thumb()" onerror="this.src='/img/static.jpg'">
     </div>
     <div class="col-xs-12 col-md-9 episode-middle q-px-md">
       <div class="row">
@@ -59,23 +59,25 @@
 <script>
 import {
   defineComponent,
-  // getCurrentInstance,
-  // onBeforeMount,
+  getCurrentInstance,
+  onBeforeMount,
 } from 'vue';
 
 export default defineComponent({
   name: 'Episode',
-  /*
   setup() {
     onBeforeMount(() => {
       const instance = getCurrentInstance();
       console.log('episode onBeforeMount', instance.ctx.episode);
     });
   },
-  */
   props: {
     episode: Object,
   },
-
+  methods: {
+    thumb() {
+      return this.episode.thumb || '/img/static.jpg';
+    },
+  },
 });
 </script>

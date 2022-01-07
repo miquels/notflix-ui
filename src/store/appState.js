@@ -18,14 +18,15 @@ export default {
   mutations: {
     castState(state, cast) {
       state.castState = cast;
+      if (cast !== 'connected') {
+        state.castActive = false;
+      }
     },
   },
 
-  /*
   getters: {
     getCastState(state) {
-      return state.cast;
+      return state.castState;
     },
   },
-  */
 };

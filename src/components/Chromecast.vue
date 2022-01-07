@@ -12,6 +12,7 @@
        :textTracks="textTracks"
        :audioTrack="audioTrack"
        :audioTracks="audioTracks"
+       :stopButton="true"
        @play="on_play"
        @seek="on_seek"
        @volume="on_volume"
@@ -19,6 +20,7 @@
        @audiotrack="on_audiotrack"
        @muted="on_muted"
        @cast="on_cast"
+       @stop="on_stop"
     />
   </div>
 </template>
@@ -110,28 +112,39 @@ export default defineComponent({
     },
 
     initPlayerDebug() {
-      const { cast } = window.chrome;
-      const sessionRequest =
-        new cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID);
-      const argh = new cast.ApiConfig(sessionRequest,
+      const appID = chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
+      const sessionRequest = new chrome.cast.SessionRequest(appID);
+      const apiConfig = new chrome.cast.ApiConfig(
+        sessionRequest,
         (session) => {
-          console.log('got session', session);
-          cast.session = session;
-        },
-        (e) => {
-          if (e === chrome.cast.ReceiverAvailability.AVAILABLE) {
-            console.log('receiver is available :)');
+          console.log('New session:', session);
+          if (session.media.length !== 0) {
+            console.log('Found multiple sessions: ', session.media.length);
           }
-        });
-      return argh;
+        },
+        (ev) => {
+          if (ev === 'available') {
+            console.log('Chromecast was found on the network.');
+          } else {
+            console.log('There are no Chromecasts available.');
+          }
+        },
+      );
+      chrome.cast.initialize(
+        apiConfig,
+        () => { console.log('initialization succeeded'); },
+        () => { console.log('initialization failed'); },
+      );
     },
 
     init_player() {
       console.log('init_player');
-      this.initPlayerDebug();
+      // this.initPlayerDebug();
 
       const options = {};
-      options.receiverApplicationId = 'CC1AD845';
+      // options.receiverApplicationId = chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
+      // options.receiverApplicationId = 'CC1AD845';
+      options.receiverApplicationId = 'DC2E9EDB';
       options.autoJoinPolicy = chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED;
       window.cast.framework.CastContext.getInstance().setOptions(options);
 
@@ -144,7 +157,6 @@ export default defineComponent({
       instance.addEventListener(CastEvent, (state) => this.setCastStateNative(state));
       const castState = window.cast.framework.CastContext.getInstance().getCastState();
       console.log('casState now', castState);
-      // this.setCastStateNative(castState);
 
       const handleEvent = (eventType, func) => {
         const t = window.cast.framework.RemotePlayerEventType[eventType];
@@ -181,18 +193,27 @@ export default defineComponent({
 
       handleEvent('CURRENT_TIME_CHANGED', () => {
         this.currentTime = this._player.currentTime;
+        this.active(true);
       });
 
       handleEvent('IS_PAUSED_CHANGED', () => {
         this.updateState();
+        this.active(true);
       });
 
       handleEvent('IS_MUTED_CHANGED', () => {
         this.muted = this._player.isMuted;
+        this.active(true);
       });
 
       handleEvent('VOLUME_LEVEL_CHANGED', () => {
         this.volume = this._player.volumeLevel;
+        this.active(true);
+      });
+
+      this.emitter.on('playCast', (src) => {
+        console.log('playCast request', src);
+        this.load(src);
       });
 
       watch(() => this.src, (newSrc, oldSrc) => {
@@ -206,6 +227,7 @@ export default defineComponent({
     setCastStateNative(state) {
       // eslint-disable-next-line
       const CastState = window.cast.framework.CastState;
+      console.log('Chromecast: setCastStateNative', state);
       switch (state) {
         case CastState.NO_DEVICES_AVAILABLE:
           this.setCastState('no_devices');
@@ -222,8 +244,11 @@ export default defineComponent({
     },
 
     setCastState(newState) {
-      console.log('setCastState', newState);
-      this.store.commit('castState', newState);
+      if (this.store.state.castState !== newState) {
+        console.log('Chromecast: setCastState', newState);
+        this.store.commit('castState', newState);
+      }
+      this.active(newState === 'connected');
     },
 
     getCastState() {
@@ -231,17 +256,17 @@ export default defineComponent({
     },
 
     mediaInfoChanged() {
-      console.log('media_info_changed');
       const session = this.getSession();
       if (!session) {
         return;
       }
-
       const media = session.getMediaSession();
       if (!media) {
-        this.resetState('idle');
+        console.log('Chromecast.mediaInfoChanged: no media');
+        this.resetState();
         return;
       }
+      console.log('Chromecast.mediaInfoChanged:', media);
       const mediaInfo = media.media;
       // this.currentSrc = mediaInfo.contentId;
       // this.currentTitle = mediaInfo.metadata.title;
@@ -249,16 +274,23 @@ export default defineComponent({
       this.duration = mediaInfo.duration;
       // this.canseek = this._player.canSeek;
 
-      this.textTracks = this.getTracks('TEXT');
-      this.textTrack = this.getActiveTrack('TEXT');
-      this.audioTracks = this.getTracks('AUDIO');
-      this.audioTrack = this.getActiveTrack('AUDIO');
+      this.textTracks = this.getTracks(media, 'TEXT');
+      this.textTrack = this.getActiveTrack(media, 'TEXT');
+      this.audioTracks = this.getTracks(media, 'AUDIO');
+      this.audioTrack = this.getActiveTrack(media, 'AUDIO');
 
-      this.updateState();
+      console.log('calling updateState');
+      this.updateState(media);
+    },
+
+    active(flag) {
+      if (this.store.state.castActive !== flag) {
+        this.store.commit('castActive', flag);
+      }
     },
 
     on_play() {
-      if (this.playState === 'ended') {
+      if (this.playState === 'idle') {
         this._player.currentTime = 0;
         this._controller.seek();
       }
@@ -277,8 +309,8 @@ export default defineComponent({
     },
 
     on_seek(val) {
-      if (this.playState === 'ended') {
-        this.playState = 'paused';
+      if (this.playState === 'idle') {
+        this.setPlayStat('paused');
       }
       this._player.currentTime = val;
       this._controller.seek();
@@ -297,8 +329,16 @@ export default defineComponent({
     },
 
     resetState() {
-      // TODO
-      console.log('TODO: resetState');
+      this.setPlayState('idle');
+      this.currentTime = 0;
+      this.duration = 0;
+      this.volume = 1;
+      this.muted = false;
+      this.textTracks = [];
+      this.textTrack = null;
+      this.audioTracks = [];
+      this.audioTrack = null;
+      this.buffering = false;
     },
 
     on_cast() {
@@ -310,14 +350,18 @@ export default defineComponent({
       const mediaInfo = new chrome.cast.media.MediaInfo(src, 'video/mp4');
       mediaInfo.streamType = chrome.cast.media.StreamType.BUFFERED;
 
-      if (src.endsWith('.m3u8')) {
+      console.log('chromecast.load', src);
+
+      if (src.match(/\.m3u8(\?.*|)$/)) {
         // These must be set to FMP4, or the chromecast will hang.
-        mediaInfo.hlsSegmentFormat = chrome.cast.media.HlsSegmentFormat.FMP4;
-        mediaInfo.hlsVideoSegmentFormat = chrome.cast.media.HlsVideoSegmentFormat.FMP4;
+        // mediaInfo.hlsSegmentFormat = chrome.cast.media.HlsSegmentFormat.FMP4;
+        // mediaInfo.hlsVideoSegmentFormat = chrome.cast.media.HlsVideoSegmentFormat.FMP4;
         // StreamType must be LIVE or OTHER, not BUFFERED.
-        mediaInfo.streamType = chrome.cast.media.StreamType.OTHER;
+        // mediaInfo.streamType = chrome.cast.media.StreamType.OTHER;
         // And ofcourse the MIME type.
-        mediaInfo.contentType = 'application/x-mpegURL';
+        // mediaInfo.contentType = 'application/x-mpegURL';
+        console.log('setting content-type to dash');
+        mediaInfo.contentType = 'application/dash+xml';
       }
 
       mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
@@ -337,10 +381,15 @@ export default defineComponent({
       request.currentTime = startAt || 0;
       request.autoplay = this.playState !== 'paused';
 
+      console.log('chromecast: getting session');
       const session = this.getSession();
       if (!session) {
+        console.log('chromecast: no session');
         return;
       }
+      console.log('chromecast: loadMedia');
+      this.store.commit('castActive', true);
+
       session.loadMedia(request).then(
         () => {
           // eslint-disable-next-line
@@ -351,7 +400,7 @@ export default defineComponent({
           const errorMessage = this.getErrorMessage(errorCode);
           // eslint-disable-next-line
           console.log(`chromecast: media load error: ${errorMessage}`);
-          this.playState = 'idle';
+          this.setPlayState('idle');
         },
       );
     },
@@ -371,38 +420,51 @@ export default defineComponent({
     },
 
     // Update the current playerState.
-    updateState() {
-      switch (this._player.playerState) {
+    updateState(media) {
+      if (!media) {
+        const session = this.getSession();
+        if (!session) {
+          return;
+        }
+        media = session.getMediaSession();
+        if (!media) {
+          this.resetState('idle');
+          return;
+        }
+      }
+      switch (media.playerState) {
         case 'IDLE':
-          this.playState = 'idle';
+          this.setPlayState('idle');
           this.buffering = false;
           break;
         case 'PLAYING':
-          this.playState = 'playing';
+          this.setPlayState('playing');
           this.buffering = false;
           break;
         case 'PAUSED':
-          this.playState = 'paused';
+          this.setPlayState('paused');
           this.buffering = false;
           break;
         case 'BUFFERING':
           this.buffering = true;
           break;
         default:
+          console.log('Chromecast: unknown playerState', this._player.PlayerState);
           break;
       }
     },
 
+    setPlayState(playState) {
+      if (playState === 'idle') {
+        this.store.commit('castActive', false);
+      }
+      console.log('Chromecast: setPlayState', playState);
+      this.active(playState !== 'idle');
+      this.playState = playState;
+    },
+
     // Get all the tracks of a type ('AUDIO' or 'TEXT').
-    getTracks(type) {
-      const session = this.getSession();
-      if (!session) {
-        return [];
-      }
-      const media = session.getMediaSession();
-      if (!media) {
-        return [];
-      }
+    getTracks(media, type) {
       const mediaInfo = media.media;
       const tracks = [];
       if (!mediaInfo.tracks) {
@@ -413,33 +475,28 @@ export default defineComponent({
         const t = mediaInfo.tracks[i];
         if (t.type === type) {
           tracks.push({
-            label: t.name,
+            label: t.name || t.language || t.trackId,
             id: t.trackId,
           });
         }
       }
+      console.log('tracks:', type, ': ', tracks);
       return tracks;
     },
 
     // Get the active tracks of a type ('AUDIO' or 'TEXT').
-    getActiveTrack(type) {
-      const session = this.getSession();
-      if (!session) {
-        return [];
-      }
-      const media = session.getMediaSession();
-      if (!media) {
-        return [];
-      }
+    getActiveTrack(media, type) {
       const mediaInfo = media.media;
-      const active = session.getSessionObj().media[0].activeTrackIds;
+      const active = media.activeTrackIds;
       // eslint-disable-next-line
       for (let i in mediaInfo.tracks) {
         const t = mediaInfo.tracks[i];
         if (t.type === type && active.includes(t.trackId)) {
+          console.log('activeTrack:', type, t.trackId);
           return t.trackId;
         }
       }
+      console.log('activeTrack:', type, null);
       return null;
     },
 
@@ -451,10 +508,11 @@ export default defineComponent({
       }
       const media = session.getMediaSession();
       if (!media) {
+        this.resetState('idle');
         return;
       }
       const mediaInfo = media.media;
-      const active = session.getSessionObj().media[0].activeTrackIds;
+      const active = media.activeTrackIds;
       const newActive = [];
       // eslint-disable-next-line
       for (let i in mediaInfo.tracks) {
@@ -467,13 +525,13 @@ export default defineComponent({
         newActive.push(parseInt(id, 10));
       }
       const request = new chrome.cast.media.EditTracksInfoRequest(newActive);
-      session.getSessionObj().media[0].editTracksInfo(request, () => {
+      media.editTracksInfo(request, () => {
         switch (type) {
           case 'AUDIO':
-            this.audioTrack = this.getActiveTrack(type);
+            this.audioTrack = this.getActiveTrack(media, type);
             break;
           case 'TEXT':
-            this.textTrack = this.getActiveTrack(type);
+            this.textTrack = this.getActiveTrack(media, type);
             break;
           default:
             break;
@@ -482,8 +540,9 @@ export default defineComponent({
     },
 
     getErrorMessage(error) {
-      // eslint-disable-next-line
-      const chrome = chrome;
+      if (!window.chrome || !chrome || !chrome.cast) {
+        return 'Error code: ' + error;
+      }
       switch (error.code) {
         case chrome.cast.ErrorCode.API_NOT_INITIALIZED:
           return 'The API is not initialized.' +

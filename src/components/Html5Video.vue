@@ -121,7 +121,7 @@ export default defineComponent({
 
     // Initialize.
     on_mounted() {
-      console.log('on_mounted');
+      // console.log('on_mounted');
 
       this.video.addEventListener('loadedmetadata', () => {
         this.metadata_loaded = true;
@@ -132,12 +132,12 @@ export default defineComponent({
       this.video.addEventListener('play', () => { this.playState = 'playing'; if (this.showcontrols === 2) this.mouse(0); });
       this.video.addEventListener('pause', () => { this.playState = 'paused'; if (this.showcontrols < 2) this.mouse(2); });
       this.video.addEventListener('ended', () => { this.playState = 'ended'; if (this.showcontrols < 2) this.mouse(2); });
-      this.video.addEventListener('timeupdate', () => { this.currentTime = this.video.currentTime; });
+      this.video.addEventListener('timeupdate', () => { if (this.video) this.currentTime = this.video.currentTime; });
       this.video.addEventListener('volumechange', () => { this.volume = this.video.volume; });
       this.video.addEventListener('canplay', () => { if (this.autoplay) { this.autoplay = false; this.on_play(); } });
 
       watch(() => this.src, (newSrc, oldSrc) => {
-        console.log('watch -> load', this.src, newSrc, oldSrc);
+        // console.log('watch -> load', this.src, newSrc, oldSrc);
         if (newSrc !== oldSrc) {
           this.load(newSrc);
         }
@@ -157,11 +157,11 @@ export default defineComponent({
 
     on_loadedmetadata() {
       this.currentTime = this.video.currentTime || 0;
-      console.log('duration now', this.duration, this.video.duration);
+      // console.log('duration now', this.duration, this.video.duration);
       if (!this.duration) {
         this.duration = this.video.duration;
       }
-      console.log(this.video);
+      // console.log(this.video);
       if (this.video.textTracks) {
         for (let i = 0; i < this.video.textTracks.length; i += 1) {
           const t = this.video.textTracks[i];
@@ -171,7 +171,7 @@ export default defineComponent({
               label: t.label,
             });
           }
-          console.log(this.textTracks);
+          // console.log(this.textTracks);
         }
       }
       if (this.hls && this.hls.audioTracks) {
@@ -186,7 +186,7 @@ export default defineComponent({
     },
 
     load(src) {
-      console.log('load method called', src);
+      // console.log('load method called', src);
       if (this.hls) {
         this.hls.destroy();
         this.hls = null;
@@ -194,13 +194,13 @@ export default defineComponent({
       this.video.src = null;
       this.autoplay = true;
       if (src.endsWith('.m3u8')) {
-        console.log('creating new hls', this.video);
+        // console.log('creating new hls', this.video);
         this.hls = new Hls();
         this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.on_manifestloaded());
         this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { this.hls.loadSource(src); });
         this.hls.attachMedia(this.video);
       } else {
-        console.log('plain video load', src);
+        // console.log('plain video load', src);
         this.hls_loaded_metadata = true;
         this.video.src = src;
       }
@@ -208,7 +208,7 @@ export default defineComponent({
 
     // Event: play / pause / reload was clicked.
     on_play() {
-      console.log('play() state is', this.playState);
+      // console.log('play() state is', this.playState);
       if (this.playState === 'ended') {
         this.video.currentTime = 0;
       }
@@ -227,7 +227,7 @@ export default defineComponent({
     },
 
     on_texttrack(val) {
-      console.log('texttrack', val);
+      // console.log('texttrack', val);
       for (let i = 0; i < this.video.textTracks.length; i += 1) {
         this.video.textTracks[i].mode = 'disabled';
       }
@@ -265,7 +265,7 @@ export default defineComponent({
     // Called when the mouse is moved. Used to display the mouse
     // pointer and the video controls.
     mouse(showcontrols, ev) {
-      console.log('mouse', this.showcontrols, showcontrols, this.playState);
+      // console.log('mouse', this.showcontrols, showcontrols, this.playState);
       if (this.moved_timer) {
         clearTimeout(this.moved_timer);
         this.moved_timer = null;
@@ -275,7 +275,7 @@ export default defineComponent({
             && ev.layerY >= 0 && ev.layerY < this.el.clientHeight) {
           // spurious mouseleave event, because of teleported elements.. :(
           // eslint-disable-next-line
-          console.log('bad mouseleave', ev);
+          // console.log('bad mouseleave', ev);
           return;
         }
       }

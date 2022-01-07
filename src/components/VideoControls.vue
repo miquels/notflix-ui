@@ -1,7 +1,11 @@
 <template>
 
     <div class=videocontrols-container ref="el">
-      <div class="row q-mx-md">
+      <div class="row q-mx-md videocontrols-label">
+        <q-badge color="blue" v-show="showLabel" class="videocontrols-label-badge" ref="badgeEl"
+           :style="{ 'left': `${labelPos}px` }">{{ labelTime }}</q-badge>
+      </div>
+      <div class="row q-mx-md videocontrols-slider">
         <q-slider
            :modelValue="currentTime"
            @update:modelValue="seek"
@@ -10,10 +14,14 @@
            :step="0"
            color="red"
            dark
-       />
+           @mouseleave="mouseleave($event)"
+           @mousemove="mousemove($event)"
+           ref="sliderEl"
+        />
       </div>
       <div class="row q-pb-sm">
         <div class="col-auto q-ml-sm">
+          <q-icon name="stop" v-if="stopButton" size="24px" class="on-left" @click="$emit('stop')"/>
           <q-icon :name="play_icon()" size="24px" class="on-left" @click="$emit('play')"/>
           <q-icon name="volume_up" size="24px" class="on-left"/>
           <span class="on-left" v-if="duration">{{ time_info() }}</span>
@@ -90,16 +98,27 @@
 .videocontrols-fix-zindex {
   z-index: 8000;
 }
+.videocontrols-slider {
+  position: relative;
+}
+.videocontrols-label{
+  position: relative;
+  overflow: hidden;
+}
+.videocontrols-label-badge {
+  position: relative;
+}
 </style>
 <script>
 import {
   defineComponent,
   ref,
 } from 'vue';
+import { debounce } from '../lib/util.js';
 
 function hhmmss(seconds) {
   const d = new Date(seconds * 1000).toISOString();
-  if (seconds < 3600) {
+  if (seconds >= 3600) {
     return d.substr(11, 8);
   }
   return d.substr(14, 5);
@@ -132,12 +151,22 @@ export default defineComponent({
     },
     castState: String,
     fullScreenState: String,
+    stopButton: {
+      type: Boolean,
+      default: false,
+    },
   },
 
   setup() {
     const el = ref(null);
     return {
+      showLabel: ref(false),
+      labelTime: ref('00:00'),
+      labelPos: ref(0),
+      badgeEl: ref(null),
+      sliderEl: ref(null),
       cur_play_icon: 'play_arrow',
+      dSeek: null,
       el,
     };
   },
@@ -183,10 +212,39 @@ export default defineComponent({
     },
 
     seek(newTime) {
-      this.$emit('seek', newTime);
-      if (this.playState === 'ended') {
-        this.$emit('play');
+      if (!this.dSeek) {
+        this.dSeek = debounce((dTime) => {
+          // console.log('seekTo', dTime);
+          this.$emit('seek', Math.floor(dTime));
+          if (this.playState === 'ended') {
+            this.$emit('play');
+          }
+        }, 250, true);
       }
+      this.dSeek(newTime);
+    },
+
+    mouseleave() {
+      this.showLabel = false;
+    },
+
+    mousemove(ev) {
+      const sliderWidth = this.sliderEl.$el.clientWidth;
+      const badgeWidth = this.badgeEl.$el.clientWidth;
+      const sliderPos = this.sliderEl.$el.getBoundingClientRect();
+
+      let pos = ev.pageX - sliderPos.left;
+      if (pos < 0) pos = 0;
+      if (pos > sliderWidth) pos = sliderWidth;
+      const tm = (pos / sliderWidth) * this.duration;
+
+      let x = pos - badgeWidth / 2;
+      if (x < 0) x = 0;
+      if (x > sliderWidth - badgeWidth) x = sliderWidth - badgeWidth;
+
+      this.showLabel = true;
+      this.labelPos = x;
+      this.labelTime = hhmmss(tm);
     },
   },
 });

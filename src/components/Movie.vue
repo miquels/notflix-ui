@@ -67,9 +67,11 @@
 import {
   defineComponent,
   getCurrentInstance,
+  inject,
   onBeforeMount,
   ref,
 } from 'vue';
+import { useStore } from 'vuex';
 import Config from '../lib/config.js';
 import Api from '../lib/api.js';
 import { joinpath } from '../lib/util.js';
@@ -124,6 +126,10 @@ export default defineComponent({
       const instance = getCurrentInstance();
       instance.ctx.on_mounted();
     });
+
+    const emitter = inject('emitter');
+    const store = useStore();
+
     const config = new Config();
     const api = new Api({ url: config.apiUrl });
     return {
@@ -136,6 +142,8 @@ export default defineComponent({
       movie: ref(null),
       api,
       apiUrl: config.apiUrl,
+      emitter,
+      store,
     };
   },
 
@@ -191,8 +199,12 @@ export default defineComponent({
 
     playMovie() {
       const url = this.movie.video;
-      console.log('playMovie', url);
-      this.$router.push(`/local-player/${url}`);
+      console.log('playMovie', url, this.store.state.castState);
+      if (this.store.state.castState === 'connected') {
+        this.emitter.emit('playCast', url);
+      } else {
+        this.$router.push(`/local-player/${url}`);
+      }
     },
   },
 });
