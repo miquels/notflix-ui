@@ -231,6 +231,9 @@ export default defineComponent({
     },
 
     bgImage() {
+      if (!this.bgimage) {
+        return {};
+      }
       const style = {
         backgroundImage:
           `linear-gradient(to right, rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${this.bgimage})`,
@@ -250,6 +253,9 @@ export default defineComponent({
     },
 
     playEpisode(url) {
+      if (this.store.state.config.useHls) {
+        url += '/master.m3u8';
+      }
       console.log('playEpisode', url);
       if (this.store.state.castState === 'connected') {
         this.emitter.emit('playCast', url);

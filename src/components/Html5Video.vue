@@ -186,7 +186,7 @@ export default defineComponent({
     },
 
     load(src) {
-      // console.log('load method called', src);
+      console.log('load method called', src);
       if (this.hls) {
         this.hls.destroy();
         this.hls = null;
@@ -194,13 +194,17 @@ export default defineComponent({
       this.video.src = null;
       this.autoplay = true;
       if (src.endsWith('.m3u8')) {
-        // console.log('creating new hls', this.video);
-        this.hls = new Hls();
+        console.log('creating new hls', this.video);
+        const hlsConfig = {
+          backBufferLength: 0,
+          maxMaxBufferLength: 120,
+        };
+        this.hls = new Hls(hlsConfig);
         this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.on_manifestloaded());
         this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { this.hls.loadSource(src); });
         this.hls.attachMedia(this.video);
       } else {
-        // console.log('plain video load', src);
+        console.log('plain video load', src);
         this.hls_loaded_metadata = true;
         this.video.src = src;
       }

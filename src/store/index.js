@@ -16,6 +16,9 @@ export default store(() => {
     state: () => ({
       castState: 'no_devices',
       castActive: false,
+      config: {
+        useHls: true,
+      },
     }),
 
     /*

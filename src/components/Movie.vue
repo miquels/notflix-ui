@@ -181,6 +181,9 @@ export default defineComponent({
     },
 
     bgImage() {
+      if (!this.bgimage) {
+        return {};
+      }
       const style = {
         backgroundImage:
           `linear-gradient(to right, rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${this.bgimage})`,
@@ -198,7 +201,10 @@ export default defineComponent({
     },
 
     playMovie() {
-      const url = this.movie.video;
+      let url = this.movie.video;
+      if (this.store.state.config.useHls) {
+        url += '/master.m3u8';
+      }
       console.log('playMovie', url, this.store.state.castState);
       if (this.store.state.castState === 'connected') {
         this.emitter.emit('playCast', url);

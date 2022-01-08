@@ -15,3 +15,7 @@
 - Favorites.
 - Hover over poster on thumbwall: show details
 
+- bubble up errors from Chromecast and Html5Video
+
+- 'loading' or 'waiting' spinners
+
