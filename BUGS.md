@@ -1,1 +1,3 @@
 -  connected chromecast has wrong time when connected and playing a new video
+- fullscreen exit with ESC after native fullscreen (intended?)
+- in TvShow.vue (and movie) the background image doesn't cover but stretches
