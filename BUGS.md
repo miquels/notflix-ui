@@ -1,0 +1,1 @@
+-  connected chromecast has wrong time when connected and playing a new video
