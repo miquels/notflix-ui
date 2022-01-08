@@ -1,7 +1,13 @@
 <template>
   <div ref="el" class="fit thumbs-container">
     <q-resize-observer @resize="onResize"/>
-    <q-virtual-scroll virtual-scroll-item-size="150" :items="item_rows()">
+    <q-virtual-scroll
+      style="max-height: calc(100vh - 100px)"
+      :virtual-scroll-item-size="150"
+      :virtual-scroll-slice-size="10"
+      :items-fn="item_rows"
+      :items-size="item_nrows()"
+    >
       <template v-slot="{ item }">
         <q-item :key="item.key" class="row no-wrap justify-center q-pa-none">
           <div class="col-auto no-wrap">
@@ -11,7 +17,7 @@
               class="thumbs-thumb"
               @click="$emit('select', item2.key)">
             >
-              <img :src="img_url(item2.item)" class="thumbs-img">
+              <img :src="item2.item.url" class="thumbs-img">
               <div class="thumbs-title">{{ item2.item.name }}</div>
             </div>
           </div>
@@ -62,6 +68,7 @@
 <script>
 import {
   defineComponent,
+  markRaw,
   ref,
 } from 'vue';
 import { scroll } from 'quasar';
@@ -71,12 +78,14 @@ export default defineComponent({
   name: 'Thumbs',
 
   props: {
-    items: Array,
+    items: {
+      type: Array,
+      default: () => [],
+    },
   },
 
   setup() {
     const config = new Config();
-    console.log('apiUrl', config.apiUrl);
     return {
       apiUrl: config.apiUrl,
       posterSize: ref(1),
@@ -89,25 +98,38 @@ export default defineComponent({
   },
 
   methods: {
-    item_rows() {
-      if (!this.el) {
+    item_rows(from, size) {
+      if (!this.el || !this.thumbsPerRow) {
         return [];
       }
-      this.calcSizes();
-      console.log('thumbsPerRow', this.thumbsPerRow);
-      if (!this.thumbsPerRow) {
-        return [];
-      }
-      const { thumbsPerRow } = this;
       const rows = [];
-      for (let i = 0; i < this.items.length; i += thumbsPerRow) {
+      const { thumbsPerRow } = this;
+      for (let i = from; i < from + size; i += 1) {
+        const base = i * thumbsPerRow;
         const row = [];
-        for (let r = 0; r < thumbsPerRow && r + i < this.items.length; r += 1) {
-          row.push({ item: this.items[r + i], key: r + i });
+        for (let r = 0; r < thumbsPerRow && base + r < this.items.length; r += 1) {
+          const theItem = this.items[base + r];
+          let item = {
+            url: this.imgUrl(theItem),
+            name: theItem.name,
+          };
+          item = JSON.parse(JSON.stringify(markRaw(item)));
+          row.push({ item, key: base + r });
         }
-        rows.push({ row, key: `${i}.${thumbsPerRow}` });
+        rows.push({ row, key: `${base}.${thumbsPerRow}` });
       }
+      console.log('Thumbs: thumbsPerRow:', thumbsPerRow, 'item_rows:', rows.length);
       return rows;
+    },
+
+    item_nrows() {
+      if (!this.el || !this.thumbsPerRow) {
+        console.log('Thumb: nrows = ', 0);
+        return 0;
+      }
+      const nrows = 1 + Math.floor(this.items.length / this.thumbsPerRow);
+      console.log('Thumb: nrows = ', nrows);
+      return nrows;
     },
 
     calcSizes() {
@@ -142,7 +164,7 @@ export default defineComponent({
       this.calcSizes();
     },
 
-    img_url(item) {
+    imgUrl(item) {
       if (!item.poster) {
         return '';
       }

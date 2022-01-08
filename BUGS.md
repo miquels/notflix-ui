@@ -1,7 +1,5 @@
--  connected chromecast has wrong time when connected and playing a new video
-- fullscreen exit with ESC after native fullscreen (intended?)
+- connected chromecast has wrong time when connected and playing a new video
 - in TvShow.vue (and movie) the background image doesn't cover but stretches
 - chromecast subtitles have no name / label
-- subtitles need outline
-- drawing thumbwall is way too CPU intensive - why
+- subtitles on chromecast need outline
 - TvShow: episode image: sizes should be the same (snow is'nt)

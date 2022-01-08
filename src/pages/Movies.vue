@@ -8,7 +8,7 @@
 import {
   defineComponent,
   getCurrentInstance,
-  onMounted,
+  onBeforeMount,
   ref,
 } from 'vue';
 import Thumbs from 'components/Thumbs.vue';
@@ -22,9 +22,9 @@ export default defineComponent({
   },
 
   setup() {
-    onMounted(() => {
+    onBeforeMount(() => {
       const instance = getCurrentInstance();
-      instance.ctx.on_mounted();
+      instance.ctx.onBeforeMount();
     });
     return {
       api: null,
@@ -33,7 +33,7 @@ export default defineComponent({
   },
 
   methods: {
-    on_mounted() {
+    onBeforeMount() {
       const config = new Config();
       this.api = new API({ url: `${config.apiUrl}/` });
       this.api.getItems('Movies').then((items) => {
@@ -43,7 +43,6 @@ export default defineComponent({
 
     movie_clicked(item) {
       const itemName = this.items[item].name;
-      console.log('clicked on', item, itemName);
       this.$router.push(`/movies/Movies/${itemName}`);
     },
   },
