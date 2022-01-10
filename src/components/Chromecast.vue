@@ -49,7 +49,6 @@ import {
   inject,
   onMounted,
   ref,
-  watch,
 } from 'vue';
 import { useStore } from 'vuex';
 import VideoControls from 'components/VideoControls.vue';
@@ -112,7 +111,7 @@ export default defineComponent({
     },
 
     initPlayerDebug() {
-      const appID = chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
+      const appID = 'DC2E9EDB';
       const sessionRequest = new chrome.cast.SessionRequest(appID);
       const apiConfig = new chrome.cast.ApiConfig(
         sessionRequest,
@@ -129,6 +128,7 @@ export default defineComponent({
             console.log('There are no Chromecasts available.');
           }
         },
+        chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
       );
       chrome.cast.initialize(
         apiConfig,
@@ -138,24 +138,39 @@ export default defineComponent({
     },
 
     init_player() {
-      console.log('init_player');
+      // console.log('init_player');
       // this.initPlayerDebug();
+      // window.cc = this;
 
-      const options = {};
-      // options.receiverApplicationId = chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
-      // options.receiverApplicationId = 'CC1AD845';
-      options.receiverApplicationId = 'DC2E9EDB';
-      options.autoJoinPolicy = chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED;
-      window.cast.framework.CastContext.getInstance().setOptions(options);
+      const instance = window.cast.framework.CastContext.getInstance();
+      const options = {
+        // receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+        receiverApplicationId: 'DC2E9EDB',
+        autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
+        resumeSavedSession: true,
+      };
+      const castOptions = new window.cast.framework.CastOptions(options);
+      instance.setOptions(castOptions);
 
       this._player = new window.cast.framework.RemotePlayer();
       this._controller = new window.cast.framework.RemotePlayerController(this._player);
 
       // Add a listener for cast-device events (if there are any, etc)
-      const instance = window.cast.framework.CastContext.getInstance();
-      const CastEvent = window.cast.framework.CastContextEventType.CAST_STATE_CHANGED;
-      instance.addEventListener(CastEvent, (state) => this.setCastStateNative(state));
-      const castState = window.cast.framework.CastContext.getInstance().getCastState();
+      const { CAST_STATE_CHANGED } = window.cast.framework.CastContextEventType;
+      instance.addEventListener(CAST_STATE_CHANGED, (newState) => {
+        this.setCastStateNative(newState);
+        const session = this.getSession();
+        const connected = this._player.isConnected && session !== null;
+
+        if (session) {
+          this.deviceName = session.getCastDevice().friendlyName || this.deviceName;
+        }
+        // eslint-disable-next-line
+        if (connected && session.getSessionState() === window.cast.framework.SessionState.SESSION_RESUMED) {
+          this.mediaInfoChanged('INIT_PLAYER');
+        }
+      });
+      const castState = instance.getCastState();
       console.log('casState now', castState);
 
       const handleEvent = (eventType, func) => {
@@ -166,26 +181,19 @@ export default defineComponent({
       handleEvent('IS_CONNECTED_CHANGED', () => {
         const session = this.getSession();
         const connected = this._player.isConnected && session !== null;
-        const state = this.getCastState;
 
         this.setCastState(connected ? 'connected' : 'disconnected');
         if (session) {
           this.deviceName = session.getCastDevice().friendlyName || this.deviceName;
         }
         // eslint-disable-next-line
-        if (connected && session.getSessionState() === window.cast.framework.SessionState.SESSION_RESUMED) {
-          this.mediaInfoChanged();
-          return;
-        }
-        if (connected && state === 'disconnected') {
-          // Initial connected. If we have a src, play it.
-          if (this.src) {
-            this.load(this.src, this.startAt);
-          }
+        const SESSION_RESUMED = window.cast.framework.SessionState.SESSION_RESUMED;
+        if (connected && session.getSessionState() === SESSION_RESUMED) {
+          this.mediaInfoChanged('SESSION_RESUMED');
         }
       });
 
-      handleEvent('MEDIA_INFO_CHANGED', () => this.mediaInfoChanged());
+      handleEvent('MEDIA_INFO_CHANGED', () => this.mediaInfoChanged('MEDIA_INFO_CHANGED'));
 
       // handleEvent('CAN_SEEK_CHANGED', () => {
       //   this.canseek = this._player.canseek;
@@ -193,34 +201,32 @@ export default defineComponent({
 
       handleEvent('CURRENT_TIME_CHANGED', () => {
         this.currentTime = this._player.currentTime;
+        console.log('current time changed');
         this.active(true);
       });
 
       handleEvent('IS_PAUSED_CHANGED', () => {
+        console.log('is_paused changed');
         this.updateState();
         this.active(true);
       });
 
       handleEvent('IS_MUTED_CHANGED', () => {
+        console.log('is_muted changed');
         this.muted = this._player.isMuted;
         this.active(true);
       });
 
       handleEvent('VOLUME_LEVEL_CHANGED', () => {
+        console.log('volume_level changed', this._player.volumeLevel);
         this.volume = this._player.volumeLevel;
-        this.active(true);
+        // Don't trigger active(true) here, the OS might have done this on connect.
       });
 
       this.emitter.on('playCast', (src) => {
+        console.log('playCast');
         console.log('playCast request', src);
         this.load(src);
-      });
-
-      watch(() => this.src, (newSrc, oldSrc) => {
-        console.log('watch -> load', this.src, newSrc, oldSrc);
-        if (newSrc !== oldSrc) {
-          this.load(newSrc);
-        }
       });
     },
 
@@ -228,7 +234,7 @@ export default defineComponent({
       // eslint-disable-next-line
       const CastState = window.cast.framework.CastState;
       console.log('Chromecast: setCastStateNative', state);
-      switch (state) {
+      switch (state.castState) {
         case CastState.NO_DEVICES_AVAILABLE:
           this.setCastState('no_devices');
           break;
@@ -239,27 +245,32 @@ export default defineComponent({
           this.setCastState('connected');
           break;
         default:
+          console.log('setCastStateNative: unknown state', state);
           break;
       }
     },
 
     setCastState(newState) {
+      console.log('Chromecast: setCastState', newState);
       if (this.store.state.castState !== newState) {
-        console.log('Chromecast: setCastState', newState);
         this.store.commit('castState', newState);
       }
-      this.active(newState === 'connected');
+      if (newState === 'no_devices' || newState === 'disconnected') {
+        this.active(false);
+      }
     },
 
     getCastState() {
       return this.store.castState;
     },
 
-    mediaInfoChanged() {
+    mediaInfoChanged(id) {
+      console.log('Chromecast: mediaInfoChanged from', id);
       const session = this.getSession();
       if (!session) {
         return;
       }
+      console.log('Chromecast: mediaInfoChanged: getSessionObj: ', session.getSessionObj());
       const media = session.getMediaSession();
       if (!media) {
         console.log('Chromecast.mediaInfoChanged: no media');
@@ -285,6 +296,7 @@ export default defineComponent({
 
     active(flag) {
       if (this.store.state.castActive !== flag) {
+        console.log('setting castActive', this.store.state.castActive, ' -> ', flag);
         this.store.commit('castActive', flag);
       }
     },
@@ -310,7 +322,7 @@ export default defineComponent({
 
     on_seek(val) {
       if (this.playState === 'idle') {
-        this.setPlayStat('paused');
+        this.setPlayState('paused');
       }
       this._player.currentTime = val;
       this._controller.seek();
@@ -456,9 +468,11 @@ export default defineComponent({
 
     setPlayState(playState) {
       if (playState === 'idle') {
+        console.log('set castActive to', false);
         this.store.commit('castActive', false);
       }
       console.log('Chromecast: setPlayState', playState);
+      console.log('playState !== idle', playState !== 'idle');
       this.active(playState !== 'idle');
       this.playState = playState;
     },

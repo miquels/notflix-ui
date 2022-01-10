@@ -8,6 +8,28 @@
         <q-toolbar-title class="col-auto">
           Notflix
         </q-toolbar-title>
+        <q-item v-show="store.state.showSearch" shrink class="col-auto q-pa-none">
+          <q-input
+            :hidden="!showSearch"
+            :modelValue="store.state.search"
+            @update:modelValue="store.commit('search', $event)"
+            dark
+            clearable
+            hide-bottom-space
+            dense
+            debounce="500"
+            label-color="white"
+            type="search"
+            color="white"
+          />
+          <q-btn
+            dense
+            flat
+            icon="search"
+            color="white"
+            @click="showSearch = !showSearch"
+          />
+        </q-item>
         <q-tabs shrink class="col">
           <q-route-tab name="tv-shows" label="TV Shows" to="/tv-shows/" />
           <q-route-tab name="movies" label="Movies" to="/movies/" />
@@ -54,6 +76,7 @@ export default {
     return {
       leftDrawerOpen,
       store,
+      showSearch: ref(false),
       toggleLeftDrawer() {
         leftDrawerOpen.value = !leftDrawerOpen.value;
       },

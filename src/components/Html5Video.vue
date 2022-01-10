@@ -1,19 +1,23 @@
 <template>
   <div
     class="html5video-container"
-    :class="{ 'cursor-none': !showcontrols}"
+    :class="{ 'cursor-none': !showcontrols }"
+    @touchend="container_clicked($event)"
+    @mousedown.stop="false"
+    @click="container_clicked()"
     @mousemove="mouse(1, $event)"
     @mouseleave="mouse(0, $event)"
-    @click="container_clicked"
     ref="el"
   >
     <video class="html5video-video" ref="video"></video>
-    <q-slide-transition appear :duration="50">
+    <q-slide-transition :duration="500">
       <div
         class="html5video-controls"
         v-if="showcontrols"
-        @click.stop=""
-        @mousemove.stop="mouse(3, $event)"
+        @click.stop="true"
+        @mousemove.stop="mouse(isTouch ? 1 : 3)"
+        @touchstart.passive.capture="mouse(3)"
+        @touchend.passive.capture="showcontrols = 1; mouse(1)"
       >
         <VideoControls
            :playState="playState"
@@ -25,6 +29,7 @@
            :audioTrack="audioTrack"
            :audioTracks="audioTracks"
            :castState="castState"
+           :airplayState="airplayState"
            :fullScreenState="fullScreenState"
            @play="on_play"
            @seek="on_seek"
@@ -32,6 +37,8 @@
            @texttrack="on_texttrack"
            @audiotrack="on_audiotrack"
            @fullscreen="on_fullscreen"
+           @menuActive="on_menuactive"
+           @airplay="on_airplay"
         />
       </div>
     </q-slide-transition>
@@ -99,7 +106,7 @@ export default defineComponent({
     });
     return {
       video: ref(null),
-      playState: ref('paused'),
+      playState: ref('playing'),
       volume: ref(0.5),
       currentTime: ref(0),
       duration: ref(null),
@@ -107,13 +114,15 @@ export default defineComponent({
       textTrack: ref(null),
       audioTracks: ref([]),
       audioTrack: ref(0),
-      castState: ref('off'),
+      castState: ref('no_devices'),
+      airplayState: ref(false),
       fullScreenState: ref('off'),
       showcontrols: ref(2),
       moved_timer: null,
       el: ref(null),
       quasar: useQuasar(),
       autoplay: true,
+      isTouch: false,
     };
   },
 
@@ -134,7 +143,35 @@ export default defineComponent({
       this.video.addEventListener('ended', () => { this.playState = 'ended'; if (this.showcontrols < 2) this.mouse(2); });
       this.video.addEventListener('timeupdate', () => { if (this.video) this.currentTime = this.video.currentTime; });
       this.video.addEventListener('volumechange', () => { this.volume = this.video.volume; });
-      this.video.addEventListener('canplay', () => { if (this.autoplay) { this.autoplay = false; this.on_play(); } });
+      if (this.video.audioTracks && !this.hls) {
+        this.video.audioTracks.addEventListener('addtrack', () => this.on_audiotracks_updated());
+        this.video.audioTracks.addEventListener('removetrack', () => this.on_audiotracks_updated());
+      }
+      if (this.video.textTracks && !this.hls) {
+        this.video.textTracks.addEventListener('addtrack', () => this.on_texttracks_updated());
+        this.video.textTracks.addEventListener('removetrack', () => this.on_texttracks_updated());
+        this.video.textTracks.addEventListener('change', () => this.on_texttrack_changed());
+      }
+      this.video.addEventListener('canplay', () => {
+        if (this.autoplay) {
+          this.video.play().catch(() => {
+            // autoplay was prevented.
+            this.playState = 'paused';
+            this.autoplay = false;
+            if (this.showcontrols < 2) {
+              this.mouse(2);
+            }
+          });
+        }
+      });
+      this.video.oncontextmenu = () => false;
+
+      // Airplay support. For now, local to this component, not global as Chromecast.
+      if (window.WebKitPlaybackTargetAvailabilityEvent) {
+        this.video.addEventListener('webkitplaybacktargetavailabilitychanged', (ev) => {
+          this.airplayAvailable = ev.availability === 'available';
+        });
+      }
 
       watch(() => this.src, (newSrc, oldSrc) => {
         // console.log('watch -> load', this.src, newSrc, oldSrc);
@@ -155,32 +192,109 @@ export default defineComponent({
       }
     },
 
+    /*
+    // This needs more thought.
+    forced_subs() {
+      if (this.audioTrack !== null && this.textTrack === null) {
+        let audioTracks = this.hls ? this.hls.audioTracks : this.audioTracks;
+        const lang = audioTracks[this.audioTrack].language;
+        for (let i = 0; i < this.video.textTracks.length; i += 1) {
+          const t = this.video.textTracks[i];
+          if (t.language === lang && t.kind === 'forced') {
+            this.on_texttrack(i);
+            break;
+          }
+        }
+      }
+    },
+    */
+
     on_loadedmetadata() {
       this.currentTime = this.video.currentTime || 0;
       // console.log('duration now', this.duration, this.video.duration);
       if (!this.duration) {
         this.duration = this.video.duration;
       }
-      // console.log(this.video);
-      if (this.video.textTracks) {
-        for (let i = 0; i < this.video.textTracks.length; i += 1) {
-          const t = this.video.textTracks[i];
-          if (t.kind === 'subtitles') {
-            this.textTracks.push({
+      if (this.hls) {
+        if (this.hls.audioTracks) {
+          for (let i = 0; i < this.hls.audioTracks.length; i += 1) {
+            const t = this.hls.audioTracks[i];
+            this.audioTracks.push({
               id: i,
-              label: t.label,
+              label: t.name,
             });
           }
-          // console.log(this.textTracks);
+        }
+        this.on_texttracks_updated();
+      }
+    },
+
+    on_texttracks_updated() {
+      this.textTracks = [];
+      this.textTrack = null;
+      if (!this.video.textTracks) {
+        return;
+      }
+
+      for (let i = 0; i < this.video.textTracks.length; i += 1) {
+        const t = this.video.textTracks[i];
+        if (t.kind === 'subtitles' || t.kind === 'captions' || t.kind === 'forced') {
+          this.textTracks.push({
+            id: i,
+            label: t.label,
+          });
         }
       }
-      if (this.hls && this.hls.audioTracks) {
-        for (let i = 0; i < this.hls.audioTracks.length; i += 1) {
-          const t = this.hls.audioTracks[i];
-          this.audioTracks.push({
-            id: i,
-            label: t.name,
-          });
+      this.on_texttrack_changed();
+    },
+
+    on_texttrack_changed() {
+      let activeTrack = null;
+      for (let i = 0; i < this.video.textTracks.length; i += 1) {
+        const t = this.video.textTracks[i];
+        if (t.kind === 'subtitles' || t.kind === 'captions' || t.kind === 'forced') {
+          if (t.mode === 'showing') {
+            activeTrack = i;
+            break;
+          }
+        }
+      }
+      if (this.textTrack === activeTrack) {
+        return;
+      }
+
+      // Apple devices will often automatically choose captions
+      // instead of subtitles. Try to fix that.
+      if (activeTrack !== null && this.video.textTracks[activeTrack].kind === 'captions') {
+        const at = this.video.textTracks[activeTrack];
+        for (let i = 0; i < this.video.textTracks.length; i += 1) {
+          const t = this.video.textTracks[i];
+          if (t.language === at.language && t.kind === 'subtitles') {
+            this.video.textTracks[activeTrack].mode = 'disabled';
+            activeTrack = i;
+            this.video.textTracks[activeTrack].mode = 'showing';
+            break;
+          }
+        }
+      }
+
+      this.textTrack = activeTrack;
+    },
+
+    on_audiotracks_updated() {
+      this.audioTracks = [];
+      this.audioTrack = null;
+      if (!this.video.audioTracks) {
+        return;
+      }
+      for (let i = 0; i < this.video.audioTracks.length; i += 1) {
+        const t = this.video.audioTracks[i];
+        this.audioTracks.push({
+          id: i,
+          label: t.label,
+        });
+        if (t.enabled) {
+          this.audioTrack = i;
         }
       }
     },
@@ -193,7 +307,9 @@ export default defineComponent({
       }
       this.video.src = null;
       this.autoplay = true;
-      if (src.endsWith('.m3u8')) {
+      const hasNativeHls = this.video.canPlayType('application/vnd.apple.mpegurl');
+      window.video = this.video;
+      if (src.endsWith('.m3u8') && !hasNativeHls) {
         console.log('creating new hls', this.video);
         const hlsConfig = {
           backBufferLength: 0,
@@ -242,10 +358,21 @@ export default defineComponent({
     },
 
     on_audiotrack(val) {
+      this.audioTrack = val;
+
       if (this.hls) {
         this.hls.audioTrack = val;
+        return;
       }
-      this.audioTrack = val;
+
+      if (this.video.audioTracks) {
+        for (let i = 0; i < this.video.audioTracks.length; i += 1) {
+          this.video.audioTracks[i].enabled = false;
+        }
+        if (val !== null) {
+          this.video.audioTracks[val].enabled = true;
+        }
+      }
     },
 
     on_volume(val) {
@@ -260,10 +387,37 @@ export default defineComponent({
       }
     },
 
-    container_clicked() {
-      if (this.playState !== 'ended') {
+    on_menuactive(val) {
+      // XXX FIXME doesn't work yet. QMenu events don't seem to fire.
+      console.log(val);
+      this.mouse(val ? 3 : 1);
+    },
+
+    on_airplay() {
+      this.video.webkitShowPlaybackTargetPicker();
+    },
+
+    container_clicked(touchEvent) {
+      console.log('container clicked');
+      if (touchEvent) {
+        this.isTouch = true;
+      }
+      if (this.showcontrols === 0) {
+        this.mouse(1);
+        if (touchEvent) {
+          touchEvent.preventDefault();
+        }
+        return true;
+      }
+      if (this.playState !== 'ended' && !touchEvent) {
         this.on_play();
       }
+      return true;
+    },
+
+    touch(showcontrols, ev) {
+      this.mouse(showcontrols, ev);
+      ev.preventDefault();
     },
 
     // Called when the mouse is moved. Used to display the mouse
@@ -287,9 +441,13 @@ export default defineComponent({
         showcontrols = 2;
       }
       if (showcontrols === 1 && this.showcontrols < 2) {
-        this.moved_timer = setTimeout(() => { this.showcontrols = 0; }, 2000);
+        this.moved_timer = setTimeout(() => { this.showcontrols = 0; }, 3000);
       }
-      this.showcontrols = showcontrols;
+      if (showcontrols === 0) {
+        this.moved_timer = setTimeout(() => { this.showcontrols = 0; }, 1000);
+      } else {
+        this.showcontrols = showcontrols;
+      }
     },
   },
 });

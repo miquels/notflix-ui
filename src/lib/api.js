@@ -17,6 +17,70 @@ import { joinpath } from './util.js';
 
 const objectCache = {};
 const requestsPending = {};
+let idCounter = 1;
+
+function updateNfo(base, item) {
+  if (!item.nfo) {
+    item.nfo = {};
+  }
+  if (!item.nfo.title) {
+    item.nfo.title = item.name || '(No Title)';
+  }
+  if (item.nfo.thumb) {
+    item.nfo.thumb = joinpath(base.path, item.nfo.thumb);
+  }
+}
+
+function updateEpisode(show, episode) {
+  updateNfo(show, episode);
+  if (episode.thumb) episode.thumb = joinpath(show.path, episode.thumb);
+  if (episode.video) {
+    episode.video = joinpath(show.path, episode.video);
+  }
+}
+
+function updateShow(apiUrl, theShow) {
+  console.log('updateShow', apiUrl, theShow);
+  const show = JSON.parse(JSON.stringify(theShow));
+  show.path = joinpath(apiUrl, show.baseurl, show.path);
+  console.log('show.path us now', show.path);
+  updateNfo(show, show);
+  if (show.banner) show.banner = joinpath(show.path, show.banner);
+  if (show.fanart) show.fanart = joinpath(show.path, show.fanart);
+  if (show.poster) show.poster = joinpath(show.path, show.poster);
+  console.log('aaa, now path and fanart', show.path, show.fanart);
+  if (show.seasonAllBanner) {
+    show.seasonAllBanner = joinpath(show.path, show.seasonAllBanner);
+  }
+  if (show.seasonAllPoster) {
+    show.seasonAllPoster = joinpath(show.path, show.seasonAllPoster);
+  }
+  // eslint-disable-next-line
+  for (const season of show.seasons) {
+    if (season.poster) {
+      season.poster = joinpath(show.path, season.poster);
+    }
+    // eslint-disable-next-line
+    for (const episode of season.episodes) {
+      updateEpisode(show, episode);
+    }
+  }
+  return show;
+}
+
+function updateMovie(apiUrl, theMovie) {
+  const movie = JSON.parse(JSON.stringify(theMovie));
+  movie.path = joinpath(apiUrl, movie.baseurl, movie.path);
+  updateNfo(movie, movie);
+  if (movie.banner) movie.banner = joinpath(movie.path, movie.banner);
+  if (movie.fanart) movie.fanart = joinpath(movie.path, movie.fanart);
+  if (movie.poster) movie.poster = joinpath(movie.path, movie.poster);
+  if (movie.video) {
+    movie.video = joinpath(movie.path, movie.video);
+  }
+  return movie;
+}
+
 export default class API {
   url;
 
@@ -53,10 +117,13 @@ export default class API {
         }
         // console.log('response:', resp)
         resp.json().then((obj) => {
-          objectCache[path] = obj;
+          obj.id = idCounter;
+          idCounter += 1;
+          const frozenObj = Object.freeze(obj);
+          objectCache[path] = frozenObj;
           while (pending.length > 0) {
             const p = pending.shift();
-            p.resolve(obj);
+            p.resolve(frozenObj);
           }
         });
       }).catch((err) => {
@@ -88,15 +155,22 @@ export default class API {
     return this.getItems(collName);
   }
 
-  getShow(collName, show) {
-    return this.getItem(collName, show);
+  async getShowById(collName, show) {
+    const theShow = await this.getItem(collName, show);
+    return updateShow(this.url, theShow);
+  }
+
+  async getShow(collName, show) {
+    const theShow = await this.getItem(collName, show);
+    return updateShow(this.url, theShow);
   }
 
   getMovies(collName) {
     return this.getItems(collName);
   }
 
-  getMovie(collName, movie) {
-    return this.getItem(collName, movie);
+  async getMovie(collName, movie) {
+    const theMovie = await this.getItem(collName, movie);
+    return updateMovie(this.url, theMovie);
   }
 }

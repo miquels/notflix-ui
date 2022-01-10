@@ -16,6 +16,8 @@ export default store(() => {
     state: () => ({
       castState: 'no_devices',
       castActive: false,
+      showSearch: false,
+      search: '',
       config: {
         useHls: true,
       },
@@ -41,6 +43,12 @@ export default store(() => {
       },
       castActive(state, active) {
         state.castActive = active;
+      },
+      search(state, value) {
+        state.search = value || '';
+      },
+      showSearch(state, value) {
+        state.showSearch = value || false;
       },
     },
 

@@ -59,18 +59,10 @@
 <script>
 import {
   defineComponent,
-  getCurrentInstance,
-  onBeforeMount,
 } from 'vue';
 
 export default defineComponent({
   name: 'Episode',
-  setup() {
-    onBeforeMount(() => {
-      const instance = getCurrentInstance();
-      console.log('episode onBeforeMount', instance.ctx.episode);
-    });
-  },
   props: {
     episode: Object,
   },

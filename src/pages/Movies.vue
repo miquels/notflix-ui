@@ -1,16 +1,23 @@
 <template>
   <q-page class="flex flex-center">
-    <Thumbs :items="items" class="fit" @select="movie_clicked"/>
+    <Thumbs
+      :items="items"
+      :filter="store.state.search"
+      class="fit"
+      @select="movie_clicked"/>
   </q-page>
 </template>
 
 <script>
 import {
   defineComponent,
-  getCurrentInstance,
   onBeforeMount,
+  onActivated,
+  onUnmounted,
+  onDeactivated,
   ref,
 } from 'vue';
+import { useStore } from 'vuex';
 import Thumbs from 'components/Thumbs.vue';
 import API from '../lib/api.js';
 import Config from '../lib/config.js';
@@ -22,28 +29,39 @@ export default defineComponent({
   },
 
   setup() {
+    const store = useStore();
+    const items = ref([]);
+
     onBeforeMount(() => {
-      const instance = getCurrentInstance();
-      instance.ctx.onBeforeMount();
+      const config = new Config();
+      const api = new API({ url: `${config.apiUrl}/` });
+      api.getItems('Movies').then((theItems) => {
+        items.value = theItems;
+      });
+      store.commit('showSearch', true);
     });
+
+    onActivated(() => {
+      store.commit('showSearch', true);
+    });
+    onUnmounted(() => {
+      store.commit('search', '');
+      store.commit('showSearch', false);
+    });
+    onDeactivated(() => {
+      store.commit('search', '');
+      store.commit('showSearch', false);
+    });
+
     return {
-      api: null,
-      items: ref([]),
+      items,
+      store,
     };
   },
 
   methods: {
-    onBeforeMount() {
-      const config = new Config();
-      this.api = new API({ url: `${config.apiUrl}/` });
-      this.api.getItems('Movies').then((items) => {
-        this.items = items;
-      });
-    },
-
-    movie_clicked(item) {
-      const itemName = this.items[item].name;
-      this.$router.push(`/movies/Movies/${itemName}`);
+    movie_clicked(movieName) {
+      this.$router.push(`/movies/Movies/${movieName}`);
     },
   },
 });

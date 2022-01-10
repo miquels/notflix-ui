@@ -9,16 +9,18 @@
       :items-size="item_nrows()"
     >
       <template v-slot="{ item }">
-        <q-item :key="item.key" class="row no-wrap justify-center q-pa-none">
-          <div class="col-auto no-wrap">
-            <div
-              v-for="item2 in item.row"
-              :key="item2.key"
-              class="thumbs-thumb"
-              @click="$emit('select', item2.key)">
-            >
-              <img :src="item2.item.url" class="thumbs-img">
-              <div class="thumbs-title">{{ item2.item.name }}</div>
+        <q-item :key="item.key" class="row no-wrap q-pa-none">
+          <div class="col-12">
+            <div class="row justify-center no-wrap">
+              <div
+                v-for="item2 in item.row"
+                :key="item2.id"
+                class="thumbs-thumb"
+                @click="$emit('select', item2.name)">
+              >
+                <Image :src="item2.url" :name="item2.name" class="thumbs-img" />
+                <div class="thumbs-title">{{ item2.name }}</div>
+              </div>
             </div>
           </div>
         </q-item>
@@ -67,30 +69,76 @@
 
 <script>
 import {
+  computed,
   defineComponent,
-  markRaw,
   ref,
+  toRefs,
 } from 'vue';
+import Image from 'components/Image.vue';
 import { scroll } from 'quasar';
 import Config from '../lib/config.js';
 
 export default defineComponent({
   name: 'Thumbs',
+  components: {
+    Image,
+  },
 
   props: {
     items: {
       type: Array,
       default: () => [],
     },
+    filter: {
+      type: String,
+      default: '',
+    },
   },
 
-  setup() {
+  setup(props) {
+    const rProps = toRefs(props);
+
+    // eslint-disable-next-line
+    const items = rProps.items;
+    // eslint-disable-next-line
+    const filter = rProps.filter;
+    const theItems = computed(() => {
+      // console.log('computed: items:', items);
+      // console.log('computed: filter:', filter);
+      if (filter.value === '') {
+        return items.value;
+      }
+      const filteredItems = [];
+      const f = filter.value.toLowerCase();
+      for (let i = 0; i < items.value.length; i += 1) {
+        const item = items.value[i];
+        const nameMatch = item.name.toLowerCase().includes(f);
+        // FIXME: this doesn't work, because we do not have this info at
+        // this point yet - the movie/tv-show details haven't been loaded yet.
+        // perhaps a server-side search ?
+        let actorMatch = false;
+        if (item.nfo && item.nfo.actor) {
+          console.log('filter: checking actors', item.nfo.actor);
+          for (let a = 0; a < item.nfo.actor.length; a += 1) {
+            if (item.nfo.actor[a].toLowerCase().includes(f)) {
+              actorMatch = true;
+            }
+          }
+        }
+        if (nameMatch || actorMatch) {
+          filteredItems.push(items.value[i]);
+        }
+      }
+      return filteredItems;
+    });
+
     const config = new Config();
     return {
       apiUrl: config.apiUrl,
       posterSize: ref(1),
       prevPosterSize: null,
       thumbsPerRow: ref(null),
+      theItems,
       imgWidth: 0,
       imgHeight: 0,
       el: ref(null),
@@ -102,37 +150,39 @@ export default defineComponent({
       if (!this.el || !this.thumbsPerRow) {
         return [];
       }
+      const nrItems = this.theItems.length;
       const rows = [];
       const { thumbsPerRow } = this;
       for (let i = from; i < from + size; i += 1) {
         const base = i * thumbsPerRow;
         const row = [];
-        for (let r = 0; r < thumbsPerRow && base + r < this.items.length; r += 1) {
-          const theItem = this.items[base + r];
-          let item = {
+        for (let r = 0; r < thumbsPerRow && base + r < nrItems; r += 1) {
+          const theItem = this.theItems[base + r];
+          const item = {
+            key: theItem.id,
             url: this.imgUrl(theItem),
             name: theItem.name,
           };
-          item = JSON.parse(JSON.stringify(markRaw(item)));
-          row.push({ item, key: base + r });
+          row.push(item);
         }
-        rows.push({ row, key: `${base}.${thumbsPerRow}` });
+        rows.push({ row, key: `${nrItems}.${base}.${thumbsPerRow}` });
       }
-      console.log('Thumbs: thumbsPerRow:', thumbsPerRow, 'item_rows:', rows.length);
+      // console.log('Thumbs: thumbsPerRow:', thumbsPerRow, 'item_rows:', rows.length);
       return rows;
     },
 
     item_nrows() {
       if (!this.el || !this.thumbsPerRow) {
-        console.log('Thumb: nrows = ', 0);
+        // console.log('Thumb: nrows = ', 0);
         return 0;
       }
-      const nrows = 1 + Math.floor(this.items.length / this.thumbsPerRow);
-      console.log('Thumb: nrows = ', nrows);
+
+      const nrows = 1 + Math.floor(this.theItems.length / this.thumbsPerRow);
+      // console.log('Thumb: nrows = ', nrows);
       return nrows;
     },
 
-    calcSizes() {
+    calcSizes(width) {
       const sizing = {
         imgWidth: [100, 133, 200],
         imgHeight: [150, 200, 270],
@@ -143,7 +193,9 @@ export default defineComponent({
       this.imgWidth = sizing.imgWidth[psz];
       this.imgHeight = sizing.imgHeight[psz];
       if (this.el) {
-        const width = scroll.getScrollWidth(this.el);
+        if (!width) {
+          width = scroll.getScrollWidth(this.el);
+        }
         if (width < 100) {
           return;
         }
@@ -152,7 +204,7 @@ export default defineComponent({
         this.el.style.setProperty('--thumbPadding', `${sizing.thumbPadding[psz]}px`);
         this.el.style.setProperty('--font-size', `${sizing.fontSize[psz]}px`);
         const thumbWidth = sizing.imgWidth[psz] + 2 * sizing.thumbPadding[psz];
-        this.thumbsPerRow = parseInt((width - 20) / thumbWidth, 10);
+        this.thumbsPerRow = parseInt((width - 40) / thumbWidth, 10);
       }
     },
 
@@ -161,7 +213,7 @@ export default defineComponent({
         return;
       }
       console.log('resize', ev);
-      this.calcSizes();
+      this.calcSizes(ev.Width);
     },
 
     imgUrl(item) {

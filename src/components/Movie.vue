@@ -41,6 +41,7 @@
 }
 .movie-header {
   position: relative;
+  min-height: 250px;
 }
 .movie-header-img {
   position: absolute;
@@ -74,44 +75,6 @@ import {
 import { useStore } from 'vuex';
 import Config from '../lib/config.js';
 import Api from '../lib/api.js';
-import { joinpath } from '../lib/util.js';
-
-function escapeHtml(html) {
-  const text = document.createTextNode(html);
-  const p = document.createElement('p');
-  p.appendChild(text);
-  return p.innerHTML;
-}
-
-function updateNfo(movie, nfo) {
-  if (nfo.title) {
-    nfo.title = escapeHtml(nfo.title);
-  }
-  if (nfo.plot) {
-    nfo.plot = escapeHtml(nfo.plot);
-  }
-  if (nfo.thumb) {
-    nfo.thumb = joinpath(movie.path, nfo.thumb);
-  }
-}
-
-function updateMovie(apiUrl, theMovie) {
-  console.log('updateMovie', apiUrl, theMovie);
-  const movie = JSON.parse(JSON.stringify(theMovie));
-  movie.name = escapeHtml(movie.name);
-  movie.path = joinpath(apiUrl, movie.baseurl, movie.path);
-  console.log('movie.path us now', movie.path);
-  updateNfo(movie, movie.nfo);
-  if (movie.banner) movie.banner = joinpath(movie.path, movie.banner);
-  if (movie.fanart) movie.fanart = joinpath(movie.path, movie.fanart);
-  if (movie.poster) movie.poster = joinpath(movie.path, movie.poster);
-  if (movie.video) {
-    movie.video = joinpath(movie.path, movie.video);
-    movie.video = Config.fixupMovieUrl(movie.video);
-  }
-  console.log('movie is now xyzzy', movie);
-  return movie;
-}
 
 export default defineComponent({
   name: 'Movie',
@@ -141,7 +104,6 @@ export default defineComponent({
       bgimage: ref(null),
       movie: ref(null),
       api,
-      apiUrl: config.apiUrl,
       emitter,
       store,
     };
@@ -151,16 +113,16 @@ export default defineComponent({
     on_mounted() {
       this.api.getMovie(this.collection, this.name).then((item) => {
         console.log(item);
-        this.movie = updateMovie(this.apiUrl, item);
+        this.movie = item;
         if (!this.movie.fanart && this.movie.poster) {
           this.movie.fanart = this.movie.poster;
         }
         if (!this.movie.poster && this.movie.fanart) {
           this.movie.poster = this.movie.fanart;
         }
+        this.bgimage = this.movie.fanart ? this.movie.fanart : '/img/static.jpg';
         if (!this.movie.fanart) this.movie.fanart = '#';
         if (!this.movie.poster) this.movie.poster = '#';
-        this.bgimage = this.movie.fanart;
         console.log('setting bgimage to', this.bgimage);
         this.title = this.movie.nfo.title;
         this.plot = this.movie.nfo.plot;
@@ -181,9 +143,6 @@ export default defineComponent({
     },
 
     bgImage() {
-      if (!this.bgimage) {
-        return {};
-      }
       const style = {
         backgroundImage:
           `linear-gradient(to right, rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${this.bgimage})`,

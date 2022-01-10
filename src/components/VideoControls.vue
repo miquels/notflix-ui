@@ -1,36 +1,52 @@
 <template>
-
     <div class=videocontrols-container ref="el">
       <div class="row q-mx-md videocontrols-label">
-        <q-badge color="blue" v-show="showLabel" class="videocontrols-label-badge" ref="badgeEl"
-           :style="{ 'left': `${labelPos}px` }">{{ labelTime }}</q-badge>
+        <q-badge color="blue" v-show="showLabel" class="videocontrols-label-badge q-pa-sm"
+           ref="badgeEl" :style="{ 'left': `${labelPos}px` }">{{ labelTime }}</q-badge>
       </div>
       <div class="row q-mx-md videocontrols-slider">
         <q-slider
            :modelValue="currentTime"
-           @update:modelValue="seek"
+           @update:modelValue="val => seekTo = val"
+           @change="seek(seekTo)"
            :min="0"
            :max="duration || 1"
            :step="0"
            color="red"
+           label
+           :label-value="hhmmss(seekTo)"
            dark
            @mouseleave="mouseleave($event)"
            @mousemove="mousemove($event)"
+           @touchmove.passive="mousemove($event)"
            ref="sliderEl"
         />
       </div>
       <div class="row q-pb-sm">
         <div class="col-auto q-ml-sm">
-          <q-icon name="stop" v-if="stopButton" size="24px" class="on-left" @click="$emit('stop')"/>
-          <q-icon :name="play_icon()" size="24px" class="on-left" @click="$emit('play')"/>
-          <q-icon name="volume_up" size="24px" class="on-left"/>
+          <q-icon
+            name="stop" v-if="stopButton" size="32px"
+            class="on-left videocontrols-hover" @click="$emit('stop')"
+          />
+          <q-icon
+            :name="play_icon()" size="32px"
+            class="on-left videocontrols-hover" @click="$emit('play')"
+          />
+          <q-icon name="volume_up" size="32px" class="on-left videocontrols-hover"/>
           <span class="on-left" v-if="duration">{{ time_info() }}</span>
         </div>
         <div class="col"></div>
         <div class="col-auto q-mr-sm">
 
-          <q-icon name="language" size="24px" class="on-right" v-if="audioTracks.length > 1">
-            <q-menu anchor="top end" self="bottom right" class="videocontrols-fix-zindex">
+          <q-icon
+            name="language" size="32px"
+            class="on-right videocontrols-hover" v-if="audioTracks.length > 1"
+          >
+            <q-menu
+              anchor="top end"
+              self="bottom right"
+              class="videocontrols-fix-zindex"
+            >
               <q-list style="min-width: 10em" bordered dense>
                 <q-item
                   v-for="a in audioTracks"
@@ -46,7 +62,10 @@
             </q-menu>
           </q-icon>
 
-          <q-icon name="closed_caption" size="24px" class="on-right" v-if="textTracks.length">
+          <q-icon
+            name="closed_caption" size="32px"
+           class="on-right videocontrols-hover" v-if="textTracks.length"
+          >
             <q-menu anchor="top end" self="bottom right" class="videocontrols-fix-zindex">
               <q-list style="min-width: 10em" bordered dense>
                 <q-item
@@ -72,16 +91,23 @@
           </q-icon>
 
           <q-icon
+            :name="airplay"
+            size="32px"
+            class="on-right videocontrols-hover"
+            v-if="airplayState === 'available'"
+            @click="$emit('airplay')"
+          />
+          <q-icon
             :name="cast_icon()"
-            size="24px"
-            class="on-right"
+            size="32px"
+            class="on-right videocontrols-hover"
             v-if="castState && castState !== 'no_devices'"
             @click="$emit('cast')"
           />
           <q-icon
             :name="fullscreen_icon()"
-            size="24px"
-            class="on-right"
+            size="32px"
+            class="on-right videocontrols-hover"
             v-if="!!fullScreenState"
             @click="$emit('fullscreen')"
           />
@@ -105,6 +131,9 @@
   position: relative;
   overflow: hidden;
 }
+.videocontrols-hover:hover {
+  cursor: pointer;
+}
 .videocontrols-label-badge {
   position: relative;
 }
@@ -113,20 +142,13 @@
 import {
   defineComponent,
   ref,
+  toRaw,
 } from 'vue';
-import { debounce } from '../lib/util.js';
-
-function hhmmss(seconds) {
-  const d = new Date(seconds * 1000).toISOString();
-  if (seconds >= 3600) {
-    return d.substr(11, 8);
-  }
-  return d.substr(14, 5);
-}
+import { hhmmss } from '../lib/util.js';
 
 export default defineComponent({
   name: 'VideoControls',
-  emits: ['play', 'seek', 'volume', 'texttrack', 'audiotrack', 'fullscreen', 'cast'],
+  emits: ['play', 'seek', 'volume', 'texttrack', 'audiotrack', 'fullscreen', 'cast', 'stop'],
 
   props: {
     currentTime: Number,
@@ -150,6 +172,10 @@ export default defineComponent({
       default: () => [],
     },
     castState: String,
+    airplayState: {
+      type: Boolean,
+      default: false,
+    },
     fullScreenState: String,
     stopButton: {
       type: Boolean,
@@ -166,7 +192,8 @@ export default defineComponent({
       badgeEl: ref(null),
       sliderEl: ref(null),
       cur_play_icon: 'play_arrow',
-      dSeek: null,
+      hhmmss,
+      seekTo: 0,
       el,
     };
   },
@@ -205,23 +232,23 @@ export default defineComponent({
     },
 
     cast_icon() {
+      // console.log('castState is', this.castState);
       if (this.castState === 'connected') {
         return 'cast_connected';
       }
       return 'cast';
     },
 
-    seek(newTime) {
-      if (!this.dSeek) {
-        this.dSeek = debounce((dTime) => {
-          // console.log('seekTo', dTime);
-          this.$emit('seek', Math.floor(dTime));
-          if (this.playState === 'ended') {
-            this.$emit('play');
-          }
-        }, 250, true);
+    menuActive(ev) {
+      console.log(ev);
+    },
+
+    seek(seekTo) {
+      const newTime = toRaw(seekTo);
+      this.$emit('seek', Math.floor(newTime));
+      if (this.playState === 'ended') {
+        this.$emit('play');
       }
-      this.dSeek(newTime);
     },
 
     mouseleave() {
@@ -229,6 +256,7 @@ export default defineComponent({
     },
 
     mousemove(ev) {
+      // console.log('mousemove');
       const sliderWidth = this.sliderEl.$el.clientWidth;
       const badgeWidth = this.badgeEl.$el.clientWidth;
       const sliderPos = this.sliderEl.$el.getBoundingClientRect();

@@ -35,23 +35,6 @@ export function joinpath(...args) {
   return ret.join('/');
 }
 
-function twoDigits(n) {
-  return n < 10 ? `0${n}` : `${n}`;
-}
-
-export function hhmmss(tm, doHour) {
-  if (tm === null || tm === undefined) {
-    return '-';
-  }
-  const h = Math.floor(tm / 3600);
-  const m = Math.floor((tm % 3600) / 60);
-  const s = Math.floor(tm % 60);
-  if (doHour || h > 0) {
-    return `${twoDigits(h)}:${twoDigits(m)}:${twoDigits(s)}`;
-  }
-  return `${twoDigits(m)}:${twoDigits(s)}`;
-}
-
 export function isMobile() {
   return (window.orientation !== undefined);
 }
@@ -111,4 +94,12 @@ export function debounce(func, wait, immediate) {
     timeout = setTimeout(later, wait);
     if (callNow) func(args);
   };
+}
+
+export function hhmmss(seconds) {
+  const d = new Date(seconds * 1000).toISOString();
+  if (seconds >= 3600) {
+    return d.substr(11, 8);
+  }
+  return d.substr(14, 5);
 }
