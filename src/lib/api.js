@@ -40,15 +40,15 @@ function updateEpisode(show, episode) {
 }
 
 function updateShow(apiUrl, theShow) {
-  console.log('updateShow', apiUrl, theShow);
+  // console.log('updateShow', apiUrl, theShow);
   const show = JSON.parse(JSON.stringify(theShow));
   show.path = joinpath(apiUrl, show.baseurl, show.path);
-  console.log('show.path us now', show.path);
+  // console.log('show.path is now', show.path);
   updateNfo(show, show);
   if (show.banner) show.banner = joinpath(show.path, show.banner);
   if (show.fanart) show.fanart = joinpath(show.path, show.fanart);
   if (show.poster) show.poster = joinpath(show.path, show.poster);
-  console.log('aaa, now path and fanart', show.path, show.fanart);
+  // console.log('aaa, now path and fanart', show.path, show.fanart);
   if (show.seasonAllBanner) {
     show.seasonAllBanner = joinpath(show.path, show.seasonAllBanner);
   }

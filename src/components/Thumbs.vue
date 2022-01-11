@@ -2,7 +2,7 @@
   <div ref="el" class="fit thumbs-container">
     <q-resize-observer @resize="onResize"/>
     <q-virtual-scroll
-      style="max-height: calc(100vh - 100px)"
+      class="thumbs-virtual-scroller"
       :virtual-scroll-item-size="150"
       :virtual-scroll-slice-size="10"
       :items-fn="item_rows"
@@ -29,7 +29,8 @@
   </div>
 </template>
 
-<style>
+<style lang="scss">
+@import '~src/css/app.scss';
 .thumbs-container {
   --image-width: 100px;
   --image-height: 150px;
@@ -42,6 +43,10 @@
   width: calc(var(--thumb-padding) * 2 + var(--image-width));
   /* removes padding between image and name */
   font-size: 0px;
+}
+.thumbs-virtual-scroller {
+  max-height: calc(100vh - 100px);
+  @include scrollbars;
 }
 .thumbs-thumb:hover {
   transform: scale(1.1);
@@ -74,8 +79,9 @@ import {
   ref,
   toRefs,
 } from 'vue';
-import Image from 'components/Image.vue';
 import { scroll } from 'quasar';
+import Image from 'components/Image.vue';
+import { isMobile } from '../lib/util.js';
 import Config from '../lib/config.js';
 
 export default defineComponent({
@@ -132,10 +138,11 @@ export default defineComponent({
       return filteredItems;
     });
 
+    const posterSize = isMobile() ? 1 : 2;
     const config = new Config();
     return {
       apiUrl: config.apiUrl,
-      posterSize: ref(1),
+      posterSize,
       prevPosterSize: null,
       thumbsPerRow: ref(null),
       theItems,

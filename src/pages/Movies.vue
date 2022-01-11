@@ -36,7 +36,10 @@ export default defineComponent({
       const config = new Config();
       const api = new API({ url: `${config.apiUrl}/` });
       api.getItems('Movies').then((theItems) => {
-        items.value = theItems;
+        // Sort by last added.
+        const sortItems = [...theItems];
+        sortItems.sort((a, b) => b.lastvideo - a.lastvideo);
+        items.value = sortItems;
       });
       store.commit('showSearch', true);
     });

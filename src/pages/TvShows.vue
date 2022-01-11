@@ -37,7 +37,11 @@ export default defineComponent({
       const config = new Config();
       const api = new API({ url: `${config.apiUrl}/` });
       api.getItems('TV%20Shows').then((theItems) => {
-        items.value = theItems;
+        // sort by lastUpdated.
+        const sortItems = [...theItems];
+        sortItems.sort((a, b) => b.lastvideo - a.lastvideo);
+        // console.log(sortItems);
+        items.value = sortItems;
       });
       store.commit('showSearch', true);
     });

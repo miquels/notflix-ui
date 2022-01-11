@@ -1,7 +1,7 @@
 <template>
   <div class="tv-show-container q-pt-md">
-  <q-resize-observer @resize="onResize"/>
     <div class="tv-show-header">
+      <q-resize-observer @resize="onResize"/>
       <div class="tv-show-header-img" :style="bgImage()"/>
       <div class="row text-h4 q-mb-md">
         <div class="col">{{ title }}</div>
@@ -141,6 +141,7 @@ export default defineComponent({
     on_mounted() {
       this.api.getShow(this.collection, this.name).then((item) => {
         this.show = item;
+        console.log('show:', item);
 
         if (!this.show.fanart && this.show.poster) {
           this.show.fanart = this.show.poster;
@@ -151,6 +152,7 @@ export default defineComponent({
         if (!this.show.fanart) this.show.fanart = '#';
         if (!this.show.poster) this.show.poster = '#';
         this.bgimage = this.show.fanart;
+        console.log('bgimage:', this.bgimage);
 
         this.title = this.show.nfo.title;
         this.plot = this.show.nfo.plot;
@@ -205,7 +207,7 @@ export default defineComponent({
     onResize(ev) {
       console.log(ev);
       if (this.show && this.show.poster && this.show.fanart) {
-        if (1.8 * ev.height > ev.width) {
+        if (ev.height > ev.width) {
           this.bgimage = this.show.poster;
         } else {
           this.bgimage = this.show.fanart;
