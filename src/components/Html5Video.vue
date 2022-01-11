@@ -106,7 +106,7 @@ export default defineComponent({
     });
     const quasar = useQuasar();
     // Only use native HLS on apple iphone/ipad, or safari browsers.
-    const nativeHls = quasar.platfrom.is.ios || quasar.platform.is.safari;
+    const nativeHls = quasar.platform.is.ios || quasar.platform.is.safari;
 
     return {
       video: ref(null),
