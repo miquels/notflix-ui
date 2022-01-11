@@ -10,7 +10,7 @@
             name="play_circle"
             size="72px"
             class="episode-play on-left q-pb-md"
-            @click="$emit('play', episode.video)"
+            @click="$emit('play', episode)"
           />
           <span>{{ episode.name }}. {{ episode.nfo.title }}</span>
         </div>

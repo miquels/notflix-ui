@@ -9,6 +9,11 @@
     @mouseleave="mouse(0, $event)"
     ref="el"
   >
+    <div class="row justify-center html5video-big-play-button" v-if="bigPlayButton">
+      <div class="col-auto self-center">
+        <q-icon name="play_circle_outline" size="128px" @click="on_play()" />
+      </div>
+    </div>
     <video class="html5video-video" ref="video"></video>
     <q-slide-transition :duration="500">
       <div
@@ -69,6 +74,14 @@
   background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.0) 100%);
   color: white;
 }
+.html5video-big-play-button {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  bottom: 0px;
+  right: 0px;
+  z-index: 1;
+}
 </style>
 
 <script>
@@ -81,6 +94,7 @@ import {
   watch,
 } from 'vue';
 import { useQuasar } from 'quasar';
+import { useStore } from 'vuex';
 import VideoControls from 'components/VideoControls.vue';
 import Hls from 'hls.js';
 
@@ -89,25 +103,19 @@ export default defineComponent({
   components: {
     VideoControls,
   },
-  props: {
-    src: {
-      type: String,
-      default: null,
-    },
-    startAt: {
-      type: Number,
-      default: null,
-    },
-  },
+
   setup() {
     onMounted(() => {
       const instance = getCurrentInstance();
       instance.ctx.on_mounted();
     });
     const quasar = useQuasar();
-    // Only use native HLS on apple iphone/ipad, or safari browsers.
-    const nativeHls = quasar.platform.is.ios || quasar.platform.is.safari;
+    const isSafari = () => (quasar.platform.is.ios || quasar.platform.is.safari);
 
+    // Only use native HLS on apple iphone/ipad, or safari browsers.
+    const nativeHls = isSafari();
+
+    const store = useStore();
     return {
       video: ref(null),
       playState: ref('playing'),
@@ -121,13 +129,14 @@ export default defineComponent({
       castState: ref('no_devices'),
       airplayState: ref(false),
       fullScreenState: ref('off'),
-      showcontrols: ref(2),
+      showcontrols: ref(0),
       moved_timer: null,
       el: ref(null),
-      quasar,
+      isSafari,
       nativeHls,
-      autoplay: true,
       isTouch: false,
+      bigPlayButton: ref(false),
+      currentVideo: ref(store.state.currentVideo),
     };
   },
 
@@ -141,6 +150,10 @@ export default defineComponent({
         this.metadata_loaded = true;
         if (this.hls_loaded_metadata) {
           this.on_loadedmetadata();
+          // console.log('loaded metadata');
+          if (this.isSafari()) {
+            this.autoplay();
+          }
         }
       });
       this.video.addEventListener('play', () => { this.playState = 'playing'; if (this.showcontrols === 2) this.mouse(0); });
@@ -157,18 +170,7 @@ export default defineComponent({
         this.video.textTracks.addEventListener('removetrack', () => this.on_texttracks_updated());
         this.video.textTracks.addEventListener('change', () => this.on_texttrack_changed());
       }
-      this.video.addEventListener('canplay', () => {
-        if (this.autoplay) {
-          this.video.play().catch(() => {
-            // autoplay was prevented.
-            this.playState = 'paused';
-            this.autoplay = false;
-            if (this.showcontrols < 2) {
-              this.mouse(2);
-            }
-          });
-        }
-      });
+      this.video.addEventListener('canplay', () => { if (!this.isSafari()) { this.autoplay(); } });
       this.video.oncontextmenu = () => false;
 
       // Airplay support. For now, local to this component, not global as Chromecast.
@@ -181,16 +183,26 @@ export default defineComponent({
         window.video = this.video;
       }
 
-      watch(() => this.src, (newSrc, oldSrc) => {
-        // console.log('watch -> load', this.src, newSrc, oldSrc);
-        if (newSrc !== oldSrc) {
-          this.load(newSrc);
+      watch(() => this.currentVideo, (newVideo, oldVideo) => {
+        if (newVideo.src !== oldVideo.src) {
+          this.load(newVideo);
         }
       });
-      if (this.src) {
-        this.load(this.src);
+      if (this.currentVideo.src) {
+        this.load(this.currentVideo);
       }
       window.video = this.video;
+    },
+
+    autoplay() {
+      this.video.play().catch(() => {
+        // autoplay was prevented.
+        this.playState = 'paused';
+        this.bigPlayButton = true;
+        if (this.showcontrols < 2) {
+          this.mouse(2);
+        }
+      });
     },
 
     on_manifestloaded() {
@@ -307,16 +319,18 @@ export default defineComponent({
       }
     },
 
-    load(src) {
-      console.log('load method called', src);
+    load(item) {
+      console.log('load method called', item);
       if (this.hls) {
         this.hls.destroy();
         this.hls = null;
       }
       this.video.src = null;
-      this.autoplay = true;
 
-      if (src.endsWith('.m3u8') && !this.nativeHls) {
+      // We need an absolute URL (for airplay).
+      const url = new URL(item.src, window.location.origin).href;
+
+      if (url.endsWith('.m3u8') && !this.nativeHls) {
         console.log('creating new hls', this.video);
         const hlsConfig = {
           backBufferLength: 0,
@@ -324,12 +338,12 @@ export default defineComponent({
         };
         this.hls = new Hls(hlsConfig);
         this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.on_manifestloaded());
-        this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { this.hls.loadSource(src); });
+        this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { this.hls.loadSource(url); });
         this.hls.attachMedia(this.video);
       } else {
-        console.log('plain video load', src);
+        console.log('plain video load', url);
         this.hls_loaded_metadata = true;
-        this.video.src = src;
+        this.video.src = url;
       }
     },
 
@@ -344,6 +358,7 @@ export default defineComponent({
       } else {
         this.video.play();
       }
+      this.bigPlayButton = false;
     },
 
     on_seek(newTime) {

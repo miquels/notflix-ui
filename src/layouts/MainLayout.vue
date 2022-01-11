@@ -53,6 +53,7 @@
 
     <q-footer :modelValue="castActive()" elevated class="bg-grey-10 text-white">
       <Chromecast/>
+      <Play />
     </q-footer>
 
   </q-layout>
@@ -63,11 +64,13 @@ import { ref } from 'vue';
 import { useStore } from 'vuex';
 import Chromecast from 'components/Chromecast.vue';
 import CastButton from 'components/CastButton.vue';
+import Play from 'components/Play.vue';
 
 export default {
   components: {
     Chromecast,
     CastButton,
+    Play,
   },
   setup() {
     const leftDrawerOpen = ref(false);

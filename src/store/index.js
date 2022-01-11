@@ -18,8 +18,10 @@ export default store(() => {
       castActive: false,
       showSearch: false,
       search: '',
+      currentVideo: null,
       config: {
         useHls: true,
+        castUseShakaHack: true,
       },
     }),
 
@@ -49,6 +51,9 @@ export default store(() => {
       },
       showSearch(state, value) {
         state.showSearch = value || false;
+      },
+      currentVideo(state, value) {
+        state.currentVideo = value;
       },
     },
 

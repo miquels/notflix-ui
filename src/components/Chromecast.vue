@@ -59,12 +59,8 @@ export default defineComponent({
     VideoControls,
   },
   props: {
-    src: {
+    item: {
       type: String,
-      default: null,
-    },
-    startAt: {
-      type: Number,
       default: null,
     },
   },
@@ -223,10 +219,10 @@ export default defineComponent({
         // Don't trigger active(true) here, the OS might have done this on connect.
       });
 
-      this.emitter.on('playCast', (src) => {
+      this.emitter.on('playCast', () => {
         console.log('playCast');
-        console.log('playCast request', src);
-        this.load(src);
+        console.log('playCast request', this.store.state.currentVideo);
+        this.load(this.store.state.currentVideo);
       });
     },
 
@@ -358,25 +354,51 @@ export default defineComponent({
       instance.requestSession();
     },
 
-    load(src, startAt) {
+    load(item) {
+      // Make URL absolute.
+      const src = new URL(item.src, window.location.origin).href;
+      console.log('chromecast.load', src);
+
       const mediaInfo = new chrome.cast.media.MediaInfo(src, 'video/mp4');
       mediaInfo.streamType = chrome.cast.media.StreamType.BUFFERED;
 
-      console.log('chromecast.load', src);
-
-      if (src.match(/\.m3u8(\?.*|)$/)) {
-        // These must be set to FMP4, or the chromecast will hang.
-        // mediaInfo.hlsSegmentFormat = chrome.cast.media.HlsSegmentFormat.FMP4;
-        // mediaInfo.hlsVideoSegmentFormat = chrome.cast.media.HlsVideoSegmentFormat.FMP4;
-        // StreamType must be LIVE or OTHER, not BUFFERED.
-        // mediaInfo.streamType = chrome.cast.media.StreamType.OTHER;
-        // And ofcourse the MIME type.
-        // mediaInfo.contentType = 'application/x-mpegURL';
-        console.log('setting content-type to dash');
-        mediaInfo.contentType = 'application/dash+xml';
+      const images = [];
+      if (item.thumb) {
+        images.push(new chrome.cast.Image(item.thumb));
+      }
+      if (item.type === 'movie') {
+        const meta = new chrome.cast.media.MovieMediaMetadata();
+        meta.title = item.title;
+        meta.images = images;
+        meta.releaseYear = item.year;
+        mediaInfo.metadata = meta;
+      }
+      if (item.type === 'episode') {
+        const meta = new chrome.cast.media.TvShowMediaMetadata();
+        meta.title = item.title;
+        meta.images = images;
+        meta.releaseYear = item.year;
+        meta.season = item.season;
+        meta.episode = item.episode;
+        meta.seriesTitle = item.seriesTitle;
+        mediaInfo.metadata = meta;
       }
 
-      mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+      if (src.match(/\.m3u8(\?.*|)$/)) {
+        if (this.store.state.config.castUseShakaHack) {
+          // This is a hack to use ShakaPlayer for HLS content.
+          console.log('setting content-type to dash');
+          mediaInfo.contentType = 'application/dash+xml';
+        } else {
+          // These must be set to FMP4, or the chromecast will hang.
+          mediaInfo.hlsSegmentFormat = chrome.cast.media.HlsSegmentFormat.FMP4;
+          mediaInfo.hlsVideoSegmentFormat = chrome.cast.media.HlsVideoSegmentFormat.FMP4;
+          // StreamType must be LIVE or OTHER, not BUFFERED.
+          mediaInfo.streamType = chrome.cast.media.StreamType.OTHER;
+          // And ofcourse the MIME type.
+          mediaInfo.contentType = 'application/x-mpegURL';
+        }
+      }
 
       // Netflix subtitle styling
       // chrome.cast.media.TextTrackFontGenericFamily.CASUAL
@@ -390,7 +412,7 @@ export default defineComponent({
       mediaInfo.textTrackStyle.foregroundColor = '#FFFFFF';
 
       const request = new chrome.cast.media.LoadRequest(mediaInfo);
-      request.currentTime = startAt || 0;
+      request.currentTime = item.startAt || 0;
       request.autoplay = this.playState !== 'paused';
 
       console.log('chromecast: getting session');

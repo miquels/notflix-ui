@@ -9,7 +9,7 @@ const routes = [
       { path: '/tv-shows/', component: () => import('pages/TvShows.vue') },
       { path: '/movies/:collection/:name', component: () => import('pages/Movie.vue') },
       { path: '/movies/', component: () => import('pages/Movies.vue') },
-      { path: '/local-player/:src(.*)', component: () => import('pages/LocalPlayer.vue') },
+      { path: '/local-player/', component: () => import('pages/LocalPlayer.vue') },
     ],
   },
 

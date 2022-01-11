@@ -131,6 +131,7 @@ export default defineComponent({
       show: ref(null),
       seasons: ref([]),
       currentSeason: ref(0),
+      playVideo: ref(null),
       api,
       store,
       emitter,
@@ -215,16 +216,16 @@ export default defineComponent({
       }
     },
 
-    playEpisode(url) {
-      if (this.store.state.config.useHls) {
-        url += '/master.m3u8';
-      }
-      console.log('playEpisode', url);
-      if (this.store.state.castState === 'connected') {
-        this.emitter.emit('playCast', url);
-      } else {
-        this.$router.push(`/local-player/${url}`);
-      }
+    playEpisode(episode) {
+      const seasonIdx = this.seasons[this.currentSeason].idx;
+      const season = this.show.seasons[seasonIdx];
+      const { show } = this;
+      this.emitter.emit('playVideo', {
+        type: 'episode',
+        show,
+        season,
+        episode,
+      });
     },
   },
 });

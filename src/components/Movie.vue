@@ -103,6 +103,7 @@ export default defineComponent({
       plot: ref(null),
       bgimage: ref(null),
       movie: ref(null),
+      currentVideo: ref(null),
       api,
       emitter,
       store,
@@ -160,16 +161,7 @@ export default defineComponent({
     },
 
     playMovie() {
-      let url = this.movie.video;
-      if (this.store.state.config.useHls) {
-        url += '/master.m3u8';
-      }
-      console.log('playMovie', url, this.store.state.castState);
-      if (this.store.state.castState === 'connected') {
-        this.emitter.emit('playCast', url);
-      } else {
-        this.$router.push(`/local-player/${url}`);
-      }
+      this.emitter.emit('playVideo', { type: 'movie', movie: this.movie });
     },
   },
 });
