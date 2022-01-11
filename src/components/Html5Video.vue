@@ -104,6 +104,10 @@ export default defineComponent({
       const instance = getCurrentInstance();
       instance.ctx.on_mounted();
     });
+    const quasar = useQuasar();
+    // Only use native HLS on apple iphone/ipad, or safari browsers.
+    const nativeHls = quasar.platfrom.is.ios || quasar.platform.is.safari;
+
     return {
       video: ref(null),
       playState: ref('playing'),
@@ -120,7 +124,8 @@ export default defineComponent({
       showcontrols: ref(2),
       moved_timer: null,
       el: ref(null),
-      quasar: useQuasar(),
+      quasar,
+      nativeHls,
       autoplay: true,
       isTouch: false,
     };
@@ -171,6 +176,9 @@ export default defineComponent({
         this.video.addEventListener('webkitplaybacktargetavailabilitychanged', (ev) => {
           this.airplayAvailable = ev.availability === 'available';
         });
+
+        // DEBUG.
+        window.video = this.video;
       }
 
       watch(() => this.src, (newSrc, oldSrc) => {
@@ -307,9 +315,8 @@ export default defineComponent({
       }
       this.video.src = null;
       this.autoplay = true;
-      const hasNativeHls = this.video.canPlayType('application/vnd.apple.mpegurl');
-      window.video = this.video;
-      if (src.endsWith('.m3u8') && !hasNativeHls) {
+
+      if (src.endsWith('.m3u8') && !this.nativeHls) {
         console.log('creating new hls', this.video);
         const hlsConfig = {
           backBufferLength: 0,
