@@ -1,18 +1,31 @@
 <template>
   <div
     class="html5video-container"
+    tabindex="0"
     :class="{ 'cursor-none': !showcontrols }"
     @touchend="container_clicked($event)"
     @mousedown.stop="false"
     @click="container_clicked()"
     @mousemove="mouse(1, $event)"
     @mouseleave="mouse(0, $event)"
+    @keyup.space="onPlay()"
+    @keyup.left="relSeek(-10)"
+    @keyup.right="relSeek(10)"
     ref="el"
   >
-    <div class="row justify-center html5video-big-play-button" v-if="bigPlayButton">
-      <div class="col-auto self-center">
-        <q-icon name="play_circle_outline" size="128px" @click="on_play()" />
+    <div class="html5video-overlay column fit" v-if="overlay()">
+      <div class="row justify-center items-center fit absolute">
+        <div v-if="bigPlayButton" class="col-auto">
+          <q-icon name="play_circle_outline" class="hover-pointer" size="128px" @click="onPlay()" />
+        </div>
       </div>
+      <q-card flat class="html5video-info q-ml-lg row" v-if="info">
+        <q-card-section>
+          <div v-if="info.line1" class="text-h2 html5video-txt">{{ info.line1 }}</div>
+          <div v-if="info.line2" class="text-h5 html5video-txt">{{ info.line2 }}</div>
+          <div v-if="info.line3" class="text-h4 html5video-txt">{{ info.line3 }}</div>
+        </q-card-section>
+      </q-card>
     </div>
     <video class="html5video-video" ref="video"></video>
     <q-slide-transition :duration="500">
@@ -36,24 +49,26 @@
            :castState="castState"
            :airplayState="airplayState"
            :fullScreenState="fullScreenState"
-           @play="on_play"
-           @seek="on_seek"
-           @volume="on_volume"
-           @texttrack="on_texttrack"
-           @audiotrack="on_audiotrack"
-           @fullscreen="on_fullscreen"
-           @menuActive="on_menuactive"
-           @airplay="on_airplay"
+           @play="onPlay"
+           @seek="onSeek"
+           @volume="onVolume"
+           @texttrack="onTexttrack"
+           @audiotrack="onAudiotrack"
+           @fullscreen="onFullscreen"
+           @menuActive="onMenactive"
+           @airplay="onAirplay"
         />
       </div>
     </q-slide-transition>
   </div>
 </template>
 
-<style>
+<style lang="scss">
+@import '~src/css/mixins.scss';
 .html5video-container {
   position: relative;
   background: black;
+  outline: none;
   width: 100%;
   height: 100%;
 }
@@ -66,6 +81,12 @@
   object-fit: contain;
   display: block;
 }
+.html5video-video::cue {
+  color: white;
+  background: none;
+  text-shadow: none;
+  @include stroke(2px, black);
+}
 .html5video-controls {
   position: absolute;
   bottom: 0px;
@@ -74,13 +95,31 @@
   background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.0) 100%);
   color: white;
 }
-.html5video-big-play-button {
+.html5video-overlay {
   position: absolute;
   top: 0px;
   left: 0px;
   bottom: 0px;
   right: 0px;
   z-index: 1;
+}
+.html5video-info {
+  position: absolute;
+  left: 10px;
+  bottom: 60px;
+  z-index: 1;
+  font-weight: 700;
+  text-shadow:
+   -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+     1px 1px 0 #000;
+  background: transparent;
+}
+.html5video-txt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
 
@@ -89,12 +128,14 @@
 import {
   defineComponent,
   getCurrentInstance,
+  onUnmounted,
   onMounted,
   ref,
   watch,
 } from 'vue';
 import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 import VideoControls from 'components/VideoControls.vue';
 import Hls from 'hls.js';
 
@@ -105,9 +146,29 @@ export default defineComponent({
   },
 
   setup() {
+    const router = useRouter();
     onMounted(() => {
+      // Might happen after a reload.
       const instance = getCurrentInstance();
-      instance.ctx.on_mounted();
+      if (instance.ctx.currentVideo === null) {
+        router.go(-1);
+      }
+      instance.ctx.mounted();
+    });
+    onUnmounted(() => {
+      // make sure we get rid of the video.
+      if (window.video) {
+        window.video = null;
+      }
+      const instance = getCurrentInstance();
+      if (instance.ctx.hls) {
+        instance.ctx.hls.destroy();
+      }
+      if (instance.ctx.video) {
+        instance.ctx.video = '';
+        instance.video.load();
+        instance.video = null;
+      }
     });
     const quasar = useQuasar();
     const isSafari = () => (quasar.platform.is.ios || quasar.platform.is.safari);
@@ -118,7 +179,7 @@ export default defineComponent({
     const store = useStore();
     return {
       video: ref(null),
-      playState: ref('playing'),
+      playState: ref('paused'),
       volume: ref(0.5),
       currentTime: ref(0),
       duration: ref(null),
@@ -129,48 +190,63 @@ export default defineComponent({
       castState: ref('no_devices'),
       airplayState: ref(false),
       fullScreenState: ref('off'),
+      seeking: false,
       showcontrols: ref(0),
       moved_timer: null,
-      el: ref(null),
-      isSafari,
+      info: ref(null),
       nativeHls,
-      isTouch: false,
       bigPlayButton: ref(false),
       currentVideo: ref(store.state.currentVideo),
+      ignoreClick: false,
+      isTouch: false,
+      isSafari,
+      el: ref(null),
     };
   },
 
   methods: {
 
     // Initialize.
-    on_mounted() {
-      // console.log('on_mounted');
+    mounted() {
+      // console.log('mounted');
+      window.dbg = this;
+
+      this.$el.focus();
 
       this.video.addEventListener('loadedmetadata', () => {
         this.metadata_loaded = true;
         if (this.hls_loaded_metadata) {
-          this.on_loadedmetadata();
+          this.onLoadedmetadata();
           // console.log('loaded metadata');
           if (this.isSafari()) {
             this.autoplay();
           }
         }
       });
-      this.video.addEventListener('play', () => { this.playState = 'playing'; if (this.showcontrols === 2) this.mouse(0); });
-      this.video.addEventListener('pause', () => { this.playState = 'paused'; if (this.showcontrols < 2) this.mouse(2); });
-      this.video.addEventListener('ended', () => { this.playState = 'ended'; if (this.showcontrols < 2) this.mouse(2); });
-      this.video.addEventListener('timeupdate', () => { if (this.video) this.currentTime = this.video.currentTime; });
+      this.video.addEventListener('play', () => { this.setState('playing'); if (this.showcontrols === 2) this.mouse(0); });
+      this.video.addEventListener('pause', () => { this.setState('paused'); if (this.showcontrols < 2) this.mouse(2); });
+      this.video.addEventListener('ended', () => { this.setState('ended'); if (this.showcontrols < 2) this.mouse(2); });
+      this.video.addEventListener('seeking', () => { this.seeking = true; });
+      this.video.addEventListener('seeked', () => { this.seeking = false; });
+      this.video.addEventListener('timeupdate', () => {
+        // console.log('timeupdate, seeking is', this.seeking);
+        if (this.video && !this.seeking) {
+          this.currentTime = this.video.currentTime;
+        }
+      });
       this.video.addEventListener('volumechange', () => { this.volume = this.video.volume; });
       if (this.video.audioTracks && !this.hls) {
-        this.video.audioTracks.addEventListener('addtrack', () => this.on_audiotracks_updated());
-        this.video.audioTracks.addEventListener('removetrack', () => this.on_audiotracks_updated());
+        this.video.audioTracks.addEventListener('addtrack', () => this.onAudiotracks_updated());
+        this.video.audioTracks.addEventListener('removetrack', () => this.onAudiotracks_updated());
       }
       if (this.video.textTracks && !this.hls) {
-        this.video.textTracks.addEventListener('addtrack', () => this.on_texttracks_updated());
-        this.video.textTracks.addEventListener('removetrack', () => this.on_texttracks_updated());
-        this.video.textTracks.addEventListener('change', () => this.on_texttrack_changed());
+        this.video.textTracks.addEventListener('addtrack', () => this.onTexttracks_updated());
+        this.video.textTracks.addEventListener('removetrack', () => this.onTexttracks_updated());
+        this.video.textTracks.addEventListener('change', () => this.onTexttrack_changed());
       }
       this.video.addEventListener('canplay', () => { if (!this.isSafari()) { this.autoplay(); } });
+      this.video.addEventListener('abort', () => this.onError());
+      this.video.addEventListener('error', () => this.onError());
       this.video.oncontextmenu = () => false;
 
       // Airplay support. For now, local to this component, not global as Chromecast.
@@ -178,37 +254,63 @@ export default defineComponent({
         this.video.addEventListener('webkitplaybacktargetavailabilitychanged', (ev) => {
           this.airplayAvailable = ev.availability === 'available';
         });
-
-        // DEBUG.
-        window.video = this.video;
       }
 
       watch(() => this.currentVideo, (newVideo, oldVideo) => {
-        if (newVideo.src !== oldVideo.src) {
+        if (newVideo && (!oldVideo || newVideo.src !== oldVideo.src)) {
           this.load(newVideo);
         }
       });
-      if (this.currentVideo.src) {
+      if (this.currentVideo && this.currentVideo.src) {
         this.load(this.currentVideo);
       }
+
+      // Debug.
       window.video = this.video;
     },
 
-    autoplay() {
-      this.video.play().catch(() => {
-        // autoplay was prevented.
-        this.playState = 'paused';
-        this.bigPlayButton = true;
-        if (this.showcontrols < 2) {
-          this.mouse(2);
-        }
-      });
+    setState(state) {
+      this.seeking = false;
+      this.playState = state;
     },
 
-    on_manifestloaded() {
+    onError() {
+      if (this.video) {
+        this.video.pause();
+        this.setState('pause');
+      }
+    },
+
+    autoplay() {
+      this.video.play().then(
+        () => {
+          const { season } = this.currentVideo;
+          const { episode } = this.currentVideo;
+          this.info = {};
+          this.info.line1 = this.currentVideo.title;
+          this.info.line2 = `Season ${season}, Episode ${episode}`;
+          this.info.line3 = this.currentVideo.seriesTitle;
+        },
+        () => {
+          // autoplay was prevented.
+          // console.log('autoplay prevented');
+          this.setState('paused');
+          this.bigPlayButton = true;
+          if (this.showcontrols < 2) {
+            this.mouse(2);
+          }
+        },
+      );
+    },
+
+    overlay() {
+      return this.bigPlayButton || (this.info && this.playState === 'paused');
+    },
+
+    onManifestloaded() {
       this.hls_loaded_metadata = true;
       if (this.metadata_loaded) {
-        this.on_loadedmetadata();
+        this.onLoadedmetadata();
       }
     },
 
@@ -221,7 +323,7 @@ export default defineComponent({
         for (let i = 0; i < this.video.textTracks.length; i += 1) {
           const t = this.video.textTracks[i];
           if (t.language === lang && t.kind === 'forced') {
-            this.on_texttrack(i);
+            this.onTexttrack(i);
             break;
           }
         }
@@ -229,7 +331,7 @@ export default defineComponent({
     },
     */
 
-    on_loadedmetadata() {
+    onLoadedmetadata() {
       this.currentTime = this.video.currentTime || 0;
       // console.log('duration now', this.duration, this.video.duration);
       if (!this.duration) {
@@ -245,14 +347,14 @@ export default defineComponent({
             });
           }
         }
-        this.on_texttracks_updated();
+        this.onTexttracks_updated();
       }
     },
 
-    on_texttracks_updated() {
+    onTexttracks_updated() {
       this.textTracks = [];
       this.textTrack = null;
-      if (!this.video.textTracks) {
+      if (!this.video || !this.video.textTracks) {
         return;
       }
 
@@ -265,10 +367,15 @@ export default defineComponent({
           });
         }
       }
-      this.on_texttrack_changed();
+      this.onTexttrack_changed();
     },
 
-    on_texttrack_changed() {
+    onTexttrack_changed() {
+      if (!this.video || !this.video.textTracks) {
+        this.textTracks = [];
+        this.textTrack = null;
+        return;
+      }
       let activeTrack = null;
       for (let i = 0; i < this.video.textTracks.length; i += 1) {
         const t = this.video.textTracks[i];
@@ -301,7 +408,7 @@ export default defineComponent({
       this.textTrack = activeTrack;
     },
 
-    on_audiotracks_updated() {
+    onAudiotracks_updated() {
       this.audioTracks = [];
       this.audioTrack = null;
       if (!this.video.audioTracks) {
@@ -320,7 +427,7 @@ export default defineComponent({
     },
 
     load(item) {
-      console.log('load method called', item);
+      console.log('Html5Video: load method called', item);
       if (this.hls) {
         this.hls.destroy();
         this.hls = null;
@@ -331,44 +438,49 @@ export default defineComponent({
       const url = new URL(item.src, window.location.origin).href;
 
       if (url.endsWith('.m3u8') && !this.nativeHls) {
-        console.log('creating new hls', this.video);
+        // console.log('creating new hls', this.video);
         const hlsConfig = {
           backBufferLength: 0,
           maxMaxBufferLength: 120,
         };
         this.hls = new Hls(hlsConfig);
-        this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.on_manifestloaded());
+        this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.onManifestloaded());
         this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { this.hls.loadSource(url); });
         this.hls.attachMedia(this.video);
       } else {
-        console.log('plain video load', url);
+        // console.log('plain video load', url);
         this.hls_loaded_metadata = true;
         this.video.src = url;
       }
     },
 
     // Event: play / pause / reload was clicked.
-    on_play() {
+    onPlay() {
       // console.log('play() state is', this.playState);
       if (this.playState === 'ended') {
         this.video.currentTime = 0;
       }
       if (this.playState === 'playing') {
+        // console.log('calling pause');
         this.video.pause();
       } else {
+        // console.log('calling play');
         this.video.play();
       }
       this.bigPlayButton = false;
     },
 
-    on_seek(newTime) {
+    onSeek(newTime) {
       if (this.playState === 'ended') {
-        this.playState = 'paused';
+        this.setState('paused');
+      }
+      if (this.playState === 'playing') {
+        this.seeking = true;
       }
       this.video.currentTime = newTime;
     },
 
-    on_texttrack(val) {
+    onTexttrack(val) {
       // console.log('texttrack', val);
       for (let i = 0; i < this.video.textTracks.length; i += 1) {
         this.video.textTracks[i].mode = 'disabled';
@@ -379,7 +491,7 @@ export default defineComponent({
       this.currentTextTrack = val;
     },
 
-    on_audiotrack(val) {
+    onAudiotrack(val) {
       this.audioTrack = val;
 
       if (this.hls) {
@@ -397,11 +509,11 @@ export default defineComponent({
       }
     },
 
-    on_volume(val) {
+    onVolume(val) {
       console.log('volume changed to', val);
     },
 
-    on_fullscreen() {
+    onFullscreen() {
       if (this.quasar.fullscreen.isActive) {
         this.quasar.fullscreen.exit().then(() => { this.fullScreenState = 'off'; });
       } else {
@@ -409,32 +521,49 @@ export default defineComponent({
       }
     },
 
-    on_menuactive(val) {
+    onMenactive(val) {
       // XXX FIXME doesn't work yet. QMenu events don't seem to fire.
       console.log(val);
       this.mouse(val ? 3 : 1);
     },
 
-    on_airplay() {
+    onAirplay() {
       this.video.webkitShowPlaybackTargetPicker();
     },
 
     container_clicked(touchEvent) {
-      console.log('container clicked');
-      if (touchEvent) {
-        this.isTouch = true;
+      this.el.focus();
+      if (this.ignoreClick) {
+        return;
       }
-      if (this.showcontrols === 0) {
-        this.mouse(1);
-        if (touchEvent) {
-          touchEvent.preventDefault();
+      // console.log('container clicked', touchEvent);
+      if (touchEvent) {
+        this.ignoreClick = true;
+        setTimeout(() => { this.ignoreClick = false; }, 10);
+        this.isTouch = true;
+        if (this.showcontrols === 0) {
+          this.mouse(1);
+          return;
         }
-        return true;
       }
       if (this.playState !== 'ended' && !touchEvent) {
-        this.on_play();
+        this.onPlay();
       }
-      return true;
+    },
+
+    relSeek(offset) {
+      // console.log('relseek', offset);
+      if (!this.duration) {
+        return;
+      }
+      let newTime = this.currentTime + offset;
+      if (newTime < 0) {
+        newTime = 0;
+      }
+      if (newTime > this.duration) {
+        newTime = this.duration;
+      }
+      this.onSeek(newTime);
     },
 
     touch(showcontrols, ev) {

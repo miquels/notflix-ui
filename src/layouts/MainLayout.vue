@@ -10,10 +10,11 @@
         </q-toolbar-title>
         <q-item v-show="store.state.showSearch" shrink class="col-auto q-pa-none">
           <q-input
-            :hidden="!showSearch"
+            v-if="showSearch"
             :modelValue="store.state.search"
             @update:modelValue="store.commit('search', $event)"
             dark
+            autofocus
             clearable
             hide-bottom-space
             dense
@@ -27,7 +28,7 @@
             flat
             icon="search"
             color="white"
-            @click="showSearch = !showSearch"
+            @click="toggleSearch"
           />
         </q-item>
         <q-tabs shrink class="col">
@@ -59,12 +60,18 @@
   </q-layout>
 </template>
 
+<style lang="scss">
+@import '~src/css/app.scss';
+</style>
+
 <script>
-import { ref } from 'vue';
+import { ref, onBeforeMount } from 'vue';
+import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
 import Chromecast from 'components/Chromecast.vue';
 import CastButton from 'components/CastButton.vue';
 import Play from 'components/Play.vue';
+import { isMobile } from '../lib/util.js';
 
 export default {
   components: {
@@ -73,16 +80,29 @@ export default {
     Play,
   },
   setup() {
-    const leftDrawerOpen = ref(false);
     const store = useStore();
+    const leftDrawerOpen = ref(false);
+    const showSearch = ref(false);
+    const mobile = isMobile();
+    const quasar = useQuasar();
+
+    onBeforeMount(() => {
+      if (!mobile && !quasar.platform.is.safari) {
+        const body = document.getElementsByTagName('BODY');
+        body[0].classList.add('pretty-scrollbar');
+      }
+    });
 
     return {
       leftDrawerOpen,
-      store,
-      showSearch: ref(false),
       toggleLeftDrawer() {
         leftDrawerOpen.value = !leftDrawerOpen.value;
       },
+      showSearch,
+      toggleSearch() {
+        showSearch.value = !showSearch.value;
+      },
+      store,
     };
   },
   methods: {

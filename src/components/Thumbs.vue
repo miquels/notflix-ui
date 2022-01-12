@@ -3,6 +3,7 @@
     <q-resize-observer @resize="onResize"/>
     <q-virtual-scroll
       class="thumbs-virtual-scroller"
+      :class="prettyScrollbar"
       :virtual-scroll-item-size="150"
       :virtual-scroll-slice-size="10"
       :items-fn="item_rows"
@@ -30,7 +31,6 @@
 </template>
 
 <style lang="scss">
-@import '~src/css/app.scss';
 .thumbs-container {
   --image-width: 100px;
   --image-height: 150px;
@@ -46,7 +46,6 @@
 }
 .thumbs-virtual-scroller {
   max-height: calc(100vh - 100px);
-  @include scrollbars;
 }
 .thumbs-thumb:hover {
   transform: scale(1.1);
@@ -138,6 +137,8 @@ export default defineComponent({
       return filteredItems;
     });
 
+    const prettyScrollbar = isMobile() ? '' : 'pretty-scrollbar';
+    console.log('prettyScrollbar:', prettyScrollbar);
     const posterSize = isMobile() ? 1 : 2;
     const config = new Config();
     return {
@@ -148,6 +149,7 @@ export default defineComponent({
       theItems,
       imgWidth: 0,
       imgHeight: 0,
+      prettyScrollbar,
       el: ref(null),
     };
   },
