@@ -13,6 +13,7 @@
     @keyup.right="relSeek(15)"
     ref="el"
   >
+    <video class="html5video-video" ref="video"></video>
     <div class="html5video-overlay column fit" v-if="overlay()">
       <div class="row justify-center items-center fit absolute">
         <div v-if="bigPlayButton" class="col-auto">
@@ -27,7 +28,6 @@
         </q-card-section>
       </q-card>
     </div>
-    <video class="html5video-video" ref="video"></video>
     <q-slide-transition :duration="500">
       <div
         class="html5video-controls"
@@ -57,6 +57,7 @@
            @fullscreen="onFullscreen"
            @menuActive="onMenactive"
            @airplay="onAirplay"
+           @keyUp.prevent="true"
         />
       </div>
     </q-slide-transition>
@@ -101,13 +102,13 @@
   left: 0px;
   bottom: 0px;
   right: 0px;
-  z-index: 1;
+  // z-index: 1;
 }
 .html5video-info {
   position: absolute;
   left: 10px;
   bottom: 60px;
-  z-index: 1;
+  // z-index: 1;
   background: none;
   @include stroke(2px, black);
   font-weight: 700;
@@ -194,6 +195,7 @@ export default defineComponent({
       bigPlayButton: ref(false),
       currentVideo: ref(store.state.currentVideo),
       ignoreClick: false,
+      wantAutoPlay: true,
       isTouch: false,
       isSafari,
       el: ref(null),
@@ -226,9 +228,11 @@ export default defineComponent({
       this.video.addEventListener('seeked', () => { this.seeking = false; });
       this.video.addEventListener('timeupdate', () => {
         // console.log('timeupdate, seeking is', this.seeking);
-        if (this.video && !this.seeking) {
-          this.currentTime = this.video.currentTime;
-        }
+        setTimeout(() => {
+          if (this.video && !this.seeking) {
+            this.currentTime = this.video.currentTime;
+          }
+        }, 10);
       });
       this.video.addEventListener('volumechange', () => { this.volume = this.video.volume; });
       if (this.video.audioTracks && !this.hls) {
@@ -278,6 +282,12 @@ export default defineComponent({
     },
 
     autoplay() {
+      // Only do this once. Otherwise, other 'canplay' events
+      // will suddenly start the video.
+      if (!this.wantAutoPlay) {
+        return;
+      }
+      this.wantAutoPlay = false;
       this.video.play().then(
         () => {
           const { season } = this.currentVideo;
@@ -466,14 +476,20 @@ export default defineComponent({
       this.bigPlayButton = false;
     },
 
-    onSeek(newTime) {
+    onSeek(newTime, fast) {
       if (this.playState === 'ended') {
         this.setState('paused');
       }
       if (this.playState === 'playing') {
         this.seeking = true;
       }
-      this.video.currentTime = newTime;
+      if (fast && this.video.fastSeek && !this.hls) {
+        // console.log('onSeek: fastSeek to', newTime);
+        this.video.fastSeek(newTime);
+      } else {
+        // console.log('onSeek: updating currentTime to', newTime);
+        this.video.currentTime = newTime;
+      }
     },
 
     onTexttrack(val) {
@@ -552,7 +568,7 @@ export default defineComponent({
       if (!this.duration) {
         return;
       }
-      let newTime = this.currentTime + offset;
+      let newTime = this.video.currentTime + offset;
       if (newTime < 0) {
         newTime = 0;
       }
@@ -560,6 +576,7 @@ export default defineComponent({
         newTime = this.duration;
       }
       this.onSeek(newTime);
+      // console.log('seek from', this.video.currentTime, 'to', newTime);
     },
 
     touch(showcontrols, ev) {
