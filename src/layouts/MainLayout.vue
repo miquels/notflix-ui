@@ -46,7 +46,7 @@
 
     <q-page-container>
       <router-view v-slot="{ Component }">
-        <keep-alive :include="['PageTvShows', 'PageMovies', 'TvShows', 'Movies', 'Thumbs']">
+        <keep-alive :include="keepAlive">
           <component :is="Component" />
         </keep-alive>
       </router-view>
@@ -93,6 +93,16 @@ export default {
       }
     });
 
+    const keepAlive = [
+      'PageTvShows',
+      'PageMovies',
+      'TvShows',
+      'Movies',
+      'Thumbs',
+      'PageTvShow',
+      'PageMovie',
+    ];
+
     return {
       leftDrawerOpen,
       toggleLeftDrawer() {
@@ -102,6 +112,7 @@ export default {
       toggleSearch() {
         showSearch.value = !showSearch.value;
       },
+      keepAlive,
       store,
     };
   },

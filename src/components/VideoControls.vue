@@ -1,8 +1,8 @@
 <template>
     <div class=videocontrols-container ref="el">
-      <div class="row q-mx-md videocontrols-label">
-        <q-badge color="blue" v-show="showLabel" class="videocontrols-label-badge q-pa-sm"
-           ref="badgeEl" :style="{ 'left': `${labelPos}px` }">{{ labelTime }}</q-badge>
+      <div class="row q-mx-md videocontrols-hover-label">
+        <q-badge color="blue" v-show="showLabel" class="videocontrols-hover-badge q-pa-sm"
+           ref="badgeEl" :style="{ 'left': `${labelPos}px` }">{{ badgeTime }}</q-badge>
       </div>
       <div class="row q-mx-md videocontrols-slider">
         <q-slider
@@ -13,8 +13,8 @@
            :max="duration || 1"
            :step="0"
            color="red"
-           label
-           :label-value="hhmmss(seekTo)"
+           :label="showLabel"
+           :label-value="hhmmss(currentTime)"
            dark
            @mouseleave="mouseleave($event)"
            @mousemove="mousemove($event)"
@@ -26,13 +26,13 @@
         <div class="col-auto q-ml-sm">
           <q-icon
             name="stop" v-if="stopButton" size="32px"
-            class="on-left videocontrols-hover" @click="$emit('stop')"
+            class="on-left hover-pointer" @click="$emit('stop')"
           />
           <q-icon
             :name="play_icon()" size="32px"
-            class="on-left videocontrols-hover" @click="$emit('play')"
+            class="on-left hover-pointer" @click="$emit('play')"
           />
-          <q-icon name="volume_up" size="32px" class="on-left videocontrols-hover"/>
+          <q-icon name="volume_up" size="32px" class="on-left hover-pointer"/>
           <span class="on-left" v-if="duration">{{ time_info() }}</span>
         </div>
         <div class="col"></div>
@@ -40,7 +40,7 @@
 
           <q-icon
             name="language" size="32px"
-            class="on-right videocontrols-hover" v-if="audioTracks.length > 1"
+            class="on-right hover-pointer" v-if="audioTracks.length > 1"
           >
             <q-menu
               anchor="top end"
@@ -64,7 +64,7 @@
 
           <q-icon
             name="closed_caption" size="32px"
-           class="on-right videocontrols-hover" v-if="textTracks.length"
+           class="on-right hover-pointer" v-if="textTracks.length"
           >
             <q-menu anchor="top end" self="bottom right" class="videocontrols-fix-zindex">
               <q-list style="min-width: 10em" bordered dense>
@@ -93,21 +93,21 @@
           <q-icon
             :name="airplay"
             size="32px"
-            class="on-right videocontrols-hover"
+            class="on-right hover-pointer"
             v-if="airplayState === 'available'"
             @click="$emit('airplay')"
           />
           <q-icon
             :name="cast_icon()"
             size="32px"
-            class="on-right videocontrols-hover"
+            class="on-right hover-pointer"
             v-if="castState && castState !== 'no_devices'"
             @click="$emit('cast')"
           />
           <q-icon
             :name="fullscreen_icon()"
             size="32px"
-            class="on-right videocontrols-hover"
+            class="on-right hover-pointer"
             v-if="!!fullScreenState"
             @click="$emit('fullscreen')"
           />
@@ -127,14 +127,11 @@
 .videocontrols-slider {
   position: relative;
 }
-.videocontrols-label{
+.videocontrols-hover-label{
   position: relative;
   overflow: hidden;
 }
-.videocontrols-hover:hover {
-  cursor: pointer;
-}
-.videocontrols-label-badge {
+.videocontrols-hover-badge {
   position: relative;
 }
 </style>
@@ -187,7 +184,7 @@ export default defineComponent({
     const el = ref(null);
     return {
       showLabel: ref(false),
-      labelTime: ref('00:00'),
+      badgeTime: ref('00:00'),
       labelPos: ref(0),
       badgeEl: ref(null),
       sliderEl: ref(null),
@@ -270,9 +267,9 @@ export default defineComponent({
       if (x < 0) x = 0;
       if (x > sliderWidth - badgeWidth) x = sliderWidth - badgeWidth;
 
-      this.showLabel = true;
+      this.showLabel = !!this.duration;
       this.labelPos = x;
-      this.labelTime = hhmmss(tm);
+      this.badgeTime = hhmmss(tm);
     },
   },
 });

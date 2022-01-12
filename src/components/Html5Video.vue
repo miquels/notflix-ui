@@ -9,8 +9,8 @@
     @mousemove="mouse(1, $event)"
     @mouseleave="mouse(0, $event)"
     @keyup.space="onPlay()"
-    @keyup.left="relSeek(-10)"
-    @keyup.right="relSeek(10)"
+    @keyup.left="relSeek(-15)"
+    @keyup.right="relSeek(15)"
     ref="el"
   >
     <div class="html5video-overlay column fit" v-if="overlay()">
@@ -108,13 +108,9 @@
   left: 10px;
   bottom: 60px;
   z-index: 1;
+  background: none;
+  @include stroke(2px, black);
   font-weight: 700;
-  text-shadow:
-   -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-     1px 1px 0 #000;
-  background: transparent;
 }
 .html5video-txt {
   white-space: nowrap;
