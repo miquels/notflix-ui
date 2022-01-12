@@ -10,6 +10,7 @@ const routes = [
       { path: '/movies/:collection/:name', component: () => import('pages/Movie.vue') },
       { path: '/movies/', component: () => import('pages/Movies.vue') },
       { path: '/local-player/', component: () => import('pages/LocalPlayer.vue') },
+      { path: '/ios-player/', component: () => import('pages/IosPlayer.vue') },
     ],
   },
 

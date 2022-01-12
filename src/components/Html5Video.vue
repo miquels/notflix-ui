@@ -198,6 +198,7 @@ export default defineComponent({
       wantAutoPlay: true,
       isTouch: false,
       isSafari,
+      quasar,
       el: ref(null),
     };
   },
@@ -558,7 +559,7 @@ export default defineComponent({
           return;
         }
       }
-      if (this.playState !== 'ended' && !touchEvent) {
+      if (this.playState !== 'ended') {
         this.onPlay();
       }
     },
