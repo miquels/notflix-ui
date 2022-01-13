@@ -1,24 +1,24 @@
 <template>
     <div class=videocontrols-container ref="el">
       <div class="row q-mx-md videocontrols-hover-label">
-        <q-badge color="blue" v-show="showLabel" class="videocontrols-hover-badge q-pa-sm"
-           ref="badgeEl" :style="{ 'left': `${labelPos}px` }">{{ badgeTime }}</q-badge>
+        <q-badge color="blue" v-show="showBadge" class="videocontrols-hover-badge q-pa-sm"
+           ref="badgeEl" :style="{ 'left': `${badgePos}px` }">{{ badgeTime }}</q-badge>
       </div>
       <div class="row q-mx-md videocontrols-slider">
         <q-slider
            :modelValue="currentTime"
-           @update:modelValue="val => seekTo = val"
+           @update:modelValue="(val) => { seekTo = val; showBadge = false; }"
            @change="seek(seekTo)"
            :min="0"
            :max="duration || 1"
            :step="0"
            color="red"
            :label="showLabel"
-           :label-value="hhmmss(currentTime)"
+           :label-value="hhmmss(seekTo)"
            dark
            @mouseleave="mouseleave($event)"
            @mousemove="mousemove($event)"
-           @touchmove.passive="mousemove($event)"
+           @touchmove.passive.capture="mousemove($event)"
            ref="sliderEl"
         />
       </div>
@@ -184,8 +184,9 @@ export default defineComponent({
     const el = ref(null);
     return {
       showLabel: ref(false),
+      showBadge: ref(false),
       badgeTime: ref('00:00'),
-      labelPos: ref(0),
+      badgePos: ref(0),
       badgeEl: ref(null),
       sliderEl: ref(null),
       cur_play_icon: 'play_arrow',
@@ -249,11 +250,22 @@ export default defineComponent({
     },
 
     mouseleave() {
-      this.showLabel = false;
+      // console.log('mouseleave', ev);
+      // this.showLabel = false;
+      this.showBadge = false;
     },
 
     mousemove(ev) {
       // console.log('mousemove');
+      if (!this.sliderEl || !this.badgeEl) {
+        return;
+      }
+      this.showLabel = !!this.duration;
+      this.showBadge = this.showLabel && !ev.touches;
+      if (!this.showBadge) {
+        return;
+      }
+
       const sliderWidth = this.sliderEl.$el.clientWidth;
       const badgeWidth = this.badgeEl.$el.clientWidth;
       const sliderPos = this.sliderEl.$el.getBoundingClientRect();
@@ -267,8 +279,7 @@ export default defineComponent({
       if (x < 0) x = 0;
       if (x > sliderWidth - badgeWidth) x = sliderWidth - badgeWidth;
 
-      this.showLabel = !!this.duration;
-      this.labelPos = x;
+      this.badgePos = x;
       this.badgeTime = hhmmss(tm);
     },
   },

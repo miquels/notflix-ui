@@ -54,7 +54,7 @@ export default defineComponent({
         }
       }
 
-      if (store.state.config.useHl || iosSafari) {
+      if (store.state.config.useHls || iosSafari) {
         info.src += '/master.m3u8';
       }
 
