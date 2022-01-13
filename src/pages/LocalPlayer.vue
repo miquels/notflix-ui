@@ -1,9 +1,7 @@
 <template>
-  <teleport to="body">
-    <div class="local-player-container z-top flex-center fit">
+    <div class="local-player-container flex-center fit">
       <Html5Video :src="src"/>
     </div>
-  </teleport>
 </template>
 
 <style>

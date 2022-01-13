@@ -2,7 +2,7 @@
   <div
     class="html5video-container"
     tabindex="0"
-    :class="{ 'cursor-none': !showControls }"
+    :class="{ 'cursor-none': !showControls && this.playState === 'playing' }"
     @touchend="mouseEvent(m.CLICK_CONTAINER, $event)"
     @click="mouseEvent(m.CLICK_CONTAINER, $event)"
     @mousemove="mouseEvent(m.MOVE_CONTAINER, $event)"
@@ -28,14 +28,7 @@
       </q-card>
     </div>
     <q-slide-transition :duration="500">
-      <div
-        class="html5video-controls"
-        v-if="showControls"
-        @mouseleave="mouseEvent(m.LEAVE_CONTROLS, $event)"
-        @mousemove.capture="mouseEvent(m.MOVE_CONTROLS, $event)"
-        @touchstart.capture.passive="mouseEvent(m.TOUCHSTART_CONTROLS, $event)"
-        @touchend.capture="mouseEvent(m.TOUCHEND_CONTROLS, $event)"
-      >
+      <div class="html5video-controls" v-if="showControls" ref="controlsEl">
         <VideoControls
            :playState="playState"
            :volume="volume"
@@ -54,9 +47,9 @@
            @texttrack="onTexttrack"
            @audiotrack="onAudiotrack"
            @fullscreen="onFullscreen"
-           @menuActive="onMenactive"
            @airplay="onAirplay"
            @keyUp.prevent="true"
+           @controlsActive="onControlsActive"
         />
       </div>
     </q-slide-transition>
@@ -146,6 +139,12 @@ const MouseEvent = {
 };
 Object.freeze(MouseEvent);
 
+const ControlsEvent = {
+  IDLE: 8,
+  ACTIVE: 9,
+};
+Object.freeze(ControlsEvent);
+
 const PlayEvent = {
   PLAYING: 'playing',
   PAUSED: 'paused',
@@ -158,6 +157,7 @@ const DisplayState = {
   TMPSHOW: 1,
   PAUSED: 2,
   PERMSHOW: 3,
+  CONTROLSACTIVE: 4,
 };
 Object.freeze(DisplayState);
 
@@ -227,6 +227,7 @@ export default defineComponent({
       wantAutoPlay: true,
       isSafari,
       quasar,
+      controlsEl: ref(null),
       el: ref(null),
       m: MouseEvent,
     };
@@ -581,12 +582,6 @@ export default defineComponent({
       }
     },
 
-    onMenactive(val) {
-      // XXX FIXME doesn't work yet. QMenu events don't seem to fire.
-      console.log(val);
-      this.mouse(val ? 3 : 1);
-    },
-
     onAirplay() {
       this.video.webkitShowPlaybackTargetPicker();
     },
@@ -608,6 +603,11 @@ export default defineComponent({
     },
 
     setDisplayState(state, timeout) {
+      // Clear timer.
+      if (this.displayTimer) {
+        clearTimeout(this.displayTimer);
+        this.displayTimer = null;
+      }
       // console.log('setDisplayState', state, timeout);
 
       if (state === DisplayState.HIDDEN) {
@@ -635,85 +635,68 @@ export default defineComponent({
       this.displayState = state;
     },
 
+    onControlsActive(active) {
+      this.handleEvent(active ? ControlsEvent.ACTIVE : ControlsEvent.IDLE);
+    },
+
+    fromControls(ev) {
+      let ret = false;
+      Object.values(ev.composedPath()).forEach((e) => {
+        if (e === this.controlsEl) {
+          ret = true;
+        }
+      });
+      return ret;
+    },
+
     mouseEvent(ev, nativeEv) {
-      // We process only the first, and the top event.
-      if (this.ignoreMouse
-          && ev !== MouseEvent.MOVE_CONTROLS
-          && ev !== MouseEvent.LEAVE_CONTROLS
-          && ev !== MouseEvent.TOUCHSTART_CONTROLS
-          && ev !== MouseEvent.TOUCHEND_CONTROLS) {
+      if (nativeEv.touches) {
+        this.isTouch = true;
+      }
+      if (this.isTouch && !nativeEv.touches) {
         return;
       }
-
-      // console.log('mouse', this.showcontrols, showcontrols, this.playState);
-      if (ev !== MouseEvent.MOVE_CONTAINER) {
-        this.ignoreMouse = true;
-        if (this.denderTimer) {
-          clearTimeout(this.denderTimer);
-        }
-        this.denderTimer = setTimeout(() => { this.ignoreMouse = false; }, 20);
+      if (this.fromControls(nativeEv)) {
+        return;
       }
-
-      // This could be a spurious mouse event because of teleported elements.
-      // Check for it, and ignore it if so. Still it might mess up state :(
-      /*
-      if (ev === MouseEvent.LEAVE_CONTAINER && !nativeEv.touches) {
-        if (ev.layerX >= 0 && ev.layerX < this.el.clientWidth
-            && ev.layerY >= 0 && ev.layerY < this.el.clientHeight) {
-          // eslint-disable-next-line
-          // console.log('bad mouseleave', ev);
-          return;
-        }
+      // console.log('mouseEvent', ev, nativeEv);
+      if (!document.hasFocus()
+          && ev !== MouseEvent.LEAVE_CONTROLS
+          && ev !== MouseEvent.LEAVE_CONTAINER) {
+        return;
       }
-      */
-      // if (ev !== 2) console.log('displayState', this.displayState, 'mouseEvent', ev, nativeEv);
-      // console.log('displayState', this.displayState, 'mouseEvent', ev, nativeEv);
       this.handleEvent(ev, nativeEv);
     },
 
-    handleEvent(ev, nativeEv) {
+    handleEvent(ev) {
       // Clear timer.
       if (this.displayTimer) {
         clearTimeout(this.displayTimer);
         this.displayTimer = null;
       }
 
+      const canHide = this.displayState < DisplayState.PAUSED
+                      || this.playState === 'playing';
+
+      if (ev === ControlsEvent.ACTIVE) {
+        this.setDisplayState(DisplayState.CONTROLSACTIVE);
+      }
+
+      if (ev === ControlsEvent.IDLE && canHide) {
+        // console.log('ControlsEvent.IDLE');
+        this.setDisplayState(DisplayState.HIDDEN, 2000);
+      }
+
       if (ev === MouseEvent.CLICK_CONTAINER) {
         this.el.focus();
-        if (nativeEv.touches && this.displayState === DisplayState.HIDDEN) {
+        if (this.isTouch && this.displayState === DisplayState.HIDDEN) {
           this.setDisplayState(DisplayState.TMPSHOW, 4000);
           return;
         }
         if (this.displayState === DisplayState.TMPSHOW) {
-          this.setDisplayState(DisplayState.TMPSHOW, 1000);
+          this.setDisplayState(DisplayState.TMPSHOW, 2000);
         }
-        if (this.displayState !== DisplayState.PERMSHOW) {
-          this.onPlay();
-        }
-        return;
-      }
-
-      if (ev === MouseEvent.MOVE_CONTAINER) {
-        if (this.displayState < DisplayState.PAUSED) {
-          this.setDisplayState(DisplayState.TMPSHOW, 1000);
-        }
-        return;
-      }
-
-      if (ev === MouseEvent.LEAVE_CONTAINER) {
-        this.setDisplayState(DisplayState.HIDDEN, 2000);
-      }
-
-      if (ev === MouseEvent.MOVE_CONTROLS || ev === MouseEvent.TOUCHSTART_CONTROLS) {
-        this.setDisplayState(DisplayState.PERMSHOW);
-      }
-
-      if (ev === MouseEvent.LEAVE_CONTROLS) {
-        this.setDisplayState(DisplayState.HIDDEN, 2000);
-      }
-
-      if (ev === MouseEvent.TOUCHEND_CONTROLS) {
-        this.setDisplayState(DisplayState.TMPSHOW, 2000);
+        this.onPlay();
       }
 
       if (ev === PlayEvent.PAUSED) {
@@ -726,6 +709,18 @@ export default defineComponent({
         if (this.displayState !== DisplayState.HIDDEN) {
           this.setDisplayState(DisplayState.HIDDEN, 1000);
         }
+      }
+
+      if (this.displayState === DisplayState.CONTROLSACTIVE) {
+        return;
+      }
+
+      if (ev === MouseEvent.MOVE_CONTAINER && canHide) {
+        this.setDisplayState(DisplayState.TMPSHOW, 1000);
+      }
+
+      if (ev === MouseEvent.LEAVE_CONTAINER && canHide) {
+        this.setDisplayState(DisplayState.HIDDEN, 2000);
       }
     },
   },
