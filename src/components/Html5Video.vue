@@ -22,9 +22,9 @@
       </div>
       <q-card flat class="html5video-info q-ml-lg row" v-if="info">
         <q-card-section>
-          <div v-if="info.line1" class="text-h2 html5video-txt">{{ info.line1 }}</div>
-          <div v-if="info.line2" class="text-h5 html5video-txt">{{ info.line2 }}</div>
-          <div v-if="info.line3" class="text-h4 html5video-txt">{{ info.line3 }}</div>
+          <div v-if="info.line1" class="scaled-text-h2 html5video-txt">{{ info.line1 }}</div>
+          <div v-if="info.line2" class="scaled-text-h5 html5video-txt">{{ info.line2 }}</div>
+          <div v-if="info.line3" class="scaled-text-h4 html5video-txt">{{ info.line3 }}</div>
         </q-card-section>
       </q-card>
     </div>
@@ -97,7 +97,7 @@
 }
 .html5video-info {
   position: absolute;
-  left: 10px;
+  left: 0px;
   bottom: 60px;
   background: none;
   @include stroke();
@@ -107,6 +107,30 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: clamp(300px, 55%, 1400px);
+}
+.scaled-text-h2 {
+  font-size: clamp(1.5rem, 0.6196rem + 3.9130vw, 3.75rem);
+  line-height: clamp(1.5rem, 0.6196rem + 3.9130vw, 3.75rem);
+  font-weight: 300;
+  white-space: normal;
+  @include stroke();
+  // line-height: 3.75rem;
+  // letter-spacing: -0.00833em;
+}
+.scaled-text-h4 {
+  font-size: clamp(1.2rem, 0.8380rem + 1.6087vw, 2.125rem);
+  font-weight: 400;
+  @include stroke();
+  // line-height: 2.5rem;
+  // letter-spacing: 0.00735em;
+}
+.scaled-text-h5 {
+  font-size: clamp(1rem, 0.8043rem + 0.8696vw, 1.5rem);
+  font-weight: 400;
+  @include stroke();
+  // line-height: 2rem;
+  // letter-spacing: normal;
 }
 </style>
 
