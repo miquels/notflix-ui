@@ -20,13 +20,27 @@
   scrollbar-color: $foreground-color $background-color;
 }
 
-@mixin stroke($width, $color) {
+@mixin stroke2(
+  $width: 1px,
+  $color: black
+) {
   $shadow: ();
   @for $i from -$width through $width {
-    $shadow: append($shadow,#{$width}px #{$i}px $color, comma);
-    $shadow: append($shadow,#{-$width}px #{$i}px $color, comma);
-    $shadow: append($shadow,#{$i}px #{$width}px $color, comma);
-    $shadow: append($shadow,#{$i}px #{-$width}px $color, comma);
+    $shadow: append($shadow,#{$width} #{$i} $color, comma);
+    $shadow: append($shadow,#{-$width} #{$i} $color, comma);
+    $shadow: append($shadow,#{$i} #{$width} $color, comma);
+    $shadow: append($shadow,#{$i} #{-$width} $color, comma);
   }
   text-shadow: $shadow;
+}
+
+@mixin stroke(
+  $width: 1px,
+  $color: black
+) {
+  text-shadow:
+   -$width $width 0 $color,
+    $width -$width 0 $color,
+    -$width $width 0 $color,
+     $width $width 0 $color;
 }

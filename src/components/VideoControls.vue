@@ -46,7 +46,7 @@
             <q-menu
               anchor="top end"
               self="bottom right"
-              z-top
+              class="videocontrols-fix-zindex"
               @show="menuOpen()"
               @hide="menuClose()"
             >
@@ -132,6 +132,9 @@
 }
 .videocontrols-slider {
   position: relative;
+}
+.videocontrols-fix-zindex {
+  z-index: 7001;
 }
 </style>
 <script>

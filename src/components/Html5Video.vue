@@ -7,6 +7,7 @@
     @click="mouseEvent(m.CLICK_CONTAINER, $event)"
     @mousemove="mouseEvent(m.MOVE_CONTAINER, $event)"
     @mouseleave="mouseEvent(m.LEAVE_CONTAINER, $event)"
+    @keyup.f="onFullscreen()"
     @keyup.space="onPlay()"
     @keyup.left="relSeek(-15)"
     @keyup.right="relSeek(15)"
@@ -48,7 +49,7 @@
            @audiotrack="onAudiotrack"
            @fullscreen="onFullscreen"
            @airplay="onAirplay"
-           @keyUp.prevent="true"
+           @keyup.prevent="true"
            @controlsActive="onControlsActive"
         />
       </div>
@@ -77,8 +78,7 @@
 .html5video-video::cue {
   color: white;
   background: none;
-  text-shadow: none;
-  @include stroke(2px, black);
+  @include stroke();
 }
 .html5video-controls {
   position: absolute;
@@ -94,15 +94,13 @@
   left: 0px;
   bottom: 0px;
   right: 0px;
-  // z-index: 1;
 }
 .html5video-info {
   position: absolute;
   left: 10px;
   bottom: 60px;
-  // z-index: 1;
   background: none;
-  @include stroke(2px, black);
+  @include stroke();
   font-weight: 700;
 }
 .html5video-txt {
@@ -132,10 +130,6 @@ const MouseEvent = {
   CLICK_CONTAINER: 1,
   MOVE_CONTAINER: 2,
   LEAVE_CONTAINER: 3,
-  MOVE_CONTROLS: 4,
-  LEAVE_CONTROLS: 5,
-  TOUCHSTART_CONTROLS: 6,
-  TOUCHEND_CONTROLS: 7,
 };
 Object.freeze(MouseEvent);
 
@@ -156,8 +150,7 @@ const DisplayState = {
   HIDDEN: 0,
   TMPSHOW: 1,
   PAUSED: 2,
-  PERMSHOW: 3,
-  CONTROLSACTIVE: 4,
+  CONTROLSACTIVE: 3,
 };
 Object.freeze(DisplayState);
 
@@ -258,12 +251,10 @@ export default defineComponent({
       this.video.addEventListener('seeking', () => { this.seeking = true; });
       this.video.addEventListener('seeked', () => { this.seeking = false; });
       this.video.addEventListener('timeupdate', () => {
-        // console.log('timeupdate, seeking is', this.seeking);
-        setTimeout(() => {
-          if (this.video && !this.seeking) {
-            this.currentTime = this.video.currentTime;
-          }
-        }, 10);
+        console.log('timeupdate, seeking is', this.seeking);
+        if (this.video && (!this.seeking || this.playState !== 'playing')) {
+          this.currentTime = this.video.currentTime;
+        }
       });
       this.video.addEventListener('volumechange', () => { this.volume = this.video.volume; });
       if (this.video.audioTracks && !this.hls) {
@@ -578,7 +569,7 @@ export default defineComponent({
       if (this.quasar.fullscreen.isActive) {
         this.quasar.fullscreen.exit().then(() => { this.fullScreenState = 'off'; });
       } else {
-        this.quasar.fullscreen.request().then(() => { this.fullScreenState = 'on'; });
+        this.quasar.fullscreen.request(this.el).then(() => { this.fullScreenState = 'on'; });
       }
     },
 
@@ -660,9 +651,7 @@ export default defineComponent({
         return;
       }
       // console.log('mouseEvent', ev, nativeEv);
-      if (!document.hasFocus()
-          && ev !== MouseEvent.LEAVE_CONTROLS
-          && ev !== MouseEvent.LEAVE_CONTAINER) {
+      if (!document.hasFocus() && ev !== MouseEvent.LEAVE_CONTAINER) {
         return;
       }
       this.handleEvent(ev, nativeEv);
