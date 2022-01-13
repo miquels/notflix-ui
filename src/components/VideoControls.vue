@@ -1,24 +1,25 @@
 <template>
-    <div class=videocontrols-container ref="el">
-      <div class="row q-mx-md videocontrols-hover-label">
-        <q-badge color="blue" v-show="showBadge" class="videocontrols-hover-badge q-pa-sm"
-           ref="badgeEl" :style="{ 'left': `${badgePos}px` }">{{ badgeTime }}</q-badge>
-      </div>
+    <div
+       class=videocontrols-container
+       ref="el"
+       @mouseleave="onMouseLeave($event)"
+       @mousemove.capture="onMouseMove($event)"
+       @touchstart.passive.capture="onTouchStart($event)"
+       @touchend.capture="onTouchEnd($event)"
+    >
       <div class="row q-mx-md videocontrols-slider">
         <q-slider
            :modelValue="currentTime"
-           @update:modelValue="(val) => { seekTo = val; showBadge = false; }"
-           @change="seek(seekTo)"
+           @update:modelValue="(val) => { seekTo = val; }"
+           @change="seek(seekTo); onSliderFocusOut()"
+           @mousedown.capture="onSliderFocusIn()"
            :min="0"
            :max="duration || 1"
            :step="0"
            color="red"
-           :label="showLabel"
-           :label-value="hhmmss(seekTo)"
+           :label="!!this.duration"
+           :label-value="hhmmss(seekTo || currentTime)"
            dark
-           @mouseleave="mouseleave($event)"
-           @mousemove="mousemove($event)"
-           @touchmove.passive.capture="mousemove($event)"
            ref="sliderEl"
         />
       </div>
@@ -45,7 +46,9 @@
             <q-menu
               anchor="top end"
               self="bottom right"
-              class="videocontrols-fix-zindex"
+              z-top
+              @show="menuOpen()"
+              @hide="menuClose()"
             >
               <q-list style="min-width: 10em" bordered dense>
                 <q-item
@@ -66,7 +69,13 @@
             name="closed_caption" size="32px"
            class="on-right hover-pointer" v-if="textTracks.length"
           >
-            <q-menu anchor="top end" self="bottom right" class="videocontrols-fix-zindex">
+            <q-menu
+              anchor="top end"
+              self="bottom right"
+              class="videocontrols-fix-zindex"
+              @show="menuOpen()"
+              @hide="menuClose()"
+            >
               <q-list style="min-width: 10em" bordered dense>
                 <q-item
                   v-for="s in textTracks"
@@ -121,17 +130,7 @@
   position: relative;
   width: 100%;
 }
-.videocontrols-fix-zindex {
-  z-index: 8000;
-}
 .videocontrols-slider {
-  position: relative;
-}
-.videocontrols-hover-label{
-  position: relative;
-  overflow: hidden;
-}
-.videocontrols-hover-badge {
   position: relative;
 }
 </style>
@@ -145,7 +144,7 @@ import { hhmmss } from '../lib/util.js';
 
 export default defineComponent({
   name: 'VideoControls',
-  emits: ['play', 'seek', 'volume', 'texttrack', 'audiotrack', 'fullscreen', 'cast', 'stop'],
+  emits: ['play', 'seek', 'volume', 'texttrack', 'audiotrack', 'fullscreen', 'cast', 'stop', 'controlsActive'],
 
   props: {
     currentTime: Number,
@@ -184,14 +183,11 @@ export default defineComponent({
     const el = ref(null);
     return {
       showLabel: ref(false),
-      showBadge: ref(false),
-      badgeTime: ref('00:00'),
-      badgePos: ref(0),
-      badgeEl: ref(null),
-      sliderEl: ref(null),
       cur_play_icon: 'play_arrow',
-      hhmmss,
+      isActive: false,
+      isMenuOpen: false,
       seekTo: 0,
+      hhmmss,
       el,
     };
   },
@@ -237,50 +233,78 @@ export default defineComponent({
       return 'cast';
     },
 
-    menuActive(ev) {
-      console.log(ev);
-    },
-
     seek(seekTo) {
       const newTime = toRaw(seekTo);
       this.$emit('seek', Math.floor(newTime));
+      this.seekTo = 0;
       if (this.playState === 'ended') {
         this.$emit('play');
       }
     },
 
-    mouseleave() {
-      // console.log('mouseleave', ev);
-      // this.showLabel = false;
-      this.showBadge = false;
+    menuOpen() {
+      if (!this.isActive) {
+        this.$emit('controlsActive', true);
+      }
+      this.isActive = true;
+      this.isMenuOpen = true;
     },
 
-    mousemove(ev) {
-      // console.log('mousemove');
-      if (!this.sliderEl || !this.badgeEl) {
-        return;
+    menuClose() {
+      this.$emit('controlsActive', false);
+      this.isMenuOpen = false;
+    },
+
+    onMouseMove() {
+      if (!document.hasFocus()) return;
+      if (!this.isActive && !this.isMenuOpen) {
+        this.$emit('controlsActive', true);
       }
-      this.showLabel = !!this.duration;
-      this.showBadge = this.showLabel && !ev.touches;
-      if (!this.showBadge) {
-        return;
+      this.isActive = true;
+    },
+
+    onMouseLeave() {
+      if (this.isTouch) return;
+      if (this.isActive && !this.isMenuOpen) {
+        this.$emit('controlsActive', false);
       }
+      // console.log('onMouseLeave');
+      this.isActive = false;
+    },
 
-      const sliderWidth = this.sliderEl.$el.clientWidth;
-      const badgeWidth = this.badgeEl.$el.clientWidth;
-      const sliderPos = this.sliderEl.$el.getBoundingClientRect();
+    onTouchStart() {
+      this.isTouch = true;
+      if (!this.isActive && !this.isMenuOpen) {
+        this.$emit('controlsActive', true);
+      }
+      this.isActive = true;
+    },
 
-      let pos = ev.pageX - sliderPos.left;
-      if (pos < 0) pos = 0;
-      if (pos > sliderWidth) pos = sliderWidth;
-      const tm = (pos / sliderWidth) * this.duration;
+    onTouchEnd() {
+      this.isTouch = true;
+      if (this.isActive && !this.isMenuOpen) {
+        this.$emit('controlsActive', false);
+      }
+      this.isActive = false;
+    },
 
-      let x = pos - badgeWidth / 2;
-      if (x < 0) x = 0;
-      if (x > sliderWidth - badgeWidth) x = sliderWidth - badgeWidth;
+    onSliderFocusIn() {
+      if (this.isTouch) return;
+      // console.log('sliderFocusIn');
+      if (!this.isActive) {
+        this.$emit('controlsActive', true);
+      }
+      this.isActive = true;
+      this.isMenuOpen = true;
+    },
 
-      this.badgePos = x;
-      this.badgeTime = hhmmss(tm);
+    onSliderFocusOut() {
+      if (this.isTouch) return;
+      // console.log('sliderFocusOut');
+      if (!this.isActive) {
+        this.$emit('controlsActive', false);
+      }
+      this.isMenuOpen = false;
     },
   },
 });
