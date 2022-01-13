@@ -47,7 +47,7 @@
     <q-page-container>
       <router-view v-slot="{ Component }">
         <keep-alive :include="keepAlive">
-          <component :is="Component" />
+          <component :is="Component" :key="$route.fullPath"/>
         </keep-alive>
       </router-view>
     </q-page-container>
@@ -98,9 +98,11 @@ export default {
       'PageMovies',
       'TvShows',
       'Movies',
+      // 'PageTvShow',
+      // 'PageMovie',
+      // 'TvShow',
+      // 'Movie',
       'Thumbs',
-      'PageTvShow',
-      'PageMovie',
     ];
 
     return {
