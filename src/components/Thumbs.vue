@@ -81,7 +81,6 @@ import {
 import { scroll } from 'quasar';
 import Image from 'components/Image.vue';
 import { isMobile } from '../lib/util.js';
-import Config from '../lib/config.js';
 
 export default defineComponent({
   name: 'Thumbs',
@@ -140,9 +139,7 @@ export default defineComponent({
     const prettyScrollbar = isMobile() ? '' : 'pretty-scrollbar';
     console.log('prettyScrollbar:', prettyScrollbar);
     const posterSize = isMobile() ? 1 : 2;
-    const config = new Config();
     return {
-      apiUrl: config.apiUrl,
       posterSize,
       prevPosterSize: null,
       thumbsPerRow: ref(null),
@@ -231,8 +228,7 @@ export default defineComponent({
       }
       const w = this.imgWidth;
       const h = this.imgHeight;
-      const url = `${this.apiUrl}${item.baseurl}/${item.path}/${item.poster}`;
-      return (`${url}?w=${w}&h=${h}&q=70`);
+      return (`${item.poster}?w=${w}&h=${h}&q=70`);
     },
   },
 });

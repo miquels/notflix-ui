@@ -73,7 +73,6 @@ import {
   ref,
 } from 'vue';
 import { useStore } from 'vuex';
-import Config from '../lib/config.js';
 import Api from '../lib/api.js';
 
 export default defineComponent({
@@ -93,8 +92,7 @@ export default defineComponent({
     const emitter = inject('emitter');
     const store = useStore();
 
-    const config = new Config();
-    const api = new Api({ url: config.apiUrl });
+    const api = new Api();
     return {
       fanart: ref(null),
       poster: ref(null),

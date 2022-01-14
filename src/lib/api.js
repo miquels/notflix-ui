@@ -13,6 +13,7 @@
  * var movie = api.getitem(collectionname, showname)
  */
 
+import { useStore } from 'vuex';
 import { joinpath } from './util.js';
 
 const objectCache = {};
@@ -84,8 +85,14 @@ function updateMovie(apiUrl, theMovie) {
 export default class API {
   url;
 
-  constructor({ url }) {
-    this.url = url;
+  constructor() {
+    // Make this a singleton.
+    if (API._instance) {
+      return API._instance;
+    }
+    API._instance = this;
+    const store = useStore();
+    this.url = store.getters.config.apiUrl;
   }
 
   getObject(path) {

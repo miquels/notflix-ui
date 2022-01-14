@@ -96,7 +96,6 @@ import {
   ref,
 } from 'vue';
 import { useStore } from 'vuex';
-import Config from '../lib/config.js';
 import Api from '../lib/api.js';
 import Episode from './Episode.vue';
 
@@ -117,8 +116,7 @@ export default defineComponent({
       const instance = getCurrentInstance();
       instance.ctx.on_mounted();
     });
-    const config = new Config();
-    const api = new Api({ url: config.apiUrl });
+    const api = new Api();
     const store = useStore();
     const emitter = inject('emitter');
     return {

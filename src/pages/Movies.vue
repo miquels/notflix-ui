@@ -20,7 +20,6 @@ import {
 import { useStore } from 'vuex';
 import Thumbs from 'components/Thumbs.vue';
 import API from '../lib/api.js';
-import Config from '../lib/config.js';
 
 export default defineComponent({
   name: 'PageMovies',
@@ -33,8 +32,7 @@ export default defineComponent({
     const items = ref([]);
 
     onBeforeMount(() => {
-      const config = new Config();
-      const api = new API({ url: `${config.apiUrl}/` });
+      const api = new API();
       api.getItems('Movies').then((theItems) => {
         // Sort by last added.
         const sortItems = [...theItems];

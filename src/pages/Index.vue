@@ -18,12 +18,10 @@ import {
   onMounted,
   ref,
 } from 'vue';
-import Config from '../lib/config.js';
 
 export default defineComponent({
   name: 'PageIndex',
   setup() {
-    const config = new Config();
     onMounted(() => {
       const instance = getCurrentInstance();
       const src = config.samples[0];

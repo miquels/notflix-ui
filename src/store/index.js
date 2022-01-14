@@ -22,6 +22,7 @@ export default store(() => {
       config: {
         useHls: true,
         castUseShakaHack: true,
+        apiUrl: '',
       },
     }),
 
@@ -36,24 +37,46 @@ export default store(() => {
     },
     */
 
+    getters: {
+      config(state) {
+        return state.config;
+      },
+    },
+
     mutations: {
+      // current Chromecast state (no_devices, not_connected, connected).
       castState(state, cast) {
         state.castState = cast;
         if (cast !== 'connected') {
           state.castActive = false;
         }
       },
+
+      // show the Chromecast bottom bar?
       castActive(state, active) {
         state.castActive = active;
       },
+
+      // search as-we-type.
       search(state, value) {
         state.search = value || '';
       },
+
+      // show 'search' in the menubar?
       showSearch(state, value) {
         state.showSearch = value || false;
       },
+
+      // video currently playing (or about to be played).
       currentVideo(state, value) {
         state.currentVideo = value;
+      },
+
+      // config from remote /config.json (if any).
+      remoteConfig(state, config) {
+        if (config.apiUrl) {
+          state.config.apiUrl = config.apiUrl;
+        }
       },
     },
 

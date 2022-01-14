@@ -21,7 +21,6 @@ import {
 import { useStore } from 'vuex';
 import Thumbs from 'components/Thumbs.vue';
 import API from '../lib/api.js';
-import Config from '../lib/config.js';
 
 export default defineComponent({
   name: 'PageTvShows',
@@ -34,8 +33,7 @@ export default defineComponent({
     const items = ref([]);
 
     onBeforeMount(() => {
-      const config = new Config();
-      const api = new API({ url: `${config.apiUrl}/` });
+      const api = new API();
       api.getItems('TV%20Shows').then((theItems) => {
         // sort by lastUpdated.
         const sortItems = [...theItems];
