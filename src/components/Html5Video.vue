@@ -102,12 +102,12 @@
   background: none;
   @include stroke();
   font-weight: 700;
+  max-width: max(320px, 55%);
 }
 .html5video-txt {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: clamp(300px, 55%, 1400px);
 }
 .scaled-text-h2 {
   font-size: clamp(1.5rem, 0.6196rem + 3.9130vw, 3.75rem);

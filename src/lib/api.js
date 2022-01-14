@@ -16,10 +16,6 @@
 import { useStore } from 'vuex';
 import { joinpath } from './util.js';
 
-const objectCache = {};
-const requestsPending = {};
-let idCounter = 1;
-
 function updateNfo(base, item) {
   if (!item.nfo) {
     item.nfo = {};
@@ -83,8 +79,6 @@ function updateMovie(apiUrl, theMovie) {
 }
 
 export default class API {
-  url;
-
   constructor() {
     // Make this a singleton.
     if (API._instance) {
@@ -92,15 +86,18 @@ export default class API {
     }
     API._instance = this;
     const store = useStore();
-    this.url = store.getters.config.apiUrl;
+    this.url = store.state.config.apiUrl;
+    this.objectCache = {};
+    this.requestsPending = {};
+    this.idCounter = 1;
   }
 
   getObject(path) {
-    if (objectCache[path] !== undefined) {
-      return Promise.resolve(objectCache[path]);
+    if (this.objectCache[path] !== undefined) {
+      return Promise.resolve(this.objectCache[path]);
     }
 
-    let pending = requestsPending[path];
+    let pending = this.requestsPending[path];
     if (pending !== undefined && pending.length > 0) {
       return new Promise((resolve, reject) => {
         pending.push({ resolve, reject });
@@ -110,7 +107,7 @@ export default class API {
     const reqUrl = joinpath(this.url, path);
     // console.log('getObj url path req', this.url, path, reqUrl)
     pending = [];
-    requestsPending[path] = pending;
+    this.requestsPending[path] = pending;
     // console.log('DBG: api.getObject: requesting', reqUrl)
 
     return new Promise((resolve, reject) => {
@@ -124,10 +121,10 @@ export default class API {
         }
         // console.log('response:', resp)
         resp.json().then((obj) => {
-          obj.id = idCounter;
-          idCounter += 1;
+          obj.id = this.idCounter;
+          this.idCounter += 1;
           const frozenObj = Object.freeze(obj);
-          objectCache[path] = frozenObj;
+          this.objectCache[path] = frozenObj;
           while (pending.length > 0) {
             const p = pending.shift();
             p.resolve(frozenObj);
