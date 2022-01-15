@@ -36,10 +36,9 @@ function updateEpisode(show, episode) {
   }
 }
 
-function updateShow(apiUrl, theShow) {
+function updateShow(theShow) {
   // console.log('updateShow', apiUrl, theShow);
   const show = JSON.parse(JSON.stringify(theShow));
-  show.path = joinpath(apiUrl, show.baseurl, show.path);
   // console.log('show.path is now', show.path);
   updateNfo(show, show);
   if (show.banner) show.banner = joinpath(show.path, show.banner);
@@ -65,9 +64,8 @@ function updateShow(apiUrl, theShow) {
   return show;
 }
 
-function updateMovie(apiUrl, theMovie) {
+function updateMovie(theMovie) {
   const movie = JSON.parse(JSON.stringify(theMovie));
-  movie.path = joinpath(apiUrl, movie.baseurl, movie.path);
   updateNfo(movie, movie);
   if (movie.banner) movie.banner = joinpath(movie.path, movie.banner);
   if (movie.fanart) movie.fanart = joinpath(movie.path, movie.fanart);
@@ -121,8 +119,21 @@ export default class API {
         }
         // console.log('response:', resp)
         resp.json().then((obj) => {
-          obj.id = this.idCounter;
-          this.idCounter += 1;
+          const updateObj = (theObj) => {
+            // Give each object an id.
+            theObj.id = this.idCounter;
+            this.idCounter += 1;
+            // Make obj.path absolute.
+            if (theObj.baseurl && theObj.path) {
+              theObj.path = joinpath(this.url, theObj.baseurl, theObj.path);
+              delete theObj.baseurl;
+            }
+          };
+          if (Array.isArray(obj)) {
+            obj.forEach(updateObj);
+          } else {
+            updateObj(obj);
+          }
           const frozenObj = Object.freeze(obj);
           this.objectCache[path] = frozenObj;
           while (pending.length > 0) {
@@ -161,12 +172,12 @@ export default class API {
 
   async getShowById(collName, show) {
     const theShow = await this.getItem(collName, show);
-    return updateShow(this.url, theShow);
+    return updateShow(theShow);
   }
 
   async getShow(collName, show) {
     const theShow = await this.getItem(collName, show);
-    return updateShow(this.url, theShow);
+    return updateShow(theShow);
   }
 
   getMovies(collName) {
@@ -175,6 +186,6 @@ export default class API {
 
   async getMovie(collName, movie) {
     const theMovie = await this.getItem(collName, movie);
-    return updateMovie(this.url, theMovie);
+    return updateMovie(theMovie);
   }
 }

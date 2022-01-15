@@ -5,7 +5,7 @@
       class="thumbs-virtual-scroller"
       :class="prettyScrollbar"
       :virtual-scroll-item-size="150"
-      :virtual-scroll-slice-size="10"
+      :virtual-scroll-slice-size="3"
       :items-fn="item_rows"
       :items-size="item_nrows()"
     >
@@ -228,7 +228,7 @@ export default defineComponent({
       }
       const w = this.imgWidth;
       const h = this.imgHeight;
-      return (`${item.poster}?w=${w}&h=${h}&q=70`);
+      return (`${item.path}/${item.poster}?w=${w}&h=${h}&q=70`);
     },
   },
 });
