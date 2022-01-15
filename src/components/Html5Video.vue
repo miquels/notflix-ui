@@ -668,8 +668,7 @@ export default defineComponent({
     },
 
     fromControls(ev) {
-      // console.log(ev);
-      if (ev.touches && this.displayState === DisplayState.MENU_ACTIVE) {
+      if (ev.touches && this.displayState === DisplayState.CONTROLSACTIVE) {
         return true;
       }
       let ret = false;
