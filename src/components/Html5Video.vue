@@ -142,6 +142,7 @@ import {
   defineComponent,
   getCurrentInstance,
   onUnmounted,
+  onBeforeMount,
   onMounted,
   ref,
   watch,
@@ -188,6 +189,13 @@ export default defineComponent({
 
   setup() {
     const router = useRouter();
+
+    onBeforeMount(() => {
+      const instance = getCurrentInstance();
+      if (instance.ctx.currentVideo !== null) {
+        instance.ctx.setDisplayState(DisplayState.TMPSHOW, 4000);
+      }
+    });
 
     onMounted(() => {
       // Might happen after a reload.
@@ -698,6 +706,12 @@ export default defineComponent({
     },
 
     handleEvent(ev) {
+      // console.log('handleEvent', ev);
+      this.handleEvent2(ev);
+      // console.log('  --> displayState:', this.displayState);
+    },
+
+    handleEvent2(ev) {
       // Clear timer.
       if (this.displayTimer) {
         clearTimeout(this.displayTimer);
@@ -711,19 +725,23 @@ export default defineComponent({
         this.setDisplayState(DisplayState.CONTROLSACTIVE);
       }
 
-      if (ev === ControlsEvent.IDLE && canHide) {
+      if (ev === ControlsEvent.IDLE) {
         // console.log('ControlsEvent.IDLE');
-        this.setDisplayState(DisplayState.HIDDEN, 2000);
+        if (canHide) {
+          this.setDisplayState(DisplayState.HIDDEN, 3000);
+        } else if (this.playState === 'paused' && this.isTouch) {
+          this.setDisplayState(DisplayState.PAUSED);
+        }
       }
 
       if (ev === MouseEvent.CLICK_CONTAINER) {
         this.el.focus();
         if (this.isTouch && this.displayState === DisplayState.HIDDEN) {
-          this.setDisplayState(DisplayState.TMPSHOW, 4000);
+          this.setDisplayState(DisplayState.TMPSHOW, 3000);
           return;
         }
         if (this.displayState === DisplayState.TMPSHOW) {
-          this.setDisplayState(DisplayState.TMPSHOW, 2000);
+          this.setDisplayState(DisplayState.TMPSHOW, 3000);
         }
         this.onPlay();
       }
@@ -736,7 +754,7 @@ export default defineComponent({
 
       if (ev === PlayEvent.PLAYING) {
         if (this.displayState !== DisplayState.HIDDEN) {
-          this.setDisplayState(DisplayState.HIDDEN, 1000);
+          this.setDisplayState(DisplayState.HIDDEN, 3000);
         }
       }
 
@@ -745,11 +763,11 @@ export default defineComponent({
       }
 
       if (ev === MouseEvent.MOVE_CONTAINER && canHide) {
-        this.setDisplayState(DisplayState.TMPSHOW, 1000);
+        this.setDisplayState(DisplayState.TMPSHOW, 3000);
       }
 
       if (ev === MouseEvent.LEAVE_CONTAINER && canHide) {
-        this.setDisplayState(DisplayState.HIDDEN, 2000);
+        this.setDisplayState(DisplayState.HIDDEN, 3000);
       }
     },
   },

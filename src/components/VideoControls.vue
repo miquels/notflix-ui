@@ -272,9 +272,8 @@ export default defineComponent({
     onMouseMove() {
       if (!document.hasFocus() || this.isTouch) return;
       // console.log('onMouseMove');
-      if (!this.isActive && !this.isMenuOpen) {
-        this.$emit('controlsActive', true);
-      }
+      // if (!this.isActive && !this.isMenuOpen) {
+      this.$emit('controlsActive', true);
       this.isActive = true;
     },
 
