@@ -65,7 +65,7 @@ export default defineComponent({
 
   methods: {
     show_clicked(showName) {
-      console.log('clicked on', showName);
+      // console.log('clicked on', showName);
       this.$router.push(`/tv-shows/TV Shows/${showName}`);
     },
   },

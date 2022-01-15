@@ -33,6 +33,7 @@
         <VideoControls
            :playState="playState"
            :volume="volume"
+           :muted="muted"
            :currentTime="currentTime"
            :duration="duration"
            :textTrack="textTrack"
@@ -45,6 +46,7 @@
            @play="onPlay"
            @seek="onSeek"
            @volume="onVolume"
+           @mute="onMute"
            @texttrack="onTexttrack"
            @audiotrack="onAudiotrack"
            @fullscreen="onFullscreen"
@@ -151,15 +153,15 @@ import VideoControls from 'components/VideoControls.vue';
 import Hls from 'hls.js';
 
 const MouseEvent = {
-  CLICK_CONTAINER: 1,
-  MOVE_CONTAINER: 2,
-  LEAVE_CONTAINER: 3,
+  CLICK_CONTAINER: 'click_container',
+  MOVE_CONTAINER: 'move_container',
+  LEAVE_CONTAINER: 'leave_container',
 };
 Object.freeze(MouseEvent);
 
 const ControlsEvent = {
-  IDLE: 8,
-  ACTIVE: 9,
+  IDLE: 'controls_idle',
+  ACTIVE: 'controls_active',
 };
 Object.freeze(ControlsEvent);
 
@@ -221,7 +223,8 @@ export default defineComponent({
     return {
       video: ref(null),
       playState: ref('paused'),
-      volume: ref(0.5),
+      volume: ref(1),
+      muted: ref(false),
       currentTime: ref(0),
       duration: ref(null),
       textTracks: ref([]),
@@ -254,10 +257,11 @@ export default defineComponent({
 
     // Initialize.
     mounted() {
-      // console.log('mounted');
-      window.dbg = this;
-
       this.el.focus();
+
+      // Copy existing global state (from the OS).
+      this.muted = this.video.muted;
+      this.volume = this.video.volume;
 
       this.video.addEventListener('loadedmetadata', () => {
         this.metadata_loaded = true;
@@ -275,12 +279,15 @@ export default defineComponent({
       this.video.addEventListener('seeking', () => { this.seeking = true; });
       this.video.addEventListener('seeked', () => { this.seeking = false; });
       this.video.addEventListener('timeupdate', () => {
-        console.log('timeupdate, seeking is', this.seeking);
+        // console.log('timeupdate, seeking is', this.seeking);
         if (this.video && (!this.seeking || this.playState !== 'playing')) {
           this.currentTime = this.video.currentTime;
         }
       });
-      this.video.addEventListener('volumechange', () => { this.volume = this.video.volume; });
+      this.video.addEventListener('volumechange', () => {
+        this.volume = this.video.volume;
+        this.muted = this.video.muted;
+      });
       if (this.video.audioTracks && !this.hls) {
         this.video.audioTracks.addEventListener('addtrack', () => this.onAudiotracks_updated());
         this.video.audioTracks.addEventListener('removetrack', () => this.onAudiotracks_updated());
@@ -585,8 +592,14 @@ export default defineComponent({
       }
     },
 
-    onVolume(val) {
-      console.log('volume changed to', val);
+    onVolume() {
+      if (!this.video) return;
+      console.log('Html5Video: onVolume: TODO');
+    },
+
+    onMute() {
+      if (!this.video) return;
+      this.video.muted = !this.video.muted;
     },
 
     onFullscreen() {
@@ -655,6 +668,10 @@ export default defineComponent({
     },
 
     fromControls(ev) {
+      // console.log(ev);
+      if (ev.touches && this.displayState === DisplayState.MENU_ACTIVE) {
+        return true;
+      }
       let ret = false;
       Object.values(ev.composedPath()).forEach((e) => {
         if (e === this.controlsEl) {

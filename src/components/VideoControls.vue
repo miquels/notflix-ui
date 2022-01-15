@@ -16,7 +16,7 @@
            :min="0"
            :max="duration || 1"
            :step="0"
-           color="red"
+           color="blue"
            :label="!!this.duration"
            :label-value="hhmmss(seekTo || currentTime)"
            dark
@@ -33,7 +33,10 @@
             :name="play_icon()" size="32px"
             class="on-left hover-pointer" @click="$emit('play')"
           />
-          <q-icon name="volume_up" size="32px" class="on-left hover-pointer"/>
+          <q-icon
+            :name="volume_icon()" size="32px"
+            class="on-left hover-pointer" @click="$emit('mute')"
+          />
           <span class="on-left" v-if="duration">{{ time_info() }}</span>
         </div>
         <div class="col"></div>
@@ -147,12 +150,16 @@ import { hhmmss } from '../lib/util.js';
 
 export default defineComponent({
   name: 'VideoControls',
-  emits: ['play', 'seek', 'volume', 'texttrack', 'audiotrack', 'fullscreen', 'cast', 'stop', 'controlsActive'],
+  emits: [
+    'play', 'seek', 'volume', 'texttrack', 'audiotrack',
+    'fullscreen', 'cast', 'stop', 'controlsActive', 'mute',
+  ],
 
   props: {
     currentTime: Number,
     playState: String,
     volume: Number,
+    muted: Boolean,
     duration: Number,
     textTrack: {
       type: Number,
@@ -221,6 +228,10 @@ export default defineComponent({
       return this.cur_play_icon;
     },
 
+    volume_icon() {
+      return this.muted ? 'volume_off' : 'volume_up';
+    },
+
     fullscreen_icon() {
       if (this.fullScreenState === 'on') {
         return 'fullscreen_exit';
@@ -259,7 +270,8 @@ export default defineComponent({
     },
 
     onMouseMove() {
-      if (!document.hasFocus()) return;
+      if (!document.hasFocus() || this.isTouch) return;
+      // console.log('onMouseMove');
       if (!this.isActive && !this.isMenuOpen) {
         this.$emit('controlsActive', true);
       }
@@ -268,6 +280,7 @@ export default defineComponent({
 
     onMouseLeave() {
       if (this.isTouch) return;
+      // console.log('onMouseLeave');
       if (this.isActive && !this.isMenuOpen) {
         this.$emit('controlsActive', false);
       }
@@ -276,6 +289,7 @@ export default defineComponent({
     },
 
     onTouchStart() {
+      // console.log('onTouchStart');
       this.isTouch = true;
       if (!this.isActive && !this.isMenuOpen) {
         this.$emit('controlsActive', true);
@@ -284,6 +298,7 @@ export default defineComponent({
     },
 
     onTouchEnd() {
+      // console.log('onTouchEnd');
       this.isTouch = true;
       if (this.isActive && !this.isMenuOpen) {
         this.$emit('controlsActive', false);
