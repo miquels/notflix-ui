@@ -1,7 +1,7 @@
 <template>
   <div class="row items-stretch episode-container">
     <div class="col-xs-12 col-md-3 episode-left">
-      <img :src="thumb()" onerror="this.src='/img/static.jpg'">
+      <Image :src="episode.thumb" errorSrc="/img/static.jpg" />
     </div>
     <div class="col-xs-12 col-md-9 episode-middle q-px-md">
       <div class="row">
@@ -60,9 +60,13 @@
 import {
   defineComponent,
 } from 'vue';
+import Image from 'components/Image.vue';
 
 export default defineComponent({
   name: 'Episode',
+  components: {
+    Image,
+  },
   props: {
     episode: Object,
   },

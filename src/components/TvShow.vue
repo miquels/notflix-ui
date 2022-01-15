@@ -196,9 +196,10 @@ export default defineComponent({
       if (!this.bgimage) {
         return {};
       }
+      const img = `${this.bgimage}?q=90&h=250`;
       const style = {
         backgroundImage:
-          `linear-gradient(to right, rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${this.bgimage})`,
+          `linear-gradient(to right, rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${img})`,
       };
       return style;
     },
