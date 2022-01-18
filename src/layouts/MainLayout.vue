@@ -36,7 +36,7 @@
           <q-route-tab name="movies" label="Movies" to="/movies/" />
       </q-tabs>
       <div class="col"/>
-      <CastButton />
+      <CastButton class="cursor-pointer" />
       </q-toolbar>
     </q-header>
 
@@ -60,7 +60,7 @@
       </router-view>
     </q-page-container>
 
-    <q-footer :modelValue="castActive()" elevated class="bg-grey-10 text-white">
+    <q-footer :modelValue="castActive()" elevated class="bg-grey-10 text-white cursor-pointer">
       <Chromecast/>
       <Play />
     </q-footer>
