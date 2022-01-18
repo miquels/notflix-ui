@@ -1,27 +1,27 @@
 <template>
-  <div ref="el" class="fit thumbs-container">
+  <div ref="el">
     <q-resize-observer @resize="onResize"/>
     <virtual-scroll
-      class="thumbs-virtual-scroller"
+      class="thumbs-virtual-scroller relative"
       :class="prettyScrollbar"
       :items="getItems()"
     >
-      <template v-slot="{ item }">
-        <q-item class="row no-wrap q-pa-none" :style="{ height: item.height }">
+      <template v-slot="{ item, scrolling }">
+        <q-item class="row no-wrap q-pa-none" :key="item.key" :style="{ height: item.height }">
           <div class="col-12">
             <div class="row justify-center no-wrap">
               <div v-if="item.type === 'header'"> ----------------===========---------------- </div>
-              <template v-if="item.type === 'thumbs'">
-              <div
-                v-for="item2 in item.row"
-                :key="item2.key"
-                class="thumbs-thumb"
-                @click="$emit('select', item2.name)"
-              >
-                <Image :src="item2.url" :name="item2.name" class="thumbs-img" />
-                <div class="thumbs-title">{{ item2.name }}</div>
-              </div>
-              </template>
+              <PosterRow
+                v-if="item.type === 'thumbs'"
+                :items="item.row"
+                :height="imgHeight + 20"
+                :padding="thumbPadding"
+                :imgWidth="imgWidth"
+                :imgHeight="imgHeight"
+                :fontSize="fontSize"
+                :hideImages="scrolling"
+                @select="$emit('select', $event)"
+              />
             </div>
           </div>
         </q-item>
@@ -31,44 +31,8 @@
 </template>
 
 <style lang="scss">
-.thumbs-container {
-  --image-width: 100px;
-  --image-height: 150px;
-  --thumb-padding: 6px;
-  --font-size: 12px;
-  position: relative;
-}
-.thumbs-thumb {
-  display: inline-block;
-  padding: var(--thumb-padding);
-  width: calc(var(--thumb-padding) * 2 + var(--image-width));
-  /* removes padding between image and name */
-  font-size: 0px;
-}
 .thumbs-virtual-scroller {
   height: calc(100vh - 100px);
-}
-.thumbs-thumb:hover {
-  transform: scale(1.1);
-  transition: all .2s ease-in-out;
-  cursor: pointer;
-  box-shadow: 0px 0px 10px 1px #888;
-  z-index: 4;
-}
-.thumbs-img {
-  height: var(--image-height);
-  width: var(--image-width);
-  display: block;
-  background-color: black;
-}
-.thumbs-title {
-  width: var(--image-width);
-  font-size: var(--font-size);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-  background-color: black;
 }
 </style>
 
@@ -82,7 +46,7 @@ import {
 import { scroll } from 'quasar';
 import { useStore } from 'vuex';
 import VirtualScroll from 'components/VirtualScroll.vue';
-import Image from 'components/Image.vue';
+import PosterRow from 'components/PosterRow.vue';
 import { isMobile } from '../lib/util.js';
 
 function gMatch(item, genres) {
@@ -97,7 +61,7 @@ function gMatch(item, genres) {
 export default defineComponent({
   name: 'Thumbs',
   components: {
-    Image,
+    PosterRow,
     VirtualScroll,
   },
 
@@ -170,8 +134,10 @@ export default defineComponent({
       prevPosterSize: null,
       thumbsPerRow: ref(null),
       theItems,
-      imgWidth: 0,
-      imgHeight: 0,
+      imgWidth: 100,
+      imgHeight: 150,
+      fontSize: 12,
+      thumbPadding: 6,
       prettyScrollbar,
       el: ref(null),
     };
@@ -179,6 +145,7 @@ export default defineComponent({
 
   methods: {
     getItems() {
+      console.log('getItems, thumbsPerRow is', this.thumbsPerRow);
       // console.log('getItems: theItems:', this.theItems);
       if (!this.el || !this.thumbsPerRow) {
         return [];
@@ -193,7 +160,7 @@ export default defineComponent({
           const theItem = this.theItems[base + r];
           const item = {
             key: theItem.id,
-            url: this.imgUrl(theItem),
+            url: `${theItem.path}/${theItem.poster}`,
             name: theItem.name,
           };
           row.push(item);
@@ -210,43 +177,6 @@ export default defineComponent({
       return rows;
     },
 
-    item_rows(from, size) {
-      if (!this.el || !this.thumbsPerRow) {
-        return [];
-      }
-      const nrItems = this.theItems.length;
-      const rows = [];
-      const { thumbsPerRow } = this;
-      for (let i = from; i < from + size; i += 1) {
-        const base = i * thumbsPerRow;
-        const row = [];
-        for (let r = 0; r < thumbsPerRow && base + r < nrItems; r += 1) {
-          const theItem = this.theItems[base + r];
-          const item = {
-            key: theItem.id,
-            url: this.imgUrl(theItem),
-            name: theItem.name,
-          };
-          row.push(item);
-        }
-        rows.push({ row, key: `${nrItems}.${base}.${thumbsPerRow}` });
-      }
-      // console.log('Thumbs: thumbsPerRow:', thumbsPerRow, 'item_rows:', rows.length);
-      // console.log('iten_rows:', rows);
-      return rows;
-    },
-
-    item_nrows() {
-      if (!this.el || !this.thumbsPerRow) {
-        // console.log('Thumb: nrows = ', 0);
-        return 0;
-      }
-
-      const nrows = 1 + Math.floor(this.theItems.length / this.thumbsPerRow);
-      // console.log('Thumb: nrows = ', nrows);
-      return nrows;
-    },
-
     calcSizes(width) {
       const sizing = {
         imgWidth: [100, 133, 200],
@@ -257,19 +187,19 @@ export default defineComponent({
       const psz = this.posterSize - 1;
       this.imgWidth = sizing.imgWidth[psz];
       this.imgHeight = sizing.imgHeight[psz];
-      if (this.el) {
+      this.fontSize = sizing.fontSize[psz];
+      this.thumbPadding = sizing.thumbPadding[psz];
+
+      if (this.el || width) {
         if (!width) {
           width = scroll.getScrollWidth(this.el);
         }
         if (width < 100) {
           return;
         }
-        this.el.style.setProperty('--image-width', `${sizing.imgWidth[psz]}px`);
-        this.el.style.setProperty('--image-height', `${sizing.imgHeight[psz]}px`);
-        this.el.style.setProperty('--thumbPadding', `${sizing.thumbPadding[psz]}px`);
-        this.el.style.setProperty('--font-size', `${sizing.fontSize[psz]}px`);
-        const thumbWidth = sizing.imgWidth[psz] + 2 * sizing.thumbPadding[psz];
+        const thumbWidth = this.imgWidth + 2 * this.thumbPadding;
         this.thumbsPerRow = parseInt((width - 40) / thumbWidth, 10);
+        console.log('thumbsPerRow now', this.thumbsPerRow);
       }
     },
 
@@ -279,15 +209,6 @@ export default defineComponent({
       }
       console.log('resize', ev);
       this.calcSizes(ev.width);
-    },
-
-    imgUrl(item) {
-      if (!item.poster) {
-        return '';
-      }
-      const w = this.imgWidth;
-      const h = this.imgHeight;
-      return (`${item.path}/${item.poster}?w=${w}&h=${h}&q=70`);
     },
   },
 });

@@ -6,7 +6,7 @@
   >
   <div :style="{ height: `${topFillerHeight}px` }" />
     <template v-for="item in visibleItems" :key=item.key>
-      <slot :item="item"></slot>
+      <slot :item="item" :scrolling="scrolling"></slot>
     </template>
     <div :style="{ height: `${bottomFillerHeight}px` }" />
   </div>
@@ -28,7 +28,6 @@ import {
   ref,
   watchEffect,
 } from 'vue';
-import { isMobile } from '../lib/util.js';
 
 export default defineComponent({
   props: {
@@ -43,6 +42,7 @@ export default defineComponent({
     const bottomFillerHeight = ref(0);
     const scrollerEl = ref(null);
     const scrollTop = ref(0);
+    const scrolling = ref(false);
 
     onMounted(() => {
       const instance = getCurrentInstance();
@@ -68,9 +68,12 @@ export default defineComponent({
       topFillerHeight,
       bottomFillerHeight,
       updating: false,
-      isMobile,
       scrollTop,
       scrollerEl,
+      lastScrollTm: 0,
+      lastScrollPos: 0,
+      lastScrollTimer: null,
+      scrolling,
     };
   },
 
@@ -81,9 +84,35 @@ export default defineComponent({
       }
       this.updating = true;
       requestAnimationFrame(() => {
+        this.updateScrollPps();
         this.updateVisibleItems();
         this.updating = false;
       });
+    },
+
+    updateScrollPps() {
+      const pos = this.scrollerEl.scrollTop;
+      const now = Date.now();
+      let pps = 0;
+      if (this.lastScrollTm) {
+        const dp = Math.abs(pos - this.lastScrollPos);
+        const dt = now - this.lastScrollTm;
+        if (dt < 60) {
+          return;
+        }
+        pps = dt === 0 ? 100000 : 1000 * (dp / dt);
+      }
+      this.lastScrollPos = pos;
+      this.lastScrollTm = now;
+      if (pps > 4500) {
+        if (this.lastScrollTimer) {
+          clearTimeout(this.lastScrollTimer);
+        }
+        this.lastScrollTimer = setTimeout(() => this.updateScrollPps(), 100);
+        this.scrolling = true;
+      } else {
+        this.scrolling = false;
+      }
     },
 
     updateVisibleItems() {
