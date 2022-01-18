@@ -1,31 +1,21 @@
 <template>
-  <div class="virtualscroll-container" ref="el">
-    <div
-      class="virtualscroll-scroller"
-      :class="{ 'pretty-scrollbar': !isMobile() }"
-      :style="{ height: `${totalHeight}px` }"
-      @scroll="updateVisibleItems"
-      ref="scrollerEl"
-    >
-    <div :style="{ height: `${topFillerHeight}px` }" />
-      <template v-for="item in visibleItems" :key=item.key>
-        <slot :item="item"></slot>
-      </template>
-      <div :style="{ height: `${bottomFillerHeight}px` }" />
-    </div>
+  <div
+    class="virtualscroll-scroller"
+    @scroll="onScroll"
+    ref="scrollerEl"
+  >
+  <div :style="{ height: `${topFillerHeight}px` }" />
+    <template v-for="item in visibleItems" :key=item.key>
+      <slot :item="item"></slot>
+    </template>
+    <div :style="{ height: `${bottomFillerHeight}px` }" />
   </div>
 </template>
 
 <style lang="scss">
-.virtualscroll-container {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
 .virtualscroll-scroller {
-  overflow-y: scroll;
   overflow-x: hidden;
-  flex-grow: 1;
+  overflow-y: scroll;
 }
 </style>
 
@@ -51,7 +41,6 @@ export default defineComponent({
     const totalHeight = ref(0);
     const topFillerHeight = ref(0);
     const bottomFillerHeight = ref(0);
-    const el = ref(null);
     const scrollerEl = ref(null);
     const scrollTop = ref(0);
 
@@ -78,18 +67,29 @@ export default defineComponent({
       totalHeight,
       topFillerHeight,
       bottomFillerHeight,
+      updating: false,
       isMobile,
       scrollTop,
       scrollerEl,
-      el,
     };
   },
 
   methods: {
+    onScroll() {
+      if (this.updating) {
+        return;
+      }
+      this.updating = true;
+      requestAnimationFrame(() => {
+        this.updateVisibleItems();
+        this.updating = false;
+      });
+    },
+
     updateVisibleItems() {
       const top = this.scrollerEl.scrollTop;
-      const bottom = top + this.el.clientHeight;
-      const renderThresHold = this.el.clientHeight;
+      const bottom = top + this.scrollerEl.clientHeight;
+      const renderThresHold = this.scrollerEl.clientHeight;
       const visibleItems = [];
 
       this.scrollTop = top;
@@ -107,6 +107,12 @@ export default defineComponent({
         if (curPos > bottom + renderThresHold) {
           break;
         }
+      }
+      if (this.visibleItems.length > 0 && visibleItems.length > 0
+        && this.visibleItems[0].key === visibleItems[0].key
+        && this.visibleItems.length === visibleItems.length) {
+        // No change.
+        return;
       }
       this.topFillerHeight = topFillerHeight > 0 ? topFillerHeight : 0;
       this.bottomFillerHeight = this.totalHeight - curPos;
