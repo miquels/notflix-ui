@@ -5,7 +5,7 @@
     ref="scrollerEl"
   >
   <div :style="{ height: `${topFillerHeight}px` }" />
-    <template v-for="item in visibleItems" :key=item.key>
+    <template v-for="item in visibleItems" :key="item.key">
       <slot :item="item" :scrolling="scrolling"></slot>
     </template>
     <div :style="{ height: `${bottomFillerHeight}px` }" />
@@ -26,7 +26,8 @@ import {
   onMounted,
   onActivated,
   ref,
-  watchEffect,
+  toRefs,
+  watchPostEffect,
 } from 'vue';
 
 export default defineComponent({
@@ -43,11 +44,12 @@ export default defineComponent({
     const scrollerEl = ref(null);
     const scrollTop = ref(0);
     const scrolling = ref(false);
+    const { items } = toRefs(props);
 
     onMounted(() => {
       const instance = getCurrentInstance();
-      watchEffect(() => {
-        theItems.value = props.items;
+      watchPostEffect(() => {
+        theItems.value = items.value;
         let h = 0;
         for (const item of theItems.value) {
           h += item.height;
@@ -137,12 +139,15 @@ export default defineComponent({
           break;
         }
       }
+      /*
       if (this.visibleItems.length > 0 && visibleItems.length > 0
         && this.visibleItems[0].key === visibleItems[0].key
         && this.visibleItems.length === visibleItems.length) {
         // No change.
-        return;
+        console.log('no change');
+        // return;
       }
+      */
       this.topFillerHeight = topFillerHeight > 0 ? topFillerHeight : 0;
       this.bottomFillerHeight = this.totalHeight - curPos;
       this.visibleItems = visibleItems;
