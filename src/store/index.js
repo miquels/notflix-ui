@@ -1,28 +1,33 @@
 import { store } from 'quasar/wrappers';
 import { createStore } from 'vuex';
 
-/*
- * If not building with SSR mode, you can
- * directly export the Store instantiation;
- *
- * The function below can be async too; either use
- * async/await or return a Promise which resolves
- * with the Store instance.
- */
-
 export default store(() => {
   const Store = createStore({
 
     state: () => ({
       castState: 'no_devices',
       castActive: false,
-      showSearch: false,
-      search: '',
       currentVideo: null,
+
+      filter: {
+        showSearch: false,
+        search: '',
+        filterGenres: [],
+        sortBy: null,
+      },
+
       config: {
         useHls: true,
         castUseShakaHack: true,
         apiUrl: '',
+      },
+
+      // currentView depends on whether we're in /tv-shows/ or /movies/.
+      currentView: {
+        // list of unique genres of all content.
+        genres: [],
+        // 'series' or 'movie'.
+        type: null,
       },
     }),
 
@@ -40,6 +45,9 @@ export default store(() => {
     getters: {
       config(state) {
         return state.config;
+      },
+      genres(state) {
+        return state.currentView.genres;
       },
     },
 
@@ -59,17 +67,32 @@ export default store(() => {
 
       // search as-we-type.
       search(state, value) {
-        state.search = value || '';
+        state.filter.search = value || '';
+      },
+
+      sortBy(state, value) {
+        state.filter.sortBy = value;
+      },
+
+      filterGenres(state, value) {
+        state.filter.filterGenres = value;
       },
 
       // show 'search' in the menubar?
       showSearch(state, value) {
-        state.showSearch = value || false;
+        state.filter.showSearch = value || false;
       },
 
       // video currently playing (or about to be played).
       currentVideo(state, value) {
         state.currentVideo = value;
+      },
+
+      currentView(state, value) {
+        console.log('update currentView', value);
+        Object.entries(value).forEach(([key, val]) => {
+          state.currentView[key] = val;
+        });
       },
 
       // config from remote /config.json (if any).

@@ -1,32 +1,32 @@
 <template>
   <div ref="el" class="fit thumbs-container">
     <q-resize-observer @resize="onResize"/>
-    <q-virtual-scroll
+    <virtual-scroll
       class="thumbs-virtual-scroller"
       :class="prettyScrollbar"
-      :virtual-scroll-item-size="150"
-      :virtual-scroll-slice-size="3"
-      :items-fn="item_rows"
-      :items-size="item_nrows()"
+      :items="getItems()"
     >
       <template v-slot="{ item }">
-        <q-item :key="item.key" class="row no-wrap q-pa-none">
+        <q-item class="row no-wrap q-pa-none" :style="{ height: item.height }">
           <div class="col-12">
             <div class="row justify-center no-wrap">
+              <div v-if="item.type === 'header'"> ----------------===========---------------- </div>
+              <template v-if="item.type === 'thumbs'">
               <div
                 v-for="item2 in item.row"
-                :key="item2.id"
+                :key="item2.key"
                 class="thumbs-thumb"
-                @click="$emit('select', item2.name)">
+                @click="$emit('select', item2.name)"
               >
                 <Image :src="item2.url" :name="item2.name" class="thumbs-img" />
                 <div class="thumbs-title">{{ item2.name }}</div>
               </div>
+              </template>
             </div>
           </div>
         </q-item>
       </template>
-    </q-virtual-scroll>
+    </virtual-scroll>
   </div>
 </template>
 
@@ -36,6 +36,7 @@
   --image-height: 150px;
   --thumb-padding: 6px;
   --font-size: 12px;
+  position: relative;
 }
 .thumbs-thumb {
   display: inline-block;
@@ -45,7 +46,7 @@
   font-size: 0px;
 }
 .thumbs-virtual-scroller {
-  max-height: calc(100vh - 100px);
+  height: calc(100vh - 100px);
 }
 .thumbs-thumb:hover {
   transform: scale(1.1);
@@ -79,13 +80,25 @@ import {
   toRefs,
 } from 'vue';
 import { scroll } from 'quasar';
+import { useStore } from 'vuex';
+import VirtualScroll from 'components/VirtualScroll.vue';
 import Image from 'components/Image.vue';
 import { isMobile } from '../lib/util.js';
+
+function gMatch(item, genres) {
+  if (genres && genres.length > 0 && !item.genre) return false;
+  if (!item.genre || !genres || genres.length === 0) return true;
+  for (let i = 0; i < genres.length; i += 1) {
+    if (!item.genre.includes(genres[i])) return false;
+  }
+  return true;
+}
 
 export default defineComponent({
   name: 'Thumbs',
   components: {
     Image,
+    VirtualScroll,
   },
 
   props: {
@@ -100,44 +113,57 @@ export default defineComponent({
   },
 
   setup(props) {
-    const rProps = toRefs(props);
+    const { items } = toRefs(props);
+    const store = useStore();
 
-    // eslint-disable-next-line
-    const items = rProps.items;
-    // eslint-disable-next-line
-    const filter = rProps.filter;
     const theItems = computed(() => {
-      // console.log('computed: items:', items);
-      // console.log('computed: filter:', filter);
-      if (filter.value === '') {
-        return items.value;
-      }
       const filteredItems = [];
-      const f = filter.value.toLowerCase();
+
+      // console.log('initially,', items);
+
+      // First, the search filter.
+      const f = store.state.filter.search.toLowerCase();
+      const g = store.state.filter.filterGenres;
+
       for (let i = 0; i < items.value.length; i += 1) {
         const item = items.value[i];
-        const nameMatch = item.name.toLowerCase().includes(f);
-        // FIXME: this doesn't work, because we do not have this info at
-        // this point yet - the movie/tv-show details haven't been loaded yet.
-        // perhaps a server-side search ?
-        let actorMatch = false;
-        if (item.nfo && item.nfo.actor) {
-          console.log('filter: checking actors', item.nfo.actor);
-          for (let a = 0; a < item.nfo.actor.length; a += 1) {
-            if (item.nfo.actor[a].toLowerCase().includes(f)) {
-              actorMatch = true;
-            }
-          }
-        }
-        if (nameMatch || actorMatch) {
+        const nameMatch = !f || item.name.toLowerCase().includes(f);
+        // if (i === 0) console.log('item: ', item);
+        const genreMatch = gMatch(item, g);
+        if (nameMatch && genreMatch) {
           filteredItems.push(items.value[i]);
         }
       }
+      // console.log('filter: ', g);
+      // console.log('thumbs: ', filteredItems.length);
+
+      // Now sort.
+      const s = store.state.filter.sortBy || 'updated';
+      switch (s) {
+        case 'updated':
+          filteredItems.sort((a, b) => (b.lastvideo || 0) - (a.lastvideo || 0));
+          break;
+        case 'added':
+          filteredItems.sort((a, b) => (b.firstvideo || 0) - (a.firstvideo || 0));
+          break;
+        case 'year':
+          filteredItems.sort((a, b) => (b.year || 0) - (a.year || 0));
+          break;
+        case 'rating':
+          filteredItems.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          break;
+        case 'title':
+          filteredItems.sort((a, b) => (a.name.localeCompare(b.name)));
+          break;
+        default:
+          break;
+      }
+
       return filteredItems;
     });
 
     const prettyScrollbar = isMobile() ? '' : 'pretty-scrollbar';
-    console.log('prettyScrollbar:', prettyScrollbar);
+    // console.log('prettyScrollbar:', prettyScrollbar);
     const posterSize = isMobile() ? 1 : 2;
     return {
       posterSize,
@@ -152,6 +178,38 @@ export default defineComponent({
   },
 
   methods: {
+    getItems() {
+      // console.log('getItems: theItems:', this.theItems);
+      if (!this.el || !this.thumbsPerRow) {
+        return [];
+      }
+      const nrItems = this.theItems.length;
+      const rows = [];
+      rows.push({ type: 'header', key: 'header', height: 20 });
+      const { thumbsPerRow } = this;
+      for (let base = 0; base < nrItems; base += thumbsPerRow) {
+        const row = [];
+        for (let r = 0; r < thumbsPerRow && base + r < nrItems; r += 1) {
+          const theItem = this.theItems[base + r];
+          const item = {
+            key: theItem.id,
+            url: this.imgUrl(theItem),
+            name: theItem.name,
+          };
+          row.push(item);
+        }
+        rows.push({
+          row,
+          type: 'thumbs',
+          height: this.imgHeight + 20,
+          key: `${nrItems}.${base}.${thumbsPerRow}`,
+        });
+      }
+      // console.log('Thumbs: thumbsPerRow:', thumbsPerRow, 'item_rows:', rows.length);
+      // console.log('getItems:', rows);
+      return rows;
+    },
+
     item_rows(from, size) {
       if (!this.el || !this.thumbsPerRow) {
         return [];
@@ -174,6 +232,7 @@ export default defineComponent({
         rows.push({ row, key: `${nrItems}.${base}.${thumbsPerRow}` });
       }
       // console.log('Thumbs: thumbsPerRow:', thumbsPerRow, 'item_rows:', rows.length);
+      // console.log('iten_rows:', rows);
       return rows;
     },
 
@@ -215,11 +274,11 @@ export default defineComponent({
     },
 
     onResize(ev) {
-      if (ev.Width < 200 || ev.Height < 200) {
+      if (ev.width < 200 || ev.height < 200) {
         return;
       }
       console.log('resize', ev);
-      this.calcSizes(ev.Width);
+      this.calcSizes(ev.width);
     },
 
     imgUrl(item) {

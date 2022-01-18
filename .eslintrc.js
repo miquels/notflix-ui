@@ -69,9 +69,10 @@ module.exports = {
     'import/prefer-default-export': 'off',
     'prefer-promise-reject-errors': 'off',
     'no-underscore-dangle': 'off',
-    'no-console': 'off',
+    'no-restricted-syntax': 'off',
 
     // allow debugger during development only
+    'no-console': 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
   }
 }

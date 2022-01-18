@@ -8,10 +8,10 @@
         <q-toolbar-title class="col-auto">
           Notflix
         </q-toolbar-title>
-        <q-item v-show="store.state.showSearch" shrink class="col-auto q-pa-none">
+        <q-item v-show="store.state.filter.showSearch" shrink class="col-auto q-pa-none">
           <q-input
             v-if="showSearch"
-            :modelValue="store.state.search"
+            :modelValue="store.state.filter.search"
             @update:modelValue="store.commit('search', $event)"
             dark
             autofocus
@@ -40,8 +40,16 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer show-if-above behavior="mobile" v-model="leftDrawerOpen" side="left" bordered>
-      <!-- drawer content -->
+    <q-drawer
+      behavior="desktop"
+      class="drawer pretty-scrollbar"
+      :width="200"
+      v-model="leftDrawerOpen"
+      side="left"
+      overlay
+      elevated
+    >
+      <Filter />
     </q-drawer>
 
     <q-page-container>
@@ -62,6 +70,12 @@
 
 <style lang="scss">
 @import '~src/css/app.scss';
+.sort {
+  color: white;
+}
+.drawer {
+  height: calc(100vh - 50px);
+}
 </style>
 
 <script>
@@ -71,12 +85,14 @@ import { useStore } from 'vuex';
 import Chromecast from 'components/Chromecast.vue';
 import CastButton from 'components/CastButton.vue';
 import Play from 'components/Play.vue';
+import Filter from 'components/Filter.vue';
 import { isMobile } from '../lib/util.js';
 
 export default {
   components: {
     Chromecast,
     CastButton,
+    Filter,
     Play,
   },
   setup() {
@@ -85,6 +101,9 @@ export default {
     const showSearch = ref(false);
     const mobile = isMobile();
     const quasar = useQuasar();
+
+    // XXX DEBUG
+    window.store = store;
 
     onBeforeMount(() => {
       if (!mobile && !quasar.platform.is.safari) {
@@ -103,6 +122,7 @@ export default {
       // 'TvShow',
       // 'Movie',
       'Thumbs',
+      'VirtualScroll',
     ];
 
     return {

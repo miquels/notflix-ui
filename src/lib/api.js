@@ -117,12 +117,15 @@ export default class API {
         if (!resp.ok) {
           throw new RangeError(`unexpected HTTP code: ${resp.status}`);
         }
-        // console.log('response:', resp)
         resp.json().then((obj) => {
           const updateObj = (theObj) => {
+            //
             // Give each object an id.
-            theObj.id = this.idCounter;
-            this.idCounter += 1;
+            if (!reqUrl.endsWith('/genres')) {
+              theObj.id = this.idCounter;
+              this.idCounter += 1;
+            }
+
             // Make obj.path absolute.
             if (theObj.baseurl && theObj.path) {
               theObj.path = joinpath(this.url, theObj.baseurl, theObj.path);
@@ -164,6 +167,18 @@ export default class API {
 
   getItem(collName, item) {
     return this.getObject(joinpath('/api/collection', collName, 'item', item));
+  }
+
+  getGenres(collName) {
+    return this.getObject(joinpath('/api/collection', collName, 'genres'));
+  }
+
+  getGenreNames(collName) {
+    return this.getGenres(collName).then((obj) => {
+      const genres = Object.keys(obj);
+      genres.sort();
+      return genres;
+    });
   }
 
   getShows(collName) {

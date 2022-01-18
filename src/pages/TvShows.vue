@@ -2,7 +2,7 @@
   <q-page class="flex flex-center">
     <Thumbs
      :items="items"
-     :filter="store.state.search"
+     :filter="store.state.filter.search"
      class="fit"
      @select="show_clicked"
    />
@@ -12,8 +12,6 @@
 <script>
 import {
   defineComponent,
-  onBeforeMount,
-  onUnmounted,
   onActivated,
   onDeactivated,
   ref,
@@ -31,25 +29,24 @@ export default defineComponent({
   setup() {
     const store = useStore();
     const items = ref([]);
+    const genres = ref([]);
+    const api = new API();
 
-    onBeforeMount(() => {
-      const api = new API();
-      api.getItems('TV%20Shows').then((theItems) => {
-        // sort by lastUpdated.
-        const sortItems = [...theItems];
-        sortItems.sort((a, b) => b.lastvideo - a.lastvideo);
-        // console.log(sortItems);
-        items.value = sortItems;
-      });
-      store.commit('showSearch', true);
+    api.getItems('TV%20Shows').then((theItems) => {
+      // console.log('setting items', theItems);
+      items.value = theItems;
+    });
+
+    api.getGenreNames('TV%20Shows').then((theGenres) => {
+      genres.value = theGenres;
+      if (store.state.currentView.type === 'series') {
+        store.commit('currentView', { genres: theGenres });
+      }
     });
 
     onActivated(() => {
       store.commit('showSearch', true);
-    });
-    onUnmounted(() => {
-      store.commit('search', '');
-      store.commit('showSearch', false);
+      store.commit('currentView', { type: 'series', genres: genres.value });
     });
     onDeactivated(() => {
       store.commit('search', '');
