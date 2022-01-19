@@ -26,6 +26,7 @@
 
 <style lang="scss">
 .poster-row-thumb {
+  position: relative;
   display: inline-block;
   // removes padding between image and name
   font-size: 0px;

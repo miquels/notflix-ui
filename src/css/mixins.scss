@@ -11,12 +11,15 @@
   }
   &::-webkit-scrollbar-thumb {
     background: $foreground-color;
+    border-radius: $size / 1.6;
+    border: ($size / 3.2) solid $background-color;
   }
   &::-webkit-scrollbar-track {
     background: $background-color;
   }
 
   // Standard version (Firefox only for now)
+  scrollbar-width: thin;
   scrollbar-color: $foreground-color $background-color;
 }
 

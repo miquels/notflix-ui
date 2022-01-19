@@ -1,10 +1,12 @@
 <template>
   <q-page class="flex flex-center">
     <Thumbs
-     :items="items"
-     :filter="store.state.filter.search"
-     class="fit"
-     @select="show_clicked"
+      :items="items"
+      :filter="store.state.filter.search"
+      :genres="genres"
+      type="series"
+      class="fit"
+      @select="show_clicked"
    />
   </q-page>
 </template>
@@ -57,6 +59,7 @@ export default defineComponent({
       api: null,
       store,
       items,
+      genres,
     };
   },
 

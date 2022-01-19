@@ -7,14 +7,22 @@
       :items="rowItems"
     >
       <template v-slot="{ item, scrolling }">
-        <q-item class="row no-wrap q-pa-none" :style="{ height: item.height }">
-          <div class="col-12">
-            <div class="row justify-center no-wrap">
-              <div v-if="item.type === 'header'"> ----------------===========---------------- </div>
+        <q-item class="row no-wrap justify-center q-pa-none" :style="{ height: item.height }">
+          <div class="col-auto">
+              <FilterBar
+               v-if="item.type === 'filterbar'"
+               :style="{ width: `${item.width}px`, height: `${item.height}px` }"
+               :type="type"
+               :genres="genres"
+               v-model:search="search"
+               v-model:sortBy="sortBy"
+               v-model:genreFilter="genreFilter"
+              />
               <PosterRow
                 v-if="item.type === 'thumbs'"
+               :style="{ width: `${item.width}px`, height: `${item.height}px` }"
                 :items="item.row"
-                :height="imgHeight + 20"
+                :height="item.height"
                 :padding="thumbPadding"
                 :imgWidth="imgWidth"
                 :imgHeight="imgHeight"
@@ -22,7 +30,6 @@
                 :hideImages="scrolling"
                 @select="$emit('select', $event)"
               />
-            </div>
           </div>
         </q-item>
       </template>
@@ -39,6 +46,7 @@
 <script>
 import VirtualScroll from 'components/VirtualScroll.vue';
 import PosterRow from 'components/PosterRow.vue';
+import FilterBar from 'components/FilterBar.vue';
 import { isMobile } from '../lib/util.js';
 
 function gMatch(item, genres) {
@@ -54,6 +62,7 @@ export default {
   name: 'Thumbs',
 
   components: {
+    FilterBar,
     PosterRow,
     VirtualScroll,
   },
@@ -63,11 +72,17 @@ export default {
       type: Array,
       default: () => [],
     },
+    genres: {
+      type: Array,
+      default: () => [],
+    },
+    type: String,
   },
 
   data() {
     const prettyScrollbar = isMobile() ? '' : 'pretty-scrollbar';
     const posterSize = isMobile() ? 1 : 2;
+    const sortBy = this.type === 'series' ? 'Updated' : 'Added';
 
     return {
       posterSize,
@@ -77,7 +92,15 @@ export default {
       fontSize: 12,
       thumbPadding: 6,
       prettyScrollbar,
+      search: '',
+      sortBy,
+      genreFilter: [],
     };
+  },
+
+  activated() {
+    console.log('activated');
+    this.search = '';
   },
 
   computed: {
@@ -93,10 +116,20 @@ export default {
 
   methods: {
     getRows(items, sortById) {
-      const nrItems = items.length;
-      const rows = [];
-      rows.push({ type: 'header', key: 'header', height: 20 });
       const { thumbsPerRow } = this;
+      const nrItems = items.length;
+
+      const width = (this.imgWidth + 2 * this.thumbPadding) * thumbsPerRow;
+      const height = this.imgHeight + 32 + 2 * this.thumbPadding;
+
+      const rows = [];
+      rows.push({
+        type: 'filterbar',
+        key: 'filterbar',
+        width,
+        height: 32,
+      });
+
       for (let base = 0; base < nrItems; base += thumbsPerRow) {
         const row = [];
         for (let r = 0; r < thumbsPerRow && base + r < nrItems; r += 1) {
@@ -111,7 +144,8 @@ export default {
         rows.push({
           row,
           type: 'thumbs',
-          height: this.imgHeight + 20,
+          width,
+          height,
           key: `${nrItems}.${base}.${thumbsPerRow}.${sortById}`,
         });
       }
@@ -125,8 +159,8 @@ export default {
       // console.log('initially,', items);
 
       // First, the search filter.
-      const f = this.$store.state.filter.search.toLowerCase();
-      const g = this.$store.state.filter.filterGenres;
+      const f = this.search ? this.search.toLowerCase() : '';
+      const g = this.genreFilter;
 
       for (let i = 0; i < items.length; i += 1) {
         const item = items[i];
@@ -141,7 +175,7 @@ export default {
       // console.log('thumbs: ', filteredItems.length);
 
       // Now sort.
-      const s = this.$store.state.filter.sortBy || 'updated';
+      const s = this.sortBy.toLowerCase();
       switch (s) {
         case 'updated':
           sortById = 1;

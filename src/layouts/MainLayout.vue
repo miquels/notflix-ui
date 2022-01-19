@@ -3,39 +3,16 @@
 
     <q-header elevated class="bg-grey-10 text-white">
       <q-toolbar>
-        <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
-
-        <q-toolbar-title class="col-auto">
-          Notflix
+        <!-- q-btn dense flat round icon="menu" @click="toggleLeftDrawer" /-->
+        <q-toolbar-title class="col-auto q-ml-lg">
+          <span class="reverse-n">&#7438;</span>otflix
         </q-toolbar-title>
-        <q-item v-show="store.state.filter.showSearch" shrink class="col-auto q-pa-none">
-          <q-input
-            v-if="showSearch"
-            :modelValue="store.state.filter.search"
-            @update:modelValue="store.commit('search', $event)"
-            dark
-            autofocus
-            clearable
-            hide-bottom-space
-            dense
-            debounce="500"
-            label-color="white"
-            type="search"
-            color="white"
-          />
-          <q-btn
-            dense
-            flat
-            icon="search"
-            color="white"
-            @click="toggleSearch"
-          />
-        </q-item>
         <q-tabs shrink class="col">
           <q-route-tab name="tv-shows" label="TV Shows" to="/tv-shows/" />
           <q-route-tab name="movies" label="Movies" to="/movies/" />
       </q-tabs>
       <div class="col"/>
+      <q-item shrink id="filter" class="col-auto q-pa-none" />
       <CastButton class="cursor-pointer" />
       </q-toolbar>
     </q-header>
@@ -70,6 +47,11 @@
 
 <style lang="scss">
 @import '~src/css/app.scss';
+.reverse-n {
+  color: #007bfd;
+  font-size: 32px;
+  line-height: 20px;
+}
 .sort {
   color: white;
 }
