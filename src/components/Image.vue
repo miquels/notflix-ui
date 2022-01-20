@@ -1,7 +1,13 @@
 <template>
   <div class="image-container" :style="style">
     <div class="image-background"><span class="image-name">{{ name }}</span></div>
-    <img v-if="imgSrc && !hidden" :src="imgSrc" :style="imgStyle" :onerror="onError">
+    <img
+      v-if="imgSrc && !hidden"
+      :src="imgSrc"
+      :style="imgStyle"
+      :onerror="onError"
+      decoding="async"
+    >
   </div>
 </template>
 
@@ -70,7 +76,7 @@ export default defineComponent({
       }
       if (props.height) {
         const h = ratio * clamp(props.height, HEIGHTS);
-        imgSrc.value += `&w=${h}`;
+        imgSrc.value += `&h=${h}`;
       }
     });
 

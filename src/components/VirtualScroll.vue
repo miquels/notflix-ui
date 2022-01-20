@@ -76,40 +76,44 @@ export default defineComponent({
       lastScrollPos: 0,
       lastScrollTimer: null,
       scrolling,
+      counter: 0,
     };
   },
 
   methods: {
-    onScroll() {
-      if (this.updating) {
-        return;
-      }
-      this.updating = true;
-      requestAnimationFrame(() => {
-        this.updateScrollPps();
-        this.updateVisibleItems();
-        this.updating = false;
-      });
+    onScroll(ev) {
+      this.updateScrollPps();
+      this.updateVisibleItems(ev);
     },
 
     updateScrollPps() {
       const pos = this.scrollerEl.scrollTop;
       const now = Date.now();
       let pps = 0;
+
+      // stop timer.
+      if (this.lastScrollTimer) {
+        clearTimeout(this.lastScrollTimer);
+        this.lastScrollTimer = null;
+      }
+
+      // calculate pps (pixels per seconds).
       if (this.lastScrollTm) {
         const dp = Math.abs(pos - this.lastScrollPos);
         const dt = now - this.lastScrollTm;
         if (dt < 60) {
+          // Too fast, cannot calculate a precise pps, so skip.
+          // Load timer, make sure we do not miss the last update.
+          this.lastScrollTimer = setTimeout(() => this.updateScrollPps(), 100);
           return;
         }
-        pps = dt === 0 ? 100000 : 1000 * (dp / dt);
+        pps = 1000 * (dp / dt);
       }
       this.lastScrollPos = pos;
       this.lastScrollTm = now;
-      if (pps > 4500) {
-        if (this.lastScrollTimer) {
-          clearTimeout(this.lastScrollTimer);
-        }
+
+      // if we're scrolling really fast, set 'scrolling'.
+      if (pps > 4500 && pos > 0) {
         this.lastScrollTimer = setTimeout(() => this.updateScrollPps(), 100);
         this.scrolling = true;
       } else {
@@ -125,32 +129,59 @@ export default defineComponent({
 
       this.scrollTop = top;
       let curPos = 0;
-      let topFillerHeight = -1;
+      let topFillerHeight = 0;
+      let idx = 0;
 
-      for (const item of this.theItems) {
+      // First, work up to the first item we want to draw.
+      // "visibleItems" is not really a correct term, it's more like
+      // "items inside or just outside of the viewport".
+      while (idx < this.theItems.length) {
+        const item = this.theItems[idx];
         if (curPos + item.height + renderThresHold >= top) {
-          if (topFillerHeight < 0) {
-            topFillerHeight = curPos;
-          }
-          visibleItems.push(item);
-        }
-        curPos += item.height;
-        if (curPos > bottom + renderThresHold) {
+          // console.log('curPos', curPos, 'top', top, 'clientHeight', renderThresHold);
           break;
         }
+        curPos += item.height;
+        topFillerHeight += item.height;
+        idx += 1;
       }
-      /*
-      if (this.visibleItems.length > 0 && visibleItems.length > 0
-        && this.visibleItems[0].key === visibleItems[0].key
-        && this.visibleItems.length === visibleItems.length) {
-        // No change.
-        console.log('no change');
-        // return;
+
+      // Now create a new visibleItems array.
+      let visibleHeight = 0;
+      while (idx < this.theItems.length) {
+        const item = this.theItems[idx];
+        if (curPos + item.height > bottom + renderThresHold) {
+          break;
+        }
+        visibleItems.push(item);
+        curPos += item.height;
+        visibleHeight += item.height;
+        idx += 1;
       }
-      */
-      this.topFillerHeight = topFillerHeight > 0 ? topFillerHeight : 0;
-      this.bottomFillerHeight = this.totalHeight - curPos;
+
+      // No change?
+      if (this.visibleItems.length === visibleItems.length) {
+        let change = false;
+        for (let i = 0; i < visibleItems.length; i += 1) {
+          if (this.visibleItems[i].key !== visibleItems[i].key) {
+            change = true;
+            break;
+          }
+        }
+        if (!change) return;
+      }
+
+      // Adjust topFiller and bottomFiller div heights.
+      this.topFillerHeight = topFillerHeight;
+      this.bottomFillerHeight = this.totalHeight - topFillerHeight - visibleHeight;
       this.visibleItems = visibleItems;
+
+      // Inserting / deleting items before the current scroll position
+      // changes the position. So restore scrollTop directly after the
+      // next DOM update.
+      this.$nextTick(() => {
+        this.scrollerEl.scrollTop = top;
+      });
     },
   },
 });

@@ -10,17 +10,17 @@
         <q-item class="row no-wrap justify-center q-pa-none" :style="{ height: item.height }">
           <div class="col-auto">
               <FilterBar
-               v-if="item.type === 'filterbar'"
-               :style="{ width: `${item.width}px`, height: `${item.height}px` }"
-               :type="type"
-               :genres="genres"
-               v-model:search="search"
-               v-model:sortBy="sortBy"
-               v-model:genreFilter="genreFilter"
+                v-if="item.type === 'filterbar'"
+                :style="{ width: `${item.width}px`, height: `${item.height}px` }"
+                :type="type"
+                :genres="genres"
+                v-model:search="search"
+                v-model:sortBy="sortBy"
+                v-model:genreFilter="genreFilter"
               />
               <PosterRow
                 v-if="item.type === 'thumbs'"
-               :style="{ width: `${item.width}px`, height: `${item.height}px` }"
+                :style="{ width: `${item.width}px`, height: `${item.height}px` }"
                 :items="item.row"
                 :height="item.height"
                 :padding="thumbPadding"
@@ -87,9 +87,9 @@ export default {
     return {
       posterSize,
       thumbsPerRow: 1,
-      imgWidth: 100,
-      imgHeight: 150,
-      fontSize: 12,
+      imgWidth: 133,
+      imgHeight: 200,
+      fontSize: 14,
       thumbPadding: 6,
       prettyScrollbar,
       search: '',
@@ -99,7 +99,7 @@ export default {
   },
 
   activated() {
-    console.log('activated');
+    // console.log('activated');
     this.search = '';
   },
 
@@ -155,8 +155,6 @@ export default {
     filterItems(items) {
       const filteredItems = [];
       let sortById;
-
-      // console.log('initially,', items);
 
       // First, the search filter.
       const f = this.search ? this.search.toLowerCase() : '';
@@ -221,18 +219,18 @@ export default {
       if (!width) {
         width = this.$q.scroll.getScrollWidth(this.$el);
       }
-      if (width < 100) {
-        return;
+      if (width < 300) {
+        width = 300;
       }
       const thumbWidth = this.imgWidth + 2 * this.thumbPadding;
       this.thumbsPerRow = parseInt((width - 40) / thumbWidth, 10);
     },
 
     onResize(ev) {
-      if (ev.width < 200 || ev.height < 200) {
+      if (ev.width === 0 || ev.height === 0) {
         return;
       }
-      console.log('resize', ev);
+      console.log(' resize', ev);
       this.calcSizes(ev.width);
     },
   },
