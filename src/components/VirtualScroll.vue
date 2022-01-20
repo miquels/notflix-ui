@@ -23,8 +23,10 @@
 import {
   defineComponent,
   getCurrentInstance,
-  onMounted,
   onActivated,
+  onBeforeUpdate,
+  onMounted,
+  onUpdated,
   ref,
   toRefs,
   watchPostEffect,
@@ -61,6 +63,18 @@ export default defineComponent({
 
     onActivated(() => {
       scrollerEl.value.scrollTop = scrollTop.value;
+    });
+
+    // Restore scroll position after DOM update.
+    onBeforeUpdate(() => {
+      if (scrollerEl.value) {
+        scrollTop.value = scrollerEl.value.scrollTop;
+      }
+    });
+    onUpdated(() => {
+      if (scrollerEl.value) {
+        scrollerEl.value.scrollTop = scrollTop.value;
+      }
     });
 
     return {
@@ -127,7 +141,6 @@ export default defineComponent({
       const renderThresHold = this.scrollerEl.clientHeight;
       const visibleItems = [];
 
-      this.scrollTop = top;
       let curPos = 0;
       let topFillerHeight = 0;
       let idx = 0;
@@ -175,13 +188,6 @@ export default defineComponent({
       this.topFillerHeight = topFillerHeight;
       this.bottomFillerHeight = this.totalHeight - topFillerHeight - visibleHeight;
       this.visibleItems = visibleItems;
-
-      // Inserting / deleting items before the current scroll position
-      // changes the position. So restore scrollTop directly after the
-      // next DOM update.
-      this.$nextTick(() => {
-        this.scrollerEl.scrollTop = top;
-      });
     },
   },
 });
