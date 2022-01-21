@@ -3,7 +3,7 @@
     <div class="tv-show-header">
       <q-resize-observer @resize="onResize"/>
       <div class="tv-show-header-img" :style="bgImage()"/>
-      <div class="row text-h4 q-mb-md">
+      <div class="row text-h3 q-mb-md">
         <div class="col">{{ title }}</div>
       </div>
       <div class="row text-h6">
@@ -163,8 +163,14 @@ export default defineComponent({
         if (this.show.year) {
           nv.push({ name: 'Year:', value: this.show.year });
         }
+        if (this.show.nfo.studio) {
+          nv.push({ name: 'Studio:', value: this.show.nfo.studio });
+        }
         if (this.show.nfo.rating) {
           nv.push({ name: 'Rating:', value: this.show.nfo.rating });
+        }
+        if (this.show.nfo.mpaa) {
+          nv.push({ name: 'MPAA:', value: this.show.nfo.mpaa });
         }
         this.nameValues = nv;
 
@@ -196,7 +202,9 @@ export default defineComponent({
       if (!this.bgimage) {
         return {};
       }
-      const img = `${this.bgimage}?q=90&h=250`;
+      const ratio = window.devicePixelRatio || 1;
+      const height = 250 * ratio;
+      const img = `${this.bgimage}?q=90&h=${height}`;
       const style = {
         backgroundImage:
           `linear-gradient(to right, rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${img})`,

@@ -103,3 +103,16 @@ export function hhmmss(seconds) {
   }
   return d.substr(14, 5);
 }
+
+export function hhmm(minutes) {
+  if (Number.isNaN(Number(minutes))) {
+    return minutes;
+  }
+  minutes = parseInt(minutes, 10);
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const m = minutes % 60;
+  const h = Math.floor(minutes / 60);
+  return `${h}h${m < 10 ? '0' : ''}${m}m`;
+}

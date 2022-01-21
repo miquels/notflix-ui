@@ -74,6 +74,7 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import Api from '../lib/api.js';
+import { hhmm } from '../lib/util.js';
 
 export default defineComponent({
   name: 'Movie',
@@ -133,8 +134,14 @@ export default defineComponent({
         if (this.movie.year) {
           nv.push({ name: 'Year:', value: this.movie.year });
         }
+        if (this.movie.nfo.runtime) {
+          nv.push({ name: 'Runtime:', value: hhmm(this.movie.nfo.runtime) });
+        }
         if (this.movie.nfo.rating) {
           nv.push({ name: 'Rating:', value: this.movie.nfo.rating });
+        }
+        if (this.movie.nfo.studio) {
+          nv.push({ name: 'Studio:', value: this.movie.nfo.studio });
         }
         console.log(nv);
         this.nameValues = nv;

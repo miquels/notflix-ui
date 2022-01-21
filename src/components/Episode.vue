@@ -5,14 +5,16 @@
     </div>
     <div class="col-xs-12 col-md-9 episode-middle q-px-md">
       <div class="row">
-        <div class="col-12">
+        <div class="col-12 q-pt-sm">
           <q-icon
             name="play_circle"
-            size="72px"
-            class="episode-play on-left q-pb-md"
+            size="48px"
+            class="episode-play on-left"
             @click="$emit('play', episode)"
           />
-          <span>{{ episode.name }}. {{ episode.nfo.title }}</span>
+          <span>
+            {{ episode.name }}. {{ episode.nfo.title }}
+          </span>
         </div>
         <div class="col-12 q-pt-md">
           {{ episode.nfo.plot }}
@@ -36,7 +38,7 @@
 .episode-container {
   margin-top: 1em;
   margin-bottom: 1em;
-  background: #333333;
+  background: #19192c;
   position: relative;
 }
 .episode-left {
