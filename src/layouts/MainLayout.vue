@@ -8,8 +8,18 @@
           <span class="reverse-n">&#7438;</span>otflix
         </q-toolbar-title>
         <q-tabs shrink class="col">
-          <q-route-tab name="tv-shows" label="TV Shows" to="/tv-shows/" />
-          <q-route-tab name="movies" label="Movies" to="/movies/" />
+          <q-route-tab
+            name="tv-shows"
+            label="TV Shows"
+            to="/tv-shows/"
+            @click="routeTab('/tv-shows/')"
+          />
+          <q-route-tab
+            name="movies"
+            label="Movies"
+            to="/movies/"
+            @click="routeTab('/movies/')"
+          />
       </q-tabs>
       <div class="col"/>
       <q-item shrink id="filter" class="col-auto q-pa-none" />
@@ -61,7 +71,7 @@
 </style>
 
 <script>
-import { ref, onBeforeMount } from 'vue';
+import { ref, inject, onBeforeMount } from 'vue';
 import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
 import Chromecast from 'components/Chromecast.vue';
@@ -83,6 +93,7 @@ export default {
     const showSearch = ref(false);
     const mobile = isMobile();
     const quasar = useQuasar();
+    const emitter = inject('emitter');
 
     // XXX DEBUG
     window.store = store;
@@ -117,6 +128,7 @@ export default {
         showSearch.value = !showSearch.value;
       },
       keepAlive,
+      emitter,
       store,
     };
   },
@@ -124,6 +136,14 @@ export default {
     castActive() {
       console.log('mainLayout: castActive:', this.store.state.castActive);
       return this.store.state.castActive;
+    },
+
+    // If the user clicks on 'TV Shows' or 'Movies' and that is already
+    // the current route, emit a 'scrollToTop' event.
+    routeTab(to) {
+      if (to === this.$route.fullPath) {
+        this.emitter.emit('scrollToTop');
+      }
     },
   },
 };

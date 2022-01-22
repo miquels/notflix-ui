@@ -6,6 +6,7 @@
       :class="prettyScrollbar"
       :items="rowItems"
       :style="{ width: rowWidth }"
+      ref="scroller"
     >
       <template v-slot="{ item, scrolling }">
         <q-item class="row no-wrap justify-center q-pa-none" :style="{ height: item.height }">
@@ -68,6 +69,8 @@ export default {
     VirtualScroll,
   },
 
+  inject: ['emitter'],
+
   props: {
     items: {
       type: Array,
@@ -96,12 +99,26 @@ export default {
       search: '',
       sortBy,
       genreFilter: [],
+      isActive: true,
     };
+  },
+
+  mounted() {
+    this.emitter.on('scrollToTop', () => {
+      if (this.isActive) {
+        this.$refs.scroller.$el.scrollTop = 0;
+      }
+    });
   },
 
   activated() {
     // console.log('activated');
     this.search = '';
+    this.isActive = true;
+  },
+
+  deactivated() {
+    this.isActive = false;
   },
 
   computed: {
