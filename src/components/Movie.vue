@@ -3,7 +3,7 @@
     <div class="movie-header">
       <div class="movie-header-img" :style="bgImage()"/>
       <div class="row text-h4 q-mb-md">
-        <div class="col">{{ title }}</div>
+        <div class="col stroke">{{ title }}</div>
       </div>
       <div class="row q-my-md">
         <div class="col">{{ plot }}
@@ -33,8 +33,12 @@
 <style>
 .movie-container {
   position: relative;
+  /*
   font-family: 'Roboto', sans-serif;
   font-weight: 700;
+  */
+  font-family: sans-serif;
+  font-weight: 500;
   font-size: 1.2em;
   max-width: 1000px;
   margin: 0 auto;
@@ -112,7 +116,7 @@ export default defineComponent({
   methods: {
     on_mounted() {
       this.api.getMovie(this.collection, this.name).then((item) => {
-        console.log(item);
+        // console.log(item);
         this.movie = item;
         if (!this.movie.fanart && this.movie.poster) {
           this.movie.fanart = this.movie.poster;
@@ -123,10 +127,10 @@ export default defineComponent({
         this.bgimage = this.movie.fanart ? this.movie.fanart : '/img/static.jpg';
         if (!this.movie.fanart) this.movie.fanart = '#';
         if (!this.movie.poster) this.movie.poster = '#';
-        console.log('setting bgimage to', this.bgimage);
+        // console.log('setting bgimage to', this.bgimage);
         this.title = this.movie.nfo.title;
         this.plot = this.movie.nfo.plot;
-        console.log(this.movie);
+        // console.log(this.movie);
         const nv = [];
         if (this.movie.nfo.genre) {
           nv.push({ name: 'Genre:', value: this.movie.nfo.genre.join(', ') });
@@ -134,7 +138,7 @@ export default defineComponent({
         if (this.movie.year) {
           nv.push({ name: 'Year:', value: this.movie.year });
         }
-        if (this.movie.nfo.runtime) {
+        if (this.movie.nfo.runtime && this.movie.nfo.runtime !== '0') {
           nv.push({ name: 'Runtime:', value: hhmm(this.movie.nfo.runtime) });
         }
         if (this.movie.nfo.rating) {
@@ -143,7 +147,7 @@ export default defineComponent({
         if (this.movie.nfo.studio) {
           nv.push({ name: 'Studio:', value: this.movie.nfo.studio });
         }
-        console.log(nv);
+        // console.log(nv);
         this.nameValues = nv;
       });
     },

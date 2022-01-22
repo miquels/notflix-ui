@@ -17,3 +17,7 @@ body {
 .hover-pointer:hover {
   cursor: pointer;
 }
+
+.stroke {
+  @include stroke;
+}

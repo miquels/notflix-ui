@@ -5,6 +5,7 @@
       class="thumbs-virtual-scroller relative"
       :class="prettyScrollbar"
       :items="rowItems"
+      :style="{ width: rowWidth }"
     >
       <template v-slot="{ item, scrolling }">
         <q-item class="row no-wrap justify-center q-pa-none" :style="{ height: item.height }">
@@ -111,6 +112,10 @@ export default {
 
     filteredItems() {
       return this.filterItems(this.items);
+    },
+
+    rowWidth() {
+      return this.imgWidth + 2 * this.thumbPadding;
     },
   },
 

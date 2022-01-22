@@ -29,7 +29,7 @@ import {
   onUpdated,
   ref,
   toRefs,
-  watchPostEffect,
+  watch,
 } from 'vue';
 
 export default defineComponent({
@@ -44,13 +44,16 @@ export default defineComponent({
     const topFillerHeight = ref(0);
     const bottomFillerHeight = ref(0);
     const scrollerEl = ref(null);
+    const savedScrollTop = ref(0);
     const scrollTop = ref(0);
     const scrolling = ref(false);
     const { items } = toRefs(props);
 
     onMounted(() => {
+      console.log('mounted');
       const instance = getCurrentInstance();
-      watchPostEffect(() => {
+      watch(items, () => {
+        console.log('items changed');
         theItems.value = items.value;
         let h = 0;
         for (const item of theItems.value) {
@@ -59,10 +62,12 @@ export default defineComponent({
         totalHeight.value = h;
         instance.ctx.updateVisibleItems();
       });
+      instance.ctx.updateVisibleItems();
     });
 
     onActivated(() => {
-      scrollerEl.value.scrollTop = scrollTop.value;
+      console.log('activated, set scrollTop to', savedScrollTop.value);
+      scrollerEl.value.scrollTop = savedScrollTop.value;
     });
 
     // Restore scroll position after DOM update.
@@ -85,6 +90,7 @@ export default defineComponent({
       bottomFillerHeight,
       updating: false,
       scrollTop,
+      savedScrollTop,
       scrollerEl,
       lastScrollTm: 0,
       lastScrollPos: 0,
@@ -96,6 +102,7 @@ export default defineComponent({
 
   methods: {
     onScroll(ev) {
+      this.savedScrollTop = this.scrollerEl.scrollTop;
       this.updateScrollPps();
       this.updateVisibleItems(ev);
     },

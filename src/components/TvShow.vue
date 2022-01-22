@@ -4,7 +4,7 @@
       <q-resize-observer @resize="onResize"/>
       <div class="tv-show-header-img" :style="bgImage()"/>
       <div class="row text-h3 q-mb-md">
-        <div class="col">{{ title }}</div>
+        <div class="col stroke">{{ title }}</div>
       </div>
       <div class="row text-h6">
         <div class="col" v-if="seasons && seasons[currentSeason]">
@@ -54,8 +54,12 @@
 <style>
 .tv-show-container {
   position: relative;
+  /*
   font-family: 'Roboto', sans-serif;
   font-weight: 700;
+  */
+  font-family: sans-serif;
+  font-weight: 500;
   font-size: 1.2em;
   max-width: 1000px;
   margin: 0 auto;
