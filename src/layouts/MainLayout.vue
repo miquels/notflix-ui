@@ -29,7 +29,7 @@
 
     <q-drawer
       behavior="desktop"
-      class="drawer pretty-scrollbar"
+      class="drawer"
       :width="200"
       v-model="leftDrawerOpen"
       side="left"
@@ -78,7 +78,7 @@ import Chromecast from 'components/Chromecast.vue';
 import CastButton from 'components/CastButton.vue';
 import Play from 'components/Play.vue';
 import Filter from 'components/Filter.vue';
-import { isMobile } from '../lib/util.js';
+import { isMobile, addPrettyScrollBars } from '../lib/util.js';
 
 export default {
   components: {
@@ -100,8 +100,7 @@ export default {
 
     onBeforeMount(() => {
       if (!mobile && !quasar.platform.is.safari) {
-        const body = document.getElementsByTagName('BODY');
-        body[0].classList.add('pretty-scrollbar');
+        addPrettyScrollBars();
       }
     });
 

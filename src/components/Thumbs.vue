@@ -3,7 +3,6 @@
     <q-resize-observer @resize="onResize"/>
     <virtual-scroll
       class="thumbs-virtual-scroller relative"
-      :class="prettyScrollbar"
       :items="rowItems"
       :style="{ width: rowWidth }"
       ref="scroller"
@@ -84,7 +83,6 @@ export default {
   },
 
   data() {
-    const prettyScrollbar = isMobile() ? '' : 'pretty-scrollbar';
     const posterSize = isMobile() ? 1 : 2;
     const sortBy = this.type === 'series' ? 'Updated' : 'Added';
 
@@ -95,7 +93,6 @@ export default {
       imgHeight: 200,
       fontSize: 14,
       thumbPadding: 6,
-      prettyScrollbar,
       search: '',
       sortBy,
       genreFilter: [],

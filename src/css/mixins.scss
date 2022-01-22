@@ -1,28 +1,3 @@
-// app global css in SCSS form
-@mixin scrollbars(
-  $size: 10px,
-  $foreground-color: #999,
-  $background-color: #333
-) {
-  // For Chrome & Safari
-  &::-webkit-scrollbar {
-    width: $size;
-    height: $size;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: $foreground-color;
-    border-radius: $size / 1.6;
-    border: ($size / 3.2) solid $background-color;
-  }
-  &::-webkit-scrollbar-track {
-    background: $background-color;
-  }
-
-  // Standard version (Firefox only for now)
-  scrollbar-width: thin;
-  scrollbar-color: $foreground-color $background-color;
-}
-
 @mixin stroke2(
   $width: 1px,
   $color: black

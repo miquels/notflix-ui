@@ -116,3 +116,37 @@ export function hhmm(minutes) {
   const h = Math.floor(minutes / 60);
   return `${h}h${m < 10 ? '0' : ''}${m}m`;
 }
+
+export function addStyleSheetRule(selectorObj, rulesObj) {
+  let rules = '';
+  for (const [key, value] of Object.entries(rulesObj)) {
+    rules += `${key}: ${value};`;
+  }
+  let selector = selectorObj;
+  if (typeof selectorObj === 'object') {
+    selector = selectorObj.join(' ');
+  }
+  const styleEl = document.createElement('style');
+  document.head.appendChild(styleEl);
+  styleEl.type = 'text/css';
+  styleEl.sheet.insertRule(`${selector} { ${rules} }`, 0);
+}
+
+export function addPrettyScrollBars() {
+  addStyleSheetRule('*::-webkit-scrollbar', {
+    width: '12px',
+    height: '12px',
+  });
+  addStyleSheetRule('*::-webkit-scrollbar-thumb', {
+    background: '#999',
+    'border-radius': '8px',
+    border: '2px solid #333',
+  });
+  addStyleSheetRule('*::-webkit-scrollbar-track', {
+    background: '#333',
+  });
+  addStyleSheetRule('*', {
+    'scrollbar-width': 'thin',
+    'scrollbar-color': '#999 #333',
+  });
+}
