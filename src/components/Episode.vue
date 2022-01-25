@@ -1,20 +1,22 @@
 <template>
   <div class="row items-stretch episode-container">
     <div class="col-xs-12 col-md-3 episode-left">
-      <Image :src="episode.thumb" :width="250" errorSrc="/img/static.jpg" />
+      <Image :src="episode.thumb" errorSrc="/img/static.jpg" />
     </div>
     <div class="col-xs-12 col-md-9 episode-middle q-px-md">
       <div class="row">
         <div class="col-12 q-pt-sm">
+          <div class="row">
           <q-icon
             name="play_circle"
             size="48px"
-            class="episode-play on-left"
+            class="episode-play col-auto on-left"
             @click="$emit('play', episode)"
           />
-          <span>
+          <div class="col" style="margin: auto">
             {{ episode.name }}. {{ episode.nfo.title }}
-          </span>
+          </div>
+          </div>
         </div>
         <div class="col-12 q-pt-md">
           {{ episode.nfo.plot }}

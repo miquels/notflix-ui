@@ -1,6 +1,6 @@
 <template>
 <div class="row justify-start">
-  <q-item shrink class="col-xs-12 col-md-6 q-pa-none">
+  <q-item shrink class="col-xs-12 col-sm-5 col-md-3 q-pa-none relative">
     <q-input
       :modelValue="search"
       @update:modelValue="$emit('update:search', $event)"
@@ -13,6 +13,7 @@
       label-color="white"
       type="search"
       color="white"
+      style="width: 100%"
     />
     <q-btn
       dense
@@ -21,7 +22,8 @@
       color="white"
     />
   </q-item>
-  <q-item class="col-md q-pa-none" />
+  <q-item class="col-sm col-xs-auto q-pa-none" />
+  <q-item class="col-xs-4 col-sm-auto q-pa-none relative">
   <q-select
     filled
     dense
@@ -30,10 +32,12 @@
     :modelValue="sortBy"
     @update:modelValue="$emit('update:sortBy', $event)"
     label="Sort by"
-    style="width: 100px"
-    class="col-auto inline"
+    style="width: 100%"
+    class="inline"
   />
-  <q-item class="col-xs col-md-auto" />
+  </q-item>
+  <div class="col-auto" />
+  <q-item class="col-xs-8 col-sm-auto relative q-pa-none">
   <q-select
     filled
     dense
@@ -46,9 +50,10 @@
     @update:modelValue="$emit('update:genreFilter', $event)"
     label="Genre"
     clearable
-    style="width: 250px"
-    class="col-auto q-pl-md inline relative"
+    style="width: 100%"
+    class="q-pl-md"
   />
+  </q-item>
 </div>
 </template>
 
