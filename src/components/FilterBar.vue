@@ -1,12 +1,11 @@
 <template>
 <div class="row justify-start">
-  <q-item shrink class="col-auto q-pa-none">
+  <q-item shrink class="col-xs-12 col-md-6 q-pa-none">
     <q-input
       :modelValue="search"
       @update:modelValue="$emit('update:search', $event)"
       placeholder="Search titles"
       dark
-      autofocus
       clearable
       hide-bottom-space
       dense
@@ -22,7 +21,7 @@
       color="white"
     />
   </q-item>
-  <q-item class="col" />
+  <q-item class="col-md q-pa-none" />
   <q-select
     filled
     dense
@@ -34,6 +33,7 @@
     style="width: 100px"
     class="col-auto inline"
   />
+  <q-item class="col-xs col-md-auto" />
   <q-select
     filled
     dense

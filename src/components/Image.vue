@@ -47,8 +47,9 @@ export default defineComponent({
 
     watchEffect(() => {
       style.value = {};
-      imgStyle.value = {};
+      imgStyle.value = { 'object-fit': 'cover' };
       if (props.width) {
+        // console.log('props has width', props.width);
         imgStyle.value.width = `${props.width}px`;
         style.value.width = `${props.width}px`;
       }
@@ -57,9 +58,11 @@ export default defineComponent({
         style.value.height = `${props.height}px`;
       }
       if (!style.value.height) {
+        style.value.height = '100%';
         imgStyle.value['max-height'] = '100%';
       }
       if (!style.value.width) {
+        style.value.width = '100%';
         imgStyle.value['max-width'] = '100%';
       }
 

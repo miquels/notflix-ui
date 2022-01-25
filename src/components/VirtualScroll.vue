@@ -4,7 +4,8 @@
     @scroll="onScroll"
     ref="scrollerEl"
   >
-  <div :style="{ height: `${topFillerHeight}px` }" />
+  <slot name="header"></slot>
+  <div :style="{ height: `${topFillerHeight}px` }" ref="topEl"/>
     <template v-for="item in visibleItems" :key="item.key">
       <slot :item="item" :scrolling="scrolling"></slot>
     </template>
@@ -43,6 +44,7 @@ export default defineComponent({
     const totalHeight = ref(0);
     const topFillerHeight = ref(0);
     const bottomFillerHeight = ref(0);
+    const topEl = ref(null);
     const scrollerEl = ref(null);
     const savedScrollTop = ref(0);
     const scrollTop = ref(0);
@@ -91,6 +93,7 @@ export default defineComponent({
       updating: false,
       scrollTop,
       savedScrollTop,
+      topEl,
       scrollerEl,
       lastScrollTm: 0,
       lastScrollPos: 0,
@@ -143,7 +146,9 @@ export default defineComponent({
     },
 
     updateVisibleItems() {
-      const top = this.scrollerEl.scrollTop;
+      // Remove the header, so that top starts at (- header.clientHeight)
+      // This means top === 0 as soon as we scroll past the header.
+      const top = this.scrollerEl.scrollTop - this.topEl.offsetTop;
       const bottom = top + this.scrollerEl.clientHeight;
       const renderThresHold = this.scrollerEl.clientHeight;
       const visibleItems = [];

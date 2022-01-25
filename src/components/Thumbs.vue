@@ -4,23 +4,26 @@
     <virtual-scroll
       class="thumbs-virtual-scroller relative"
       :items="rowItems"
-      :style="{ width: rowWidth }"
       ref="scroller"
     >
-      <template v-slot="{ item, scrolling }">
-        <q-item class="row no-wrap justify-center q-pa-none" :style="{ height: item.height }">
+    <template v-slot:header>
+      <q-item class="row no-wrap justify-center q-pa-none">
           <div class="col-auto">
               <FilterBar
-                v-if="item.type === 'filterbar'"
-                :style="{ width: `${item.width}px`, height: `${item.height}px` }"
+                :style="{ width: `${rowWidth}px` }"
                 :type="type"
                 :genres="genres"
                 v-model:search="search"
                 v-model:sortBy="sortBy"
                 v-model:genreFilter="genreFilter"
               />
+          </div>
+        </q-item>
+      </template>
+      <template v-slot:default="{ item, scrolling }">
+        <q-item class="row no-wrap justify-center q-pa-none" :style="{ height: item.height }">
+          <div class="col-auto">
               <PosterRow
-                v-if="item.type === 'thumbs'"
                 :style="{ width: `${item.width}px`, height: `${item.height}px` }"
                 :items="item.row"
                 :height="item.height"
@@ -129,7 +132,7 @@ export default {
     },
 
     rowWidth() {
-      return this.imgWidth + 2 * this.thumbPadding;
+      return (this.imgWidth + 2 * this.thumbPadding) * this.thumbsPerRow;
     },
   },
 
@@ -142,12 +145,6 @@ export default {
       const height = this.imgHeight + 32 + 2 * this.thumbPadding;
 
       const rows = [];
-      rows.push({
-        type: 'filterbar',
-        key: 'filterbar',
-        width,
-        height: 32,
-      });
 
       for (let base = 0; base < nrItems; base += thumbsPerRow) {
         const row = [];
