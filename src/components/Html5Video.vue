@@ -71,12 +71,10 @@
   height: 100%;
 }
 .html5video-video {
-  position: absolute;
-  right: 0;
-  bottom: 0;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  height: auto;
+  max-height: 100%;
+  margin: auto;
   display: block;
 }
 .html5video-video::cue {

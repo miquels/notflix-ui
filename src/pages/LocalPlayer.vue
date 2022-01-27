@@ -1,6 +1,6 @@
 <template>
   <teleport to="body">
-    <div class="local-player-container z-top flex-center fit">
+    <div class="local-player-container z-top">
       <Html5Video :src="src"/>
     </div>
   </teleport>
@@ -9,7 +9,12 @@
 <style>
 .local-player-container {
   position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
+  left: 0px;
+  top: 0px;
+  padding: 0px;
+  margin: 0px;
+  width: 100vw;
+  height: 100vh;
   background-color: black;
 }
 </style>

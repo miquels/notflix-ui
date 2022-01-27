@@ -16,8 +16,10 @@
 
 <style>
 .ios-video-video {
-  max-height: calc(100vh - 100px);
-  max-width: 100vw;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  margin: auto;
 }
 </style>
 

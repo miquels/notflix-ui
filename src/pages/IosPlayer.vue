@@ -1,17 +1,21 @@
 <template>
-    <div class="ios-player-container flex-center" draggable="false">
-      <div class="row">
-        <div class="col">
-          <IosVideo fit />
-        </div>
-      </div>
+  <teleport to="body">
+    <div class="ios-player-container z-top" draggable="false">
+      <IosVideo />
     </div>
+  </teleport>
 </template>
 
 <style>
 .ios-player-container {
-  max-width: 100vw;
-  max-height: 100vh;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  padding: 0px;
+  margin: 0px;
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
 }
 </style>
 
