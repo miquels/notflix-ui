@@ -39,9 +39,12 @@
           />
           <span class="on-left" v-if="duration">{{ time_info() }}</span>
         </div>
+        <div v-if="deviceName" class="col-5 gt-xs q-ml-sm self-center text-right">
+          <span class="text-uppercase">{{ nowPlaying() }}</span>
+          <span>{{ onDevice() }}</span>
+        </div>
         <div class="col"></div>
         <div class="col-auto q-mr-sm">
-
           <q-icon
             name="language" size="32px"
             class="on-right hover-pointer" v-if="audioTracks.length > 1"
@@ -146,6 +149,7 @@ import {
   ref,
   toRaw,
 } from 'vue';
+import { useStore } from 'vuex';
 import { hhmmss } from '../lib/util.js';
 
 export default defineComponent({
@@ -187,10 +191,14 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    videoName: String,
+    deviceName: String,
   },
 
   setup() {
     const el = ref(null);
+    const store = useStore();
+
     return {
       showLabel: ref(false),
       cur_play_icon: 'play_arrow',
@@ -198,6 +206,7 @@ export default defineComponent({
       isMenuOpen: false,
       seekTo: 0,
       hhmmss,
+      store,
       el,
     };
   },
@@ -245,6 +254,28 @@ export default defineComponent({
         return 'cast_connected';
       }
       return 'cast';
+    },
+
+    nowPlaying() {
+      const { castState } = this.store.state;
+      if (castState === 'connected' && this.videoName) {
+        return `${this.videoName}`;
+      }
+      return '';
+    },
+
+    onDevice() {
+      const { castState } = this.store.state;
+      if (castState === 'connecting') {
+        return `Connecting to ${this.deviceName}`;
+      }
+      if (castState !== 'connected') {
+        return '';
+      }
+      if (castState === 'connected' && this.videoName) {
+        return ` on ${this.deviceName}`;
+      }
+      return `Connected to ${this.deviceName}`;
     },
 
     seek(seekTo) {

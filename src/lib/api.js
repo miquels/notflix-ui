@@ -128,6 +128,7 @@ export default class API {
 
             // Make obj.path absolute.
             if (theObj.baseurl && theObj.path) {
+              theObj.relPath = theObj.path;
               theObj.path = joinpath(this.url, theObj.baseurl, theObj.path);
               delete theObj.baseurl;
             }
@@ -166,7 +167,8 @@ export default class API {
   }
 
   getItem(collName, item) {
-    return this.getObject(joinpath('/api/collection', collName, 'item', item));
+    const escItem = encodeURIComponent(item);
+    return this.getObject(joinpath('/api/collection', collName, 'item', escItem));
   }
 
   getGenres(collName) {

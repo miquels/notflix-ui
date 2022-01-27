@@ -31,6 +31,7 @@ export default defineComponent({
           type: 'episode',
           src: vid.episode.video,
           title: vid.episode.name,
+          poster: vid.season.poster || vid.show.poster,
           thumb: vid.episode.thumb,
           episode: vid.episode.episodeno,
           season: vid.season.seasonno,
@@ -46,14 +47,20 @@ export default defineComponent({
           type: 'movie',
           src: vid.movie.video,
           title: vid.movie.name,
+          poster: vid.movie.poster,
         };
         if (vid.movie.nfo) {
-          info.thumb = vid.movie.poster;
           info.title = vid.movie.nfo.title;
           info.year = vid.movie.nfo.year;
         }
       }
 
+      if (info.poster) {
+        info.poster += '?q=70&w=266&h=400';
+      }
+      if (info.thumb) {
+        info.poster += '?q=70';
+      }
       if (store.state.config.useHls || iosSafari) {
         info.src += '/master.m3u8';
       }

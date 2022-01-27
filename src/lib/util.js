@@ -104,6 +104,14 @@ export function hhmmss(seconds) {
   return d.substr(14, 5);
 }
 
+function numberWidth(num, w) {
+  let s = `${num}`;
+  while (s.length < w) {
+    s = `0${s}`;
+  }
+  return s;
+}
+
 export function hhmm(minutes) {
   if (Number.isNaN(Number(minutes))) {
     return minutes;
@@ -114,7 +122,15 @@ export function hhmm(minutes) {
   }
   const m = minutes % 60;
   const h = Math.floor(minutes / 60);
-  return `${h}h${m < 10 ? '0' : ''}${m}m`;
+  return `${h}h${numberWidth(m, 2)}m`;
+}
+
+export function s0xe0x(season, episode) {
+  return `S${numberWidth(season, 2)}E${numberWidth(episode, 2)}`;
+}
+
+export function sxe(season, episode) {
+  return `${numberWidth(season, 2)}x${numberWidth(episode, 2)}`;
 }
 
 export function addStyleSheetRule(selectorObj, rulesObj) {

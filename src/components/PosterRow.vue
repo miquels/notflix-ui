@@ -5,7 +5,7 @@
       :key="item.key"
       class="poster-row-thumb relative"
       :style="{ padding: `${padding}px` }"
-      @click="$emit('select', item.name)"
+      @click="$emit('select', item.relPath)"
     >
       <Image
         :src="item.url"

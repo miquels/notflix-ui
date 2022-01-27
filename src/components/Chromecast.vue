@@ -13,6 +13,8 @@
        :audioTrack="audioTrack"
        :audioTracks="audioTracks"
        :stopButton="true"
+       :videoName="name"
+       :deviceName="deviceName"
        @play="on_play"
        @seek="on_seek"
        @volume="on_volume"
@@ -52,6 +54,7 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import VideoControls from 'components/VideoControls.vue';
+import { sxe } from '../lib/util.js';
 
 export default defineComponent({
   name: 'Chromecast',
@@ -83,6 +86,8 @@ export default defineComponent({
       audioTracks: ref([]),
       audioTrack: ref(0),
       buffering: ref(false),
+      name: ref(null),
+      deviceName: ref(null),
       emitter,
       store,
     };
@@ -150,6 +155,7 @@ export default defineComponent({
 
       this._player = new window.cast.framework.RemotePlayer();
       this._controller = new window.cast.framework.RemotePlayerController(this._player);
+      this.deviceName = 'Chromecast';
 
       // Add a listener for cast-device events (if there are any, etc)
       const { CAST_STATE_CHANGED } = window.cast.framework.CastContextEventType;
@@ -197,7 +203,7 @@ export default defineComponent({
 
       handleEvent('CURRENT_TIME_CHANGED', () => {
         this.currentTime = this._player.currentTime;
-        console.log('current time changed');
+        // console.log('current time changed');
         this.active(true);
       });
 
@@ -363,8 +369,9 @@ export default defineComponent({
       mediaInfo.streamType = chrome.cast.media.StreamType.BUFFERED;
 
       const images = [];
-      if (item.thumb) {
-        images.push(new chrome.cast.Image(item.thumb));
+      if (item.poster) {
+        const posterUrl = new URL(item.poster, window.location.origin).href;
+        images.push(new chrome.cast.Image(posterUrl));
       }
       if (item.type === 'movie') {
         const meta = new chrome.cast.media.MovieMediaMetadata();
@@ -372,6 +379,7 @@ export default defineComponent({
         meta.images = images;
         meta.releaseYear = item.year;
         mediaInfo.metadata = meta;
+        this.name = item.title;
       }
       if (item.type === 'episode') {
         const meta = new chrome.cast.media.TvShowMediaMetadata();
@@ -382,6 +390,7 @@ export default defineComponent({
         meta.episode = item.episode;
         meta.seriesTitle = item.seriesTitle;
         mediaInfo.metadata = meta;
+        this.name = `${item.seriesTitle} ${sxe(item.season, item.episode)}`;
       }
 
       if (src.match(/\.m3u8(\?.*|)$/)) {
@@ -405,7 +414,7 @@ export default defineComponent({
       // chrome.cast.media.TextTrackEdgeType.DROP_SHADOW
       mediaInfo.textTrackStyle = new chrome.cast.media.TextTrackStyle();
       mediaInfo.textTrackStyle.backgroundColor = '#00000000';
-      mediaInfo.textTrackStyle.edgeColor = '#00000016';
+      mediaInfo.textTrackStyle.edgeColor = '#000016';
       mediaInfo.textTrackStyle.edgeType = 'DROP_SHADOW';
       mediaInfo.textTrackStyle.fontFamily = 'CASUAL';
       mediaInfo.textTrackStyle.fontScale = 1.0;
@@ -421,7 +430,7 @@ export default defineComponent({
         console.log('chromecast: no session');
         return;
       }
-      console.log('chromecast: loadMedia');
+      console.log(`chromecast: loadMedia. name is ${this.name}, deviceName is ${this.deviceName}`);
       this.store.commit('castActive', true);
 
       session.loadMedia(request).then(

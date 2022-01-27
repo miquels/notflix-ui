@@ -154,6 +154,7 @@ export default {
             key: theItem.id,
             url: `${theItem.path}/${theItem.poster}`,
             name: theItem.name,
+            relPath: theItem.relPath,
           };
           row.push(item);
         }
