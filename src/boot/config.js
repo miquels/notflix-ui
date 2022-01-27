@@ -18,5 +18,5 @@ export default async ({ store }) => {
     throw new Error(`boot/config;js: GETting /config.json: error ${response.status}`);
   }
   const config = await response.json();
-  store.commit('remoteConfig', config);
+  store.commit('externalConfig', config);
 };

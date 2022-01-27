@@ -189,6 +189,7 @@ export default defineComponent({
 
   setup() {
     const router = useRouter();
+    const store = useStore();
 
     onBeforeMount(() => {
       const instance = getCurrentInstance();
@@ -225,9 +226,8 @@ export default defineComponent({
     const isSafari = () => (quasar.platform.is.ios || quasar.platform.is.safari);
 
     // Only use native HLS on apple iphone/ipad, or safari browsers.
-    const nativeHls = isSafari();
+    const nativeHls = isSafari() && store.state.config.iosNativeHls;
 
-    const store = useStore();
     return {
       video: ref(null),
       playState: ref('paused'),

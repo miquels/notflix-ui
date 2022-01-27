@@ -84,7 +84,7 @@ export default class API {
     }
     API._instance = this;
     const store = useStore();
-    this.url = store.state.config.apiUrl;
+    this.url = store.state.externalConfig.apiUrl;
     this.objectCache = {};
     this.requestsPending = {};
     this.idCounter = 1;

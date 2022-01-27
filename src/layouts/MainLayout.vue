@@ -24,6 +24,12 @@
       <div class="col"/>
       <q-item shrink id="filter" class="col-auto q-pa-none" />
       <CastButton class="cursor-pointer" />
+      <q-icon
+        name="settings"
+        class="hover-pointer"
+        size="24px"
+        @click="$router.push('/settings/');"
+      />
       </q-toolbar>
     </q-header>
 
@@ -90,7 +96,6 @@ export default {
   setup() {
     const store = useStore();
     const leftDrawerOpen = ref(false);
-    const showSearch = ref(false);
     const mobile = isMobile();
     const quasar = useQuasar();
     const emitter = inject('emitter');
@@ -121,10 +126,6 @@ export default {
       leftDrawerOpen,
       toggleLeftDrawer() {
         leftDrawerOpen.value = !leftDrawerOpen.value;
-      },
-      showSearch,
-      toggleSearch() {
-        showSearch.value = !showSearch.value;
       },
       keepAlive,
       emitter,

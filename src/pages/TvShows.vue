@@ -2,7 +2,6 @@
   <q-page class="flex flex-center">
     <Thumbs
       :items="items"
-      :filter="store.state.filter.search"
       :genres="genres"
       type="series"
       class="fit"
@@ -15,7 +14,6 @@
 import {
   defineComponent,
   onActivated,
-  onDeactivated,
   ref,
 } from 'vue';
 import { useStore } from 'vuex';
@@ -47,12 +45,7 @@ export default defineComponent({
     });
 
     onActivated(() => {
-      store.commit('showSearch', true);
       store.commit('currentView', { type: 'series', genres: genres.value });
-    });
-    onDeactivated(() => {
-      store.commit('search', '');
-      store.commit('showSearch', false);
     });
 
     return {

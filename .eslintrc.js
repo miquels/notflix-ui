@@ -68,8 +68,11 @@ module.exports = {
     'import/no-extraneous-dependencies': 'off',
     'import/prefer-default-export': 'off',
     'prefer-promise-reject-errors': 'off',
+
+    // custom notflix rules from here (the above is quasar defaults).
     'no-underscore-dangle': 'off',
     'no-restricted-syntax': 'off',
+    'padded-blocks': 'off',
 
     // allow debugger during development only
     'no-console': 'off',

@@ -45,6 +45,11 @@
 /* eslint operator-linebreak: "off" */
 /* eslint no-console: "off" */
 
+const receiverIds = {
+  notflix: 'DC2E9EDB',
+  default: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+};
+
 import {
   defineComponent,
   getCurrentInstance,
@@ -67,10 +72,11 @@ export default defineComponent({
       default: null,
     },
   },
+
   setup() {
     onMounted(() => {
       const instance = getCurrentInstance();
-      instance.ctx.on_mounted();
+      instance.ctx.onMounted();
     });
     const emitter = inject('emitter');
     const store = useStore();
@@ -94,10 +100,9 @@ export default defineComponent({
   },
 
   methods: {
-
     // Initialize.
-    on_mounted() {
-      console.log('chromecast on_mounted');
+    onMounted() {
+      console.log('chromecast onMounted');
 
       if (!window.chrome || !chrome.cast || !chrome.cast.isAvailable) {
         window.__onGCastApiAvailable = (isAvailable) => {
@@ -111,9 +116,14 @@ export default defineComponent({
       this.init_player();
     },
 
+    receiverId() {
+      const id = this.store.state.config.castReceiver;
+      return receiverIds[id] || id;
+    },
+
     initPlayerDebug() {
-      const appID = 'DC2E9EDB';
-      const sessionRequest = new chrome.cast.SessionRequest(appID);
+      const instance = window.cast.framework.CastContext.getInstance();
+      const sessionRequest = new chrome.cast.SessionRequest(instance.ctx.receiverId());
       const apiConfig = new chrome.cast.ApiConfig(
         sessionRequest,
         (session) => {
@@ -139,14 +149,9 @@ export default defineComponent({
     },
 
     init_player() {
-      // console.log('init_player');
-      // this.initPlayerDebug();
-      // window.cc = this;
-
       const instance = window.cast.framework.CastContext.getInstance();
       const options = {
-        // receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-        receiverApplicationId: 'DC2E9EDB',
+        receiverApplicationId: this.receiverId(),
         autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
         resumeSavedSession: true,
       };
@@ -393,20 +398,25 @@ export default defineComponent({
         this.name = `${item.seriesTitle} ${sxe(item.season, item.episode)}`;
       }
 
-      if (src.match(/\.m3u8(\?.*|)$/)) {
-        if (this.store.state.config.castUseShakaHack) {
-          // This is a hack to use ShakaPlayer for HLS content.
-          console.log('setting content-type to dash');
-          mediaInfo.contentType = 'application/dash+xml';
-        } else {
-          // These must be set to FMP4, or the chromecast will hang.
-          mediaInfo.hlsSegmentFormat = chrome.cast.media.HlsSegmentFormat.FMP4;
-          mediaInfo.hlsVideoSegmentFormat = chrome.cast.media.HlsVideoSegmentFormat.FMP4;
-          // StreamType must be LIVE or OTHER, not BUFFERED.
-          mediaInfo.streamType = chrome.cast.media.StreamType.OTHER;
-          // And ofcourse the MIME type.
-          mediaInfo.contentType = 'application/x-mpegURL';
-        }
+      switch (this.store.state.config.castReceiver) {
+        case 'notflix':
+          // nothing to do.
+          break;
+        case 'default':
+          // default media receiver.
+          if (src.match(/\.m3u8(\?.*|)$/)) {
+            // These must be set to FMP4, or the chromecast will hang.
+            mediaInfo.hlsSegmentFormat = chrome.cast.media.HlsSegmentFormat.FMP4;
+            mediaInfo.hlsVideoSegmentFormat = chrome.cast.media.HlsVideoSegmentFormat.FMP4;
+            // StreamType must be LIVE or OTHER, not BUFFERED.
+            mediaInfo.streamType = chrome.cast.media.StreamType.OTHER;
+            // And ofcourse the MIME type.
+            mediaInfo.contentType = 'application/x-mpegURL';
+          }
+          break;
+        default:
+          // custom receiver should handle anything itself.
+          break;
       }
 
       // Netflix subtitle styling

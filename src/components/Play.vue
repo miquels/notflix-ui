@@ -61,7 +61,7 @@ export default defineComponent({
       if (info.thumb) {
         info.poster += '?q=70';
       }
-      if (store.state.config.useHls || iosSafari) {
+      if (store.state.config.streamingFormat === 'hls' || iosSafari) {
         info.src += '/master.m3u8';
       }
 
@@ -69,7 +69,7 @@ export default defineComponent({
       store.commit('currentVideo', info);
       if (store.state.castState === 'connected') {
         emitter.emit('playCast');
-      } else if (iosSafari) {
+      } else if (iosSafari && store.state.config.iosNativeVideo) {
         router.push('/ios-player/');
       } else {
         router.push('/local-player/');

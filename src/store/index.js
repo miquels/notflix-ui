@@ -1,24 +1,41 @@
 import { store } from 'quasar/wrappers';
 import { createStore } from 'vuex';
+import VuexPersistence from 'vuex-persist';
+
+const vuexLocal = new VuexPersistence({
+  storage: window.localStorage,
+  reducer: (state) => ({ config: state.config }),
+});
 
 export default store(() => {
   const Store = createStore({
+
+    plugins: [
+      vuexLocal.plugin,
+    ],
 
     state: () => ({
       castState: 'no_devices',
       castActive: false,
       currentVideo: null,
 
-      filter: {
-        showSearch: false,
-        search: '',
-        filterGenres: [],
-        sortBy: null,
+      // Stored config (for now in localstorage).
+      config: {
+        // what sort of videostream to request.
+        streamingFormat: 'hls',
+
+        // 'notflix', 'default', or a custom receiver id.
+        castReceiver: 'notflix',
+
+        // use the native <video> element and controls on ioS.
+        iosNativeVideo: true,
+
+        // when using hls.js, use native hls, or the hls.js stuff.
+        iosNativeHls: false,
       },
 
-      config: {
-        useHls: true,
-        castUseShakaHack: true,
+      // external config loaded from 'config.json' (if present).
+      externalConfig: {
         apiUrl: '',
       },
 
@@ -65,24 +82,6 @@ export default store(() => {
         state.castActive = active;
       },
 
-      // search as-we-type.
-      search(state, value) {
-        state.filter.search = value || '';
-      },
-
-      sortBy(state, value) {
-        state.filter.sortBy = value;
-      },
-
-      filterGenres(state, value) {
-        state.filter.filterGenres = value;
-      },
-
-      // show 'search' in the menubar?
-      showSearch(state, value) {
-        state.filter.showSearch = value || false;
-      },
-
       // video currently playing (or about to be played).
       currentVideo(state, value) {
         state.currentVideo = value;
@@ -96,10 +95,25 @@ export default store(() => {
       },
 
       // config from remote /config.json (if any).
-      remoteConfig(state, config) {
+      externalConfig(state, config) {
         if (config.apiUrl) {
-          state.config.apiUrl = config.apiUrl;
+          state.externalConfig.apiUrl = config.apiUrl;
         }
+      },
+
+      // cast received id, notflix, default, or custom.
+      castReceiver(state, receiver) {
+        state.config.castReceiver = receiver;
+      },
+
+      // iosNativeVideo.
+      iosNativeVideo(state, value) {
+        state.config.iosNativeVideo = value;
+      },
+
+      // iosNativeHls.
+      iosNativeHls(state, value) {
+        state.config.iosNativeHls = value;
       },
     },
 
