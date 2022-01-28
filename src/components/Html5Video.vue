@@ -43,7 +43,9 @@
           :castState="castState"
           :airplayState="airplayState"
           :fullScreenState="fullScreenState"
+          :stopButton="stopButton"
           @play="onPlay"
+          @stop="onStop"
           @seek="onSeek"
           @volume="onVolume"
           @mute="onMute"
@@ -237,6 +239,7 @@ export default defineComponent({
 
     const fullScreenState = ref(quasar.fullscreen.isCapable
       ? (quasar.fullscreen.isActive ? 'yes' : 'no') : null);
+    const stopButton = ref(quasar.fullscreen.isActive);
 
     return {
       video: ref(null),
@@ -252,6 +255,7 @@ export default defineComponent({
       castState: ref('no_devices'),
       airplayState: ref(false),
       fullScreenState,
+      stopButton,
       seeking: false,
       showControls: ref(false),
       displayState: ref(DisplayState.HIDDEN),
@@ -565,6 +569,11 @@ export default defineComponent({
       this.bigPlayButton = false;
     },
 
+    // Stop button (if shown) was clicked.
+    onStop() {
+      this.$router.go(-1);
+    },
+
     onSeek(newTime, fast) {
       if (this.playState === 'ended') {
         this.setState('paused');
@@ -625,9 +634,15 @@ export default defineComponent({
         return;
       }
       if (this.quasar.fullscreen.isActive) {
-        this.quasar.fullscreen.exit().then(() => { this.fullScreenState = 'off'; });
+        this.quasar.fullscreen.exit().then(() => {
+          this.fullScreenState = 'off';
+          this.stopButton = false;
+        });
       } else {
-        this.quasar.fullscreen.request(this.el).then(() => { this.fullScreenState = 'on'; });
+        this.quasar.fullscreen.request(this.el).then(() => {
+          this.fullScreenState = 'on';
+          this.stopButton = true;
+        });
       }
     },
 
