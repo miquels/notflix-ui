@@ -6,34 +6,36 @@
       :items="rowItems"
       ref="scroller"
     >
-    <template v-slot:header>
-      <q-item class="row no-wrap justify-center q-pa-none">
+      <template v-slot:header>
+        <q-item class="row no-wrap justify-center q-pa-none q-pb-md">
           <div class="col-auto">
-              <FilterBar
-                :style="{ width: `${rowWidth}px` }"
-                :type="type"
-                :genres="genres"
-                v-model:search="search"
-                v-model:sortBy="sortBy"
-                v-model:genreFilter="genreFilter"
-              />
+            <FilterBar
+              :style="{ width: `${rowWidth}px` }"
+              :type="type"
+              :genres="genres"
+              v-model:search="search"
+              v-model:sortBy="sortBy"
+              v-model:genreFilter="genreFilter"
+            />
           </div>
         </q-item>
       </template>
+
       <template v-slot:default="{ item, scrolling }">
         <q-item class="row no-wrap justify-center q-pa-none" :style="{ height: item.height }">
           <div class="col-auto">
-              <PosterRow
-                :style="{ width: `${item.width}px`, height: `${item.height}px` }"
-                :items="item.row"
-                :height="item.height"
-                :padding="thumbPadding"
-                :imgWidth="imgWidth"
-                :imgHeight="imgHeight"
-                :fontSize="fontSize"
-                :hideImages="scrolling"
-                @select="$emit('select', $event)"
-              />
+            <PosterRow
+              :style="{ width: `${item.width}px`, height: `${item.height}px` }"
+              :items="item.row"
+              :collection="collection"
+              :height="item.height"
+              :padding="thumbPadding"
+              :imgWidth="imgWidth"
+              :imgHeight="imgHeight"
+              :fontSize="fontSize"
+              :hideImages="scrolling"
+              @select="$emit('select', $event)"
+            />
           </div>
         </q-item>
       </template>
@@ -81,6 +83,10 @@ export default {
     genres: {
       type: Array,
       default: () => [],
+    },
+    collection: {
+      type: String,
+      default: null,
     },
     type: String,
   },

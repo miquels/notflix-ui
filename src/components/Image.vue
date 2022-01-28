@@ -1,5 +1,5 @@
 <template>
-  <div class="image-container" :style="style">
+  <div class="image-container relative" :style="style">
     <div class="image-background"><span class="image-name">{{ name }}</span></div>
     <img
       v-if="imgSrc && !hidden"
@@ -8,6 +8,14 @@
       :onerror="onError"
       decoding="async"
     >
+    <q-icon
+      v-if="favorite === true || favorite === false"
+      :name="favorite ? 'favorite' : 'favorite_border'"
+      size="16px"
+      class="image-favorite q-pa-sm"
+      :color="favorite ? 'blue' : 'white'"
+      @click.stop="$emit('favorite', name)"
+    />
   </div>
 </template>
 
@@ -37,6 +45,10 @@ export default defineComponent({
     name: String,
     width: Number,
     height: Number,
+    favorite: {
+      type: Boolean,
+      default: null,
+    },
   },
 
   setup(props) {
@@ -122,6 +134,15 @@ export default defineComponent({
   height: 100%;
   transition: all .2s ease-in-out;
   overflow: hidden;
+}
+.image-favorite {
+  position: absolute;
+  right: 0px;
+  bottom: 0px;
+  z-index: 1;
+}
+.image-favorite:hover {
+  cursor: crosshair;
 }
 .image-name {
   width: 100%;

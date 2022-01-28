@@ -1,5 +1,14 @@
 <template>
   <q-page class="flex flex-center">
+    <div v-if="haveFavorites === false" class="text-h6">
+      You have not selected any favorites yet. Click on the TV-SHOWS tab to get started.
+    </div>
+    <div v-if="haveFavorites === true" class="text-h6">
+      &gt;&gt;
+      This listing of favorites is preliminary and subject to change!
+      Your settings will be lost!
+      &lt;&lt;
+    </div>
     <Thumbs
       :items="items"
       :collection="collection"
@@ -22,7 +31,7 @@ import Thumbs from 'components/Thumbs.vue';
 import API from '../lib/api.js';
 
 export default defineComponent({
-  name: 'PageTvShows',
+  name: 'PageHome',
   components: {
     Thumbs,
   },
@@ -33,10 +42,13 @@ export default defineComponent({
     const genres = ref([]);
     const api = new API();
     const collection = 'TV Shows';
+    const haveFavorites = ref(null);
 
     api.getItems(encodeURIComponent(collection)).then((theItems) => {
       // console.log('setting items', theItems);
-      items.value = theItems;
+      // eslint-disable-next-line
+      items.value = theItems.filter((item) => store.getters.isFavorite({ collection, name: item.name }));
+      haveFavorites.value = items.value.length > 0;
     });
 
     api.getGenreNames(encodeURIComponent(collection)).then((theGenres) => {
@@ -56,6 +68,7 @@ export default defineComponent({
       items,
       genres,
       collection,
+      haveFavorites,
     };
   },
 

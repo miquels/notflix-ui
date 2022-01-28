@@ -4,10 +4,12 @@
     <q-header elevated class="bg-grey-10 text-white">
       <q-toolbar>
         <!-- q-btn dense flat round icon="menu" @click="toggleLeftDrawer" /-->
-        <q-toolbar-title class="col-auto q-ml-lg">
-          <span class="reverse-n">&#7438;</span>otflix
-        </q-toolbar-title>
         <q-tabs shrink class="col">
+          <q-route-tab name="home" to="/" >
+            <q-toolbar-title class="col-auto q-pa-none q-ma-none">
+              <span class="reverse-n">&#7438;</span>otflix
+            </q-toolbar-title>
+          </q-route-tab>
           <q-route-tab
             name="tv-shows"
             label="TV Shows"
@@ -72,6 +74,9 @@
 }
 .drawer {
   height: calc(100vh - 50px);
+}
+.q-tab {
+  padding: 0px;
 }
 </style>
 

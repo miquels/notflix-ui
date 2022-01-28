@@ -3,8 +3,7 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      // { path: '', component: () => import('pages/Index.vue') },
-      { path: '', redirect: '/tv-shows/' },
+      { path: '', component: () => import('pages/Home.vue') },
       { path: '/tv-shows/:collection/:name', component: () => import('pages/TvShow.vue') },
       { path: '/tv-shows/', component: () => import('pages/TvShows.vue') },
       { path: '/movies/:collection/:name', component: () => import('pages/Movie.vue') },

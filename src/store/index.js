@@ -4,7 +4,7 @@ import VuexPersistence from 'vuex-persist';
 
 const vuexLocal = new VuexPersistence({
   storage: window.localStorage,
-  reducer: (state) => ({ config: state.config }),
+  reducer: (state) => ({ config: state.config, favorites: state.favorites }),
 });
 
 export default store(() => {
@@ -31,6 +31,9 @@ export default store(() => {
         iosNativeVideo: true,
       },
 
+      // What shows / movies are marked as 'favorite'.
+      favorites: {},
+
       // external config loaded from 'config.json' (if present).
       externalConfig: {
         apiUrl: '',
@@ -45,23 +48,16 @@ export default store(() => {
       },
     }),
 
-    /*
-    actions: {
-      nextSong( { commit, state } ){
-        let nextIndex = state.activeIndex + 1;
-
-        commit( 'setActiveIndex', nextIndex );
-        commit( 'setActiveSong', state.songs[ nextIndex ] );
-      }
-    },
-    */
-
     getters: {
       config(state) {
         return state.config;
       },
       genres(state) {
         return state.currentView.genres;
+      },
+      isFavorite: (state) => (value) => {
+        const key = `${value.collection}.${value.name}`;
+        return typeof state.favorites[key] === 'object';
       },
     },
 
@@ -106,6 +102,21 @@ export default store(() => {
       // iosNativeVideo.
       iosNativeVideo(state, value) {
         state.config.iosNativeVideo = value;
+      },
+
+      // Add an item as favorite.
+      // value is { collection: 'coll', item: 'name' }
+      addFavorite(state, value) {
+        const key = `${value.collection}.${value.name}`;
+        console.log('addFavorite', key);
+        state.favorites[key] = {};
+      },
+
+      // Remove an item as favorite.
+      removeFavorite(state, value) {
+        const key = `${value.collection}.${value.name}`;
+        console.log('removeFavorite', key);
+        delete state.favorites[key];
       },
     },
 

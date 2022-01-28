@@ -10,7 +10,7 @@ export default defineComponent({
   props: {
     size: {
       type: Number,
-      default: 32,
+      default: 28,
     },
   },
   setup(props) {
