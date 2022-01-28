@@ -1,22 +1,25 @@
 <template>
-  <google-cast-launcher :style="castClass"></google-cast-launcher>
+  <google-cast-launcher :style="castStyle"></google-cast-launcher>
 </template>
 
 <script>
-import { defineComponent, ref } from 'vue';
+import { defineComponent } from 'vue';
 
 export default defineComponent({
   name: 'CastButton',
   props: {
-    size: ref(24),
+    size: {
+      type: Number,
+      default: 32,
+    },
   },
   setup(props) {
-    const sizing = {
-      width: props.size || '32px',
-      height: props.size || '32px',
+    const castStyle = {
+      width: `${props.size}px`,
+      height: `${props.size}px`,
     };
     return {
-      castClass: sizing,
+      castStyle,
     };
   },
 });

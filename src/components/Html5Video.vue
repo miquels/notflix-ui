@@ -13,7 +13,7 @@
     @keyup.right="relSeek(15)"
     ref="el"
   >
-    <video class="html5video-video" ref="video"></video>
+    <video class="html5video-video" ref="video" :playsinline="playsInline ? '' : null"></video>
     <div class="html5video-overlay column fit" v-if="overlay()">
       <div class="row justify-center items-center fit absolute">
         <div v-if="bigPlayButton" class="col-auto">
@@ -43,8 +43,6 @@
           :castState="castState"
           :airplayState="airplayState"
           :fullScreenState="fullScreenState"
-          deviceName="NoCast"
-          name="hey must be the money 01x02"
           @play="onPlay"
           @seek="onSeek"
           @volume="onVolume"
@@ -64,6 +62,7 @@
 <style lang="scss">
 @import '~src/css/mixins.scss';
 .html5video-container {
+  display: flex;
   position: relative;
   background: black;
   outline: none;
@@ -190,6 +189,8 @@ export default defineComponent({
   setup() {
     const router = useRouter();
     const store = useStore();
+    const quasar = useQuasar();
+    let wasFullScreen = false;
 
     onBeforeMount(() => {
       const instance = getCurrentInstance();
@@ -205,9 +206,15 @@ export default defineComponent({
         router.go(-1);
       }
       instance.ctx.mounted();
+      wasFullScreen = quasar.fullscreen.isActive;
     });
 
     onUnmounted(() => {
+      // leave full screen.
+      if (!wasFullScreen && quasar.fullscreen.isActive) {
+        quasar.fullscreen.exit();
+      }
+
       // make sure we get rid of the video.
       if (window.video) {
         window.video = null;
@@ -222,11 +229,14 @@ export default defineComponent({
         instance.video = null;
       }
     });
-    const quasar = useQuasar();
     const isSafari = () => (quasar.platform.is.ios || quasar.platform.is.safari);
 
     // Only use native HLS on apple iphone/ipad, or safari browsers.
-    const nativeHls = isSafari() && store.state.config.iosNativeHls;
+    const nativeHls = isSafari();
+    const playsInline = isSafari() && !store.state.config.iosNativeVideo;
+
+    const fullScreenState = ref(quasar.fullscreen.isCapable
+      ? (quasar.fullscreen.isActive ? 'yes' : 'no') : null);
 
     return {
       video: ref(null),
@@ -241,12 +251,12 @@ export default defineComponent({
       audioTrack: ref(0),
       castState: ref('no_devices'),
       airplayState: ref(false),
-      fullScreenState: ref('off'),
+      fullScreenState,
       seeking: false,
       showControls: ref(false),
       displayState: ref(DisplayState.HIDDEN),
       displayTimer: null,
-      denderTimer: null,
+      playsInline,
       info: ref(null),
       nativeHls,
       bigPlayButton: ref(false),
@@ -611,6 +621,9 @@ export default defineComponent({
     },
 
     onFullscreen() {
+      if (this.fullScreenState === null) {
+        return;
+      }
       if (this.quasar.fullscreen.isActive) {
         this.quasar.fullscreen.exit().then(() => { this.fullScreenState = 'off'; });
       } else {

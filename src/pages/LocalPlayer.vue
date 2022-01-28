@@ -1,6 +1,6 @@
 <template>
   <teleport to="body">
-    <div class="local-player-container z-top">
+    <div class="local-player-container z-top" :style="fillAvailable">
       <Html5Video :src="src"/>
     </div>
   </teleport>
@@ -23,6 +23,7 @@
 import {
   defineComponent,
 } from 'vue';
+import { useQuasar } from 'quasar';
 import { useRoute } from 'vue-router';
 import Html5Video from 'components/Html5Video.vue';
 
@@ -34,9 +35,15 @@ export default defineComponent({
 
   setup() {
     const route = useRoute();
-    console.log('params:', route.params);
+    const quasar = useQuasar();
+
+    // https://allthingssmitty.com/2020/05/11/css-fix-for-100vh-in-mobile-webkit/
+    // This will eventually change to 'height: stretch'.
+    const fillAvailable = quasar.platform.is.mobile ? { 'max-height': '-webkit-fill-available' } : {};
+
     return {
       src: route.params.src,
+      fillAvailable,
     };
   },
 });

@@ -45,11 +45,6 @@
 /* eslint operator-linebreak: "off" */
 /* eslint no-console: "off" */
 
-const receiverIds = {
-  notflix: 'DC2E9EDB',
-  default: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-};
-
 import {
   defineComponent,
   getCurrentInstance,
@@ -117,6 +112,10 @@ export default defineComponent({
     },
 
     receiverId() {
+      const receiverIds = {
+        notflix: 'DC2E9EDB',
+        default: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+      };
       const id = this.store.state.config.castReceiver;
       return receiverIds[id] || id;
     },

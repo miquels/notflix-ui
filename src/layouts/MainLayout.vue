@@ -22,11 +22,10 @@
           />
       </q-tabs>
       <div class="col"/>
-      <q-item shrink id="filter" class="col-auto q-pa-none" />
-      <CastButton class="cursor-pointer" />
+      <CastButton class="on-right cursor-pointer" />
       <q-icon
         name="settings"
-        class="hover-pointer"
+        class="on-right hover-pointer"
         size="24px"
         @click="$router.push('/settings/');"
       />

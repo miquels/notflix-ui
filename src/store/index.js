@@ -29,9 +29,6 @@ export default store(() => {
 
         // use the native <video> element and controls on ioS.
         iosNativeVideo: true,
-
-        // when using hls.js, use native hls, or the hls.js stuff.
-        iosNativeHls: false,
       },
 
       // external config loaded from 'config.json' (if present).
@@ -109,11 +106,6 @@ export default store(() => {
       // iosNativeVideo.
       iosNativeVideo(state, value) {
         state.config.iosNativeVideo = value;
-      },
-
-      // iosNativeHls.
-      iosNativeHls(state, value) {
-        state.config.iosNativeHls = value;
       },
     },
 

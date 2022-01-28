@@ -4,7 +4,7 @@
   </div>
   <div class="row q-pa-md">
 
-    <q-card dark bordered class="col q-ma-md bg-grey-10 my-card">
+    <q-card dark bordered class="col-auto q-ma-md bg-grey-10 my-card">
       <q-card-section>
         <div class="text-h6">Chromecast</div>
       </q-card-section>
@@ -14,9 +14,11 @@
           :options="castOptions"
           type="radio"
           v-model="castSelected"
+          @update:modelValue="castSelectedUpdated"
         />
         <q-input
           v-model="castReceiverId"
+          @update:modelValue="castReceiverIdUpdated"
           :disable="castSelected !== 'custom'"
           :rules="[ val => checkReceiverId(val) || 'Please enter a 6-digit hex number' ]"
           placeholder="Custom Receiver Id"
@@ -31,35 +33,39 @@
       </q-card-section>
     </q-card>
 
-    <q-card dark bordered class="col q-ma-md bg-grey-10 my-card">
+    <q-card
+      v-if="quasar.platform.is.ios"
+      dark bordered
+      class="col-auto q-ma-md bg-grey-10 my-card"
+    >
       <q-card-section>
         <div class="text-h6">iPhone / iPad</div>
       </q-card-section>
       <q-separator dark inset />
       <q-card-section>
         <q-option-group
-          :options="iosOptions"
-          type="checkbox"
+          :options="iosVideo"
+          type="radio"
           v-model="iosSelected"
+          @update:modelValue="iosUpdated"
         />
       </q-card-section>
     </q-card>
   </div>
 </template>
 
-<style lang="sass" scoped>
-.my-card
-  width: 100%
-  max-width: 250px
+<style lang="scss" scoped>
+.my-card {
+  min-width: 250px;
+}
 </style>
 
 <script>
 import {
   defineComponent,
   ref,
-  onMounted,
-  onUnmounted,
 } from 'vue';
+import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
 
 export default defineComponent({
@@ -67,62 +73,41 @@ export default defineComponent({
 
   setup() {
     const store = useStore();
+    const quasar = useQuasar();
 
-    const castOptions = ref([
+    const castOptions = [
       { label: 'Notflix Receiver', value: 'notflix' },
       { label: 'Default Media Receiver', value: 'default' },
       { label: 'Custom Receiver', value: 'custom' },
-    ]);
-    const castSelected = ref('notflix');
+    ];
+    const castSelected = ref('');
     const castReceiverId = ref('');
+    switch (store.state.config.castReceiver) {
+      case 'notflix':
+        castSelected.value = 'notflix';
+        break;
+      case 'default':
+        castSelected.value = 'default';
+        break;
+      default:
+        castSelected.value = 'custom';
+        castReceiverId.value = store.state.config.castReceiver;
+        break;
+    }
 
-    const iosOptions = ref([
-      { label: 'Use system video player', value: 'nativeVideo' },
-      { label: 'HLS.js: use native HLS', value: 'nativeHls' },
-    ]);
-    const iosSelected = ref([]);
-
-    onMounted(() => {
-
-      switch (store.state.config.castReceiver) {
-        case 'notflix':
-          castSelected.value = 'notflix';
-          break;
-        case 'default':
-          castSelected.value = 'default';
-          break;
-        default:
-          castSelected.value = 'custom';
-          castReceiverId.value = store.state.config.castReceiver;
-          break;
-      }
-
-      if (store.state.config.iosNativeVideo) iosSelected.value.push('nativeVideo');
-      if (store.state.config.iosNativeHls) iosSelected.value.push('nativeHls');
-    });
-
-    onUnmounted(() => {
-      switch (castSelected.value) {
-        case 'notflix':
-          store.commit('castReceiver', 'notflix');
-          break;
-        case 'default':
-          store.commit('castReceiver', 'default');
-          break;
-        default:
-          store.commit('castReceiver', castSelected.value);
-          break;
-      }
-      store.commit('iosNativeVideo', iosSelected.value.includes('nativeVideo'));
-      store.commit('iosNativeHls', iosSelected.value.includes('nativeHls'));
-    });
+    const iosVideo = [
+      { label: 'Use system video player', value: 'native' },
+      { label: 'Use Notflix video player', value: 'notflix' },
+    ];
+    const iosSelected = ref(store.state.config.iosNativeVideo ? 'native' : 'notflix');
 
     return {
       castOptions,
       castSelected,
       castReceiverId,
-      iosOptions,
+      iosVideo,
       iosSelected,
+      quasar,
     };
   },
 
@@ -130,6 +115,24 @@ export default defineComponent({
     checkReceiverId(val) {
       if (this.castSelected !== 'custom' || !val) return true;
       return val.match(/^[0-9a-fA-F]{6}$/) !== null;
+    },
+
+    iosUpdated(val) {
+      this.$store.commit('iosNativeVideo', val === 'native');
+    },
+
+    castReceiverIdUpdated(val) {
+      this.$store.commit('castReceiver', val);
+    },
+
+    castSelectedUpdated(val) {
+      if (val === 'custom') {
+        if (this.castReceiverId) {
+          this.$store.commit('castReceiver', this.castReceiverId);
+        }
+      } else {
+        this.$store.commit('castReceiver', val);
+      }
     },
   },
 
