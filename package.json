@@ -15,6 +15,7 @@
     "core-js": "^3.6.5",
     "hls.js": "^1.1.2",
     "mitt": "^3.0.0",
+    "pwacompat": "^2.0.17",
     "quasar": "^2.0.0",
     "vuex": "^4.0.1",
     "vuex-persist": "^3.1.3"

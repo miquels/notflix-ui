@@ -1,0 +1,33 @@
+{
+  "name": "Notflix",
+  "short_name": "Notflix!",
+  "display": "minimal-ui",
+  "start_url": "/",
+  "background_color": "#102a48",
+  "icons": [
+    {
+      "src": "favicon-io/android-chrome-192x192.png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "favicon-io/android-chrome-512x512.png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "favicon-io/apple-touch-icon.png",
+      "sizes": "180x180"
+    },
+    {
+      "src": "favicon-io/favicon-16x16.png",
+      "sizes": "16x16"
+    },
+    {
+      "src": "favicon-io/favicon-32x32.png",
+      "sizes": "32x32"
+    },
+    {
+      "src": "favicon-io/favicon.ico",
+      "sizes": "48x48"
+    }
+  ]
+}

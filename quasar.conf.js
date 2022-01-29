@@ -12,6 +12,8 @@ const ESLintPlugin = require('eslint-webpack-plugin');
 /* eslint global-require: 0 */
 const { configure } = require('quasar/wrappers');
 
+const CopyPlugin = require('copy-webpack-plugin');
+
 const path = require('path');
 
 module.exports = configure((ctx) => ({
@@ -75,11 +77,24 @@ module.exports = configure((ctx) => ({
       chain.plugin('eslint-webpack-plugin')
         .use(ESLintPlugin, [{ extensions: ['js', 'vue'] }]);
     },
-	vueCompiler: true,
+
+    chainWebpack(chain) {
+      chain.plugin('copy-webpack-plugin')
+        .use(CopyPlugin, [{
+          patterns: [
+            {
+              from: 'node_modules/pwacompat/pwacompat.min.js',
+              to: 'js/pwacompat.min.js',
+            }
+          ]
+        }]);
+    },
+
+	  vueCompiler: true,
     vueLoaderOptions: {
-	  compilerOptions: {
-	    isCustomElement: tag => tag === 'google-cast-launcher',
-	  },
+	    compilerOptions: {
+	      isCustomElement: tag => tag === 'google-cast-launcher',
+	    },
     },
   },
 
@@ -89,12 +104,12 @@ module.exports = configure((ctx) => ({
       type: 'https',
     },
     port: 8080,
-	// open browser window automatically
+	  // open browser window automatically
     open: true,
-	// serve static files (not bundled) from local.
-	static: {
-	  directory: path.join(__dirname, 'local'),
-	},
+	  // serve static files (not bundled) from local.
+	  static: {
+	    directory: path.join(__dirname, 'local'),
+	  },
   },
 
   // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-framework
@@ -113,8 +128,8 @@ module.exports = configure((ctx) => ({
 
     // Quasar plugins
     plugins: [
-	  'AppFullscreen',
-	],
+	    'AppFullscreen',
+	  ],
   },
 
   // animations: 'all', // --- includes all animations
