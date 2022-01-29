@@ -2,6 +2,7 @@
   <q-page class="flex flex-center">
     <Thumbs
       :items="items"
+      :genres="genres"
       class="fit"
       @select="movie_clicked"/>
   </q-page>
@@ -49,6 +50,7 @@ export default defineComponent({
 
     return {
       items,
+      genres,
       store,
     };
   },

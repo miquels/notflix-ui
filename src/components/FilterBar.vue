@@ -65,6 +65,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+// Override max height of a QSelect in dialog mode, because the
+// only way to close it is to click outside of it, and it
+// almost covers the entire screen...
+body.mobile:not(.native-mobile) .q-select__dialog {
+  max-height: 70vh !important;
+}
 </style>
 
 <script>

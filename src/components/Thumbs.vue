@@ -242,11 +242,16 @@ export default {
       if (!width) {
         width = this.$q.scroll.getScrollWidth(this.$el);
       }
-      if (width < 300) {
-        width = 300;
+      if (width < 320) {
+        width = 320;
+      }
+      // Iphone 5 is 320 pixels wide, so only shows 2 thumbs.
+      // Add some extra padding.
+      if (width < 350 && psz === 0) {
+        this.thumbPadding = 20;
       }
       const thumbWidth = this.imgWidth + 2 * this.thumbPadding;
-      this.thumbsPerRow = parseInt((width - 40) / thumbWidth, 10);
+      this.thumbsPerRow = parseInt((width - 20) / thumbWidth, 10);
     },
 
     onResize(ev) {

@@ -76,7 +76,8 @@
   height: calc(100vh - 50px);
 }
 .q-tab {
-  padding: 0px;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 </style>
 
@@ -116,6 +117,7 @@ export default {
     const keepAlive = [
       'PageTvShows',
       'PageMovies',
+      'PageHome',
       'TvShows',
       'Movies',
       // 'PageTvShow',
