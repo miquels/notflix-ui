@@ -3,7 +3,6 @@
 
     <q-header elevated class="bg-grey-10 text-white">
       <q-toolbar>
-        <!-- q-btn dense flat round icon="menu" @click="toggleLeftDrawer" /-->
         <q-tabs shrink class="col">
           <q-route-tab name="home" to="/" >
             <q-toolbar-title class="col-auto q-pa-none q-ma-none">
@@ -34,18 +33,6 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer
-      behavior="desktop"
-      class="drawer"
-      :width="200"
-      v-model="leftDrawerOpen"
-      side="left"
-      overlay
-      elevated
-    >
-      <Filter />
-    </q-drawer>
-
     <q-page-container>
       <router-view v-slot="{ Component }">
         <keep-alive :include="keepAlive">
@@ -72,9 +59,6 @@
 .sort {
   color: white;
 }
-.drawer {
-  height: calc(100vh - 50px);
-}
 .q-tab {
   padding-left: 8px;
   padding-right: 8px;
@@ -88,19 +72,16 @@ import { useStore } from 'vuex';
 import Chromecast from 'components/Chromecast.vue';
 import CastButton from 'components/CastButton.vue';
 import Play from 'components/Play.vue';
-import Filter from 'components/Filter.vue';
 import { isMobile, addPrettyScrollBars } from '../lib/util.js';
 
 export default {
   components: {
     Chromecast,
     CastButton,
-    Filter,
     Play,
   },
   setup() {
     const store = useStore();
-    const leftDrawerOpen = ref(false);
     const mobile = isMobile();
     const quasar = useQuasar();
     const emitter = inject('emitter');
@@ -129,10 +110,6 @@ export default {
     ];
 
     return {
-      leftDrawerOpen,
-      toggleLeftDrawer() {
-        leftDrawerOpen.value = !leftDrawerOpen.value;
-      },
       keepAlive,
       emitter,
       store,
