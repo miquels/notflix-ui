@@ -158,7 +158,7 @@ export default {
           const theItem = items[base + r];
           const item = {
             key: theItem.id,
-            url: `${theItem.path}/${theItem.poster}`,
+            url: theItem.poster ? `${theItem.path}/${theItem.poster}` : '/img/static.jpg',
             name: theItem.name,
             relPath: theItem.relPath,
           };
