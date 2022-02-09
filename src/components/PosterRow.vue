@@ -7,7 +7,7 @@
       :style="{ padding: `${padding}px` }"
       @click="$emit('select', item.relPath)"
     >
-      <Image
+      <Image errorSrc="/img/static.jpg"
         :src="item.url"
         :name="item.name"
         :width="imgWidth"
