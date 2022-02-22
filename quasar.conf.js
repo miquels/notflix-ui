@@ -30,6 +30,7 @@ module.exports = configure((ctx) => ({
     'emitter.js',
     'chromecast.js',
     'config.js',
+    'pwa.js',
   ],
 
   // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-css

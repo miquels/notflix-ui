@@ -1,8 +1,10 @@
 {
   "name": "Notflix",
-  "short_name": "Notflix!",
-  "display": "minimal-ui",
+  "short_name": "Notflix",
+  "display_override": ["minimal-ui", "standalone"],
+  "display": "standalone",
   "start_url": "/",
+  "scope": "/",
   "background_color": "#102a48",
   "icons": [
     {

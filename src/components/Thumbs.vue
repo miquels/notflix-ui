@@ -92,7 +92,8 @@ export default {
   },
 
   data() {
-    const posterSize = isMobile() ? 1 : 2;
+    const isLarge = (screen.width >= 1024 || screen.height >= 1024);
+    const posterSize = isLarge ? 2 : 1;
     const sortBy = this.type === 'series' ? 'Updated' : 'Added';
 
     return {
