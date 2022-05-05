@@ -539,8 +539,10 @@ export default defineComponent({
       if (url.endsWith('.m3u8') && !this.nativeHls) {
         // console.log('creating new hls', this.video);
         const hlsConfig = {
-          backBufferLength: 0,
+          backBufferLength: 120,
           maxMaxBufferLength: 120,
+          // broken in HLS.js 1.1, should be fixed in 1.2
+          // progressive: true,
         };
         this.hls = new Hls(hlsConfig);
         this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.onManifestloaded());
