@@ -256,7 +256,6 @@ export default defineComponent({
       airplayState: ref(false),
       fullScreenState,
       stopButton,
-      seeking: false,
       showControls: ref(false),
       displayState: ref(DisplayState.HIDDEN),
       displayTimer: null,
@@ -298,11 +297,8 @@ export default defineComponent({
       this.video.addEventListener('play', () => { this.setState('playing'); });
       this.video.addEventListener('pause', () => { this.setState('paused'); });
       this.video.addEventListener('ended', () => { this.setState('ended'); });
-      this.video.addEventListener('seeking', () => { this.seeking = true; });
-      this.video.addEventListener('seeked', () => { this.seeking = false; });
       this.video.addEventListener('timeupdate', () => {
-        // console.log('timeupdate, seeking is', this.seeking);
-        if (this.video && (!this.seeking || this.playState !== 'playing')) {
+        if (this.video) {
           this.currentTime = this.video.currentTime;
         }
       });
@@ -354,7 +350,6 @@ export default defineComponent({
     },
 
     setState(state) {
-      this.seeking = false;
       this.playState = state;
       this.handleEvent(state);
     },
@@ -580,9 +575,6 @@ export default defineComponent({
       if (this.playState === 'ended') {
         this.setState('paused');
       }
-      if (this.playState === 'playing') {
-        this.seeking = true;
-      }
       if (fast && this.video.fastSeek && !this.hls) {
         // console.log('onSeek: fastSeek to', newTime);
         this.video.fastSeek(newTime);
@@ -590,6 +582,7 @@ export default defineComponent({
         // console.log('onSeek: updating currentTime to', newTime);
         this.video.currentTime = newTime;
       }
+      this.currentTime = newTime;
     },
 
     onTexttrack(val) {
