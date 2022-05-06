@@ -16,6 +16,9 @@
 import { useStore } from 'vuex';
 import { joinpath } from './util.js';
 
+// set max cache age to one hour.
+const MAX_CACHE_AGE = 3600 * 1000;
+
 function updateNfo(base, item) {
   if (!item.nfo) {
     item.nfo = {};
@@ -91,10 +94,16 @@ export default class API {
   }
 
   getObject(path) {
-    if (this.objectCache[path] !== undefined) {
-      return Promise.resolve(this.objectCache[path]);
+
+    // If it's in the cache and younger than MAX_CACHE_AGE, use cache.
+    let cached = this.objectCache[path];
+    if (cached !== undefined) {
+      if (!cached.timestamp || cached.timestamp > Date.now() - MAX_CACHE_AGE) {
+        return Promise.resolve(cached);
+      }
     }
 
+    // If there's already a request outstanding, piggy back on that.
     let pending = this.requestsPending[path];
     if (pending !== undefined && pending.length > 0) {
       return new Promise((resolve, reject) => {
@@ -120,11 +129,10 @@ export default class API {
         resp.json().then((obj) => {
           const updateObj = (theObj) => {
             //
-            // Give each object an id.
-            if (!reqUrl.endsWith('/genres')) {
-              theObj.id = this.idCounter;
-              this.idCounter += 1;
-            }
+            // Give each object an id, and a timestamp.
+            theObj.timestamp = Date.now();
+            theObj.id = this.idCounter;
+            this.idCounter += 1;
 
             // Make obj.path absolute.
             if (theObj.baseurl && theObj.path) {
@@ -177,7 +185,7 @@ export default class API {
 
   getGenreNames(collName) {
     return this.getGenres(collName).then((obj) => {
-      const genres = Object.keys(obj);
+      const genres = Object.keys(obj).filter(name => name !== 'id' && name !== 'timestamp');
       genres.sort();
       return genres;
     });
