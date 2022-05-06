@@ -1,11 +1,7 @@
 <template>
   <div ref="el">
-    <q-resize-observer @resize="onResize"/>
-    <virtual-scroll
-      class="thumbs-virtual-scroller relative"
-      :items="rowItems"
-      ref="scroller"
-    >
+    <q-resize-observer @resize="onResize" />
+    <virtual-scroll class="thumbs-virtual-scroller relative" :items="rowItems" ref="scroller">
       <template v-slot:header>
         <q-item class="row no-wrap justify-center q-pa-none q-pb-md">
           <div class="col-auto">
@@ -53,7 +49,7 @@
 import VirtualScroll from 'components/VirtualScroll.vue';
 import PosterRow from 'components/PosterRow.vue';
 import FilterBar from 'components/FilterBar.vue';
-import { isMobile } from '../lib/util.js';
+// import { isMobile } from '../lib/util.js';
 
 function gMatch(item, genres) {
   if (genres && genres.length > 0 && !item.genre) return false;
@@ -92,7 +88,7 @@ export default {
   },
 
   data() {
-    const isLarge = (screen.width >= 1024 || screen.height >= 1024);
+    const isLarge = (window.screen.width >= 1024 || window.screen.height >= 1024);
     const posterSize = isLarge ? 2 : 1;
     const sortBy = this.type === 'series' ? 'Updated' : 'Added';
 

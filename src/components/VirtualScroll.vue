@@ -7,7 +7,7 @@
   <slot name="header"></slot>
   <div :style="{ height: `${topFillerHeight}px` }" ref="topEl"/>
     <template v-for="item in visibleItems" :key="item.key">
-      <slot :item="item" :scrolling="scrolling"></slot>
+      <slot :item="item" :scrolling="fastScrolling"></slot>
     </template>
     <div :style="{ height: `${bottomFillerHeight}px` }" />
   </div>
@@ -48,7 +48,7 @@ export default defineComponent({
     const scrollerEl = ref(null);
     const savedScrollTop = ref(0);
     const scrollTop = ref(0);
-    const scrolling = ref(false);
+    const fastScrolling = ref(false);
     const { items } = toRefs(props);
 
     onMounted(() => {
@@ -98,7 +98,8 @@ export default defineComponent({
       lastScrollTm: 0,
       lastScrollPos: 0,
       lastScrollTimer: null,
-      scrolling,
+      fastScrolling,
+      scrollPps: 0,
       counter: 0,
     };
   },
@@ -113,7 +114,6 @@ export default defineComponent({
     updateScrollPps() {
       const pos = this.scrollerEl.scrollTop;
       const now = Date.now();
-      let pps = 0;
 
       // stop timer.
       if (this.lastScrollTimer) {
@@ -131,17 +131,24 @@ export default defineComponent({
           this.lastScrollTimer = setTimeout(() => this.updateScrollPps(), 100);
           return;
         }
-        pps = 1000 * (dp / dt);
+        const pps = 1000 * (dp / dt);
+        if (pps > 0) {
+          const d = dt > 1000 ? 1 : dt / 1000;
+          this.scrollPps = (1 - d) * this.scrollPps + d * pps;
+          console.log('pps: ', this.scrollPps);
+        } else {
+          this.scrollPps = 0;
+        }
       }
       this.lastScrollPos = pos;
       this.lastScrollTm = now;
 
-      // if we're scrolling really fast, set 'scrolling'.
-      if (pps > 4500 && pos > 0) {
+      // if we're scrolling really fast, set 'fastScrolling'.
+      if (this.scrollPps > 4500 && pos > 0) {
         this.lastScrollTimer = setTimeout(() => this.updateScrollPps(), 100);
-        this.scrolling = true;
+        this.fastScrolling = true;
       } else {
-        this.scrolling = false;
+        this.fastScrolling = false;
       }
     },
 
