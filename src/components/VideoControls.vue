@@ -106,10 +106,10 @@
           </q-icon>
 
           <q-icon
-            :name="airplay"
+            :name="'airplay'"
             size="32px"
             class="on-right hover-pointer"
-            v-if="airplayState === 'available'"
+            v-if="airplayAvailable"
             @click="$emit('airplay')"
           />
           <q-icon
@@ -182,7 +182,7 @@ export default defineComponent({
       default: () => [],
     },
     castState: String,
-    airplayState: {
+    airplayAvailable: {
       type: Boolean,
       default: false,
     },

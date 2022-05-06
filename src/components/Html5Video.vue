@@ -13,7 +13,12 @@
     @keyup.right="relSeek(15)"
     ref="el"
   >
-    <video class="html5video-video" ref="video" :playsinline="playsInline ? '' : null"></video>
+    <video
+      class="html5video-video"
+      ref="video"
+      :playsinline="playsInline ? '' : null"
+      x-webkit-airplay="allow"
+    ></video>
     <div class="html5video-overlay column fit" v-if="overlay()">
       <div class="row justify-center items-center fit absolute">
         <div v-if="bigPlayButton" class="col-auto">
@@ -41,7 +46,7 @@
           :audioTrack="audioTrack"
           :audioTracks="audioTracks"
           :castState="castState"
-          :airplayState="airplayState"
+          :airplayAvailable="airplayAvailable"
           :fullScreenState="fullScreenState"
           :stopButton="stopButton"
           @play="onPlay"
@@ -272,7 +277,7 @@ export default defineComponent({
       audioTracks: ref([]),
       audioTrack: ref(0),
       castState: ref('no_devices'),
-      airplayState: ref(false),
+      airplayAvailable: ref(false),
       fullScreenState,
       stopButton,
       showControls: ref(false),
@@ -303,6 +308,7 @@ export default defineComponent({
       this.muted = this.video.muted;
       this.volume = this.video.volume;
 
+      this.video.disablePictureInPicture = true;
       this.video.addEventListener('loadedmetadata', () => {
         this.metadata_loaded = true;
         if (this.hls_loaded_metadata) {
@@ -342,6 +348,7 @@ export default defineComponent({
       // Airplay support. For now, local to this component, not global as Chromecast.
       if (window.WebKitPlaybackTargetAvailabilityEvent) {
         this.video.addEventListener('webkitplaybacktargetavailabilitychanged', (ev) => {
+          console.log('airplay', ev.availability);
           this.airplayAvailable = ev.availability === 'available';
         });
       }
@@ -524,7 +531,7 @@ export default defineComponent({
     onAudiotracks_updated() {
       this.audioTracks = [];
       this.audioTrack = null;
-      if (!this.video.audioTracks) {
+      if (!this.video || !this.video.audioTracks) {
         return;
       }
       for (let i = 0; i < this.video.audioTracks.length; i += 1) {

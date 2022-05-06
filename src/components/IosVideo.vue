@@ -56,13 +56,15 @@ export default defineComponent({
         const v = video.value;
         if (!v || (isFullScreen && !v.webkitDisplayingFullscreen)) {
           instance.ctx.exit();
+        } else {
+          isFullScreen = v.webkitDisplayingFullscreen;
+          setTimeout(timer, 1000);
         }
-        isFullScreen = v.webkitDisplayingFullscreen;
-        setTimeout(timer, 1000);
       };
       timer();
 
       // start playing.
+      video.disablePictureInPicture = true;
       video.value.src = store.state.currentVideo.src;
     });
 
