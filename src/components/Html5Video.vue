@@ -142,6 +142,7 @@
 import {
   defineComponent,
   getCurrentInstance,
+  onBeforeUnmount,
   onUnmounted,
   onBeforeMount,
   onMounted,
@@ -193,6 +194,7 @@ export default defineComponent({
     const store = useStore();
     const quasar = useQuasar();
     let wasFullScreen = false;
+    const video = ref(0);
 
     onBeforeMount(() => {
       const instance = getCurrentInstance();
@@ -211,24 +213,41 @@ export default defineComponent({
       wasFullScreen = quasar.fullscreen.isActive;
     });
 
-    onUnmounted(() => {
-      // leave full screen.
-      if (!wasFullScreen && quasar.fullscreen.isActive) {
-        quasar.fullscreen.exit();
+    onBeforeUnmount(() => {
+      const instance = getCurrentInstance();
+      if (video.value) {
+        video.value.pause();
       }
-
-      // make sure we get rid of the video.
+      if (instance.ctx.hls) {
+        /*
+        console.log('HLS: destroying source buffers');
+        let ms = instance.ctx.hls.bufferController.mediaSource;
+        for (let i = 0; i < ms.sourceBuffers.length; i += 1) {
+          let buf = ms.sourceBuffers[i];
+          if (buf.updating) {
+            buf.abort();
+          }
+          buf.remove(0, ms.duration);
+        }
+        */
+        instance.ctx.hls.destroy();
+        instance.ctx.hls = null;
+      } else if (video.value) {
+        video.value.srcObject = null;
+        video.value.src = null;
+        video.value.load();
+      }
       if (window.video) {
         window.video = null;
       }
-      const instance = getCurrentInstance();
-      if (instance.ctx.hls) {
-        instance.ctx.hls.destroy();
-      }
-      if (instance.ctx.video) {
-        instance.ctx.video = '';
-        instance.video.load();
-        instance.video = null;
+    });
+
+    onUnmounted(() => {
+      // console.log('unmounted');
+
+      // leave full screen.
+      if (!wasFullScreen && quasar.fullscreen.isActive) {
+        quasar.fullscreen.exit();
       }
     });
     const isSafari = () => (quasar.platform.is.ios || quasar.platform.is.safari);
@@ -242,7 +261,7 @@ export default defineComponent({
     const stopButton = ref(quasar.fullscreen.isActive);
 
     return {
-      video: ref(null),
+      video,
       playState: ref('paused'),
       volume: ref(1),
       muted: ref(false),
@@ -534,14 +553,39 @@ export default defineComponent({
       if (url.endsWith('.m3u8') && !this.nativeHls) {
         // console.log('creating new hls', this.video);
         const hlsConfig = {
-          backBufferLength: 120,
+          backBufferLength: 60,
           maxMaxBufferLength: 120,
+          maxBufferSize: 64 * 1024 * 1024,
+          debug: false,
           // broken in HLS.js 1.1, should be fixed in 1.2
           // progressive: true,
         };
         this.hls = new Hls(hlsConfig);
         this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.onManifestloaded());
         this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { this.hls.loadSource(url); });
+        this.hls.on(Hls.Events.ERROR, (event, data) => {
+          console.log('HLS ERROR', data);
+
+          // From the hls.js API docs.
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                // try to recover network error
+                console.log('fatal network error encountered, try to recover');
+                this.hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log('fatal media error encountered, try to recover');
+                this.hls.recoverMediaError();
+                break;
+              default:
+                // cannot recover
+                hls.destroy();
+                break;
+            }
+            return;
+          }
+        });
         this.hls.attachMedia(this.video);
       } else {
         // console.log('plain video load', url);
