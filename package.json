@@ -17,6 +17,8 @@
     "mitt": "^3.0.0",
     "pwacompat": "^2.0.17",
     "quasar": "^2.0.0",
+    "vue": "^3.0.0",
+    "vue-router": "^4.0.0",
     "vuex": "^4.0.1",
     "vuex-persist": "^3.1.3"
   },
