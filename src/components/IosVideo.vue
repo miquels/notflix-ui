@@ -68,8 +68,19 @@ export default defineComponent({
 
       // Need to wait for canplay when requesting full screen.
       video.value.addEventListener('canplay', () => {
-        video.value.webkitEnterFullScreen();
+        try {
+          video.value.webkitEnterFullScreen();
+        } catch(err) { /* ignore */}
       });
+
+      // Or maybe, when the video starts playing.
+      video.value.addEventListener('timeupdate', () => {
+        if (!video.value.webkitDisplayingFullscreen) {
+          try {
+            video.value.webkitEnterFullScreen();
+          } catch(err) { /* ignore */}
+        }
+      }, { once: true });
 
       // start playing.
       video.value.src = store.state.currentVideo.src;
