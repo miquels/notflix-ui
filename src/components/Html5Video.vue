@@ -17,6 +17,7 @@
       class="html5video-video"
       ref="video"
       disablePictureInPicture
+      x-webkit-airplay="allow"
       crossorigin="anonymous"
     ></video>
     <div class="html5video-overlay column fit" v-if="overlay()">
@@ -317,8 +318,6 @@ export default defineComponent({
       }
 
       if (this.isSafari()) {
-        // Safari has airplay.
-        this.video.setAttribute("x-webkit-airplay", "allow");
         if (!store.state.config.iosNativeVideo) {
           // Need to set this for native video on iOS.
           this.video.setAttribute("playsinline", "");
@@ -365,7 +364,9 @@ export default defineComponent({
       if (window.WebKitPlaybackTargetAvailabilityEvent) {
         this.video.addEventListener('webkitplaybacktargetavailabilitychanged', (ev) => {
           console.log('airplay', ev.availability);
-          this.airplayAvailable = ev.availability === 'available';
+          const nowPlaying = this.video.remote && this.video.remote.state === 'connected';
+          const isAvailable = ev.availability === 'available';
+          this.airplayAvailable = nowPlaying || isAvailable;
         });
       }
 
