@@ -16,8 +16,8 @@
     <video
       class="html5video-video"
       ref="video"
-      :playsinline="playsInline ? '' : null"
-      x-webkit-airplay="allow"
+      disablePictureInPicture
+      crossorigin="anonymous"
     ></video>
     <div class="html5video-overlay column fit" v-if="overlay()">
       <div class="row justify-center items-center fit absolute">
@@ -213,6 +213,7 @@ export default defineComponent({
       const instance = getCurrentInstance();
       if (instance.ctx.currentVideo === null) {
         router.go(-1);
+        return;
       }
       instance.ctx.mounted();
       wasFullScreen = quasar.fullscreen.isActive;
@@ -238,9 +239,13 @@ export default defineComponent({
         instance.ctx.hls.destroy();
         instance.ctx.hls = null;
       } else if (video.value) {
-        video.value.srcObject = null;
-        video.value.src = null;
-        video.value.load();
+        if (video.value.srcObject) {
+          video.value.srcObject = null;
+        }
+        if (video.value.src) {
+          video.value.removeAttribute('src');
+          video.value.load();
+        }
       }
       if (window.video) {
         window.video = null;
@@ -259,7 +264,6 @@ export default defineComponent({
 
     // Only use native HLS on apple iphone/ipad, or safari browsers.
     const nativeHls = isSafari();
-    const playsInline = isSafari() && !store.state.config.iosNativeVideo;
 
     const fullScreenState = ref(quasar.fullscreen.isCapable
       ? (quasar.fullscreen.isActive ? 'yes' : 'no') : null);
@@ -283,7 +287,6 @@ export default defineComponent({
       showControls: ref(false),
       displayState: ref(DisplayState.HIDDEN),
       displayTimer: null,
-      playsInline,
       info: ref(null),
       nativeHls,
       bigPlayButton: ref(false),
@@ -308,15 +311,25 @@ export default defineComponent({
       this.muted = this.video.muted;
       this.volume = this.video.volume;
 
-      this.video.disablePictureInPicture = true;
+      // We need to set 'autoplay' on iOS, otherwise nothing works (!)
+      if (this.$q.platform.is.ios) {
+        this.video.setAttribute("autoplay", "");
+      }
+
+      if (this.isSafari()) {
+        // Safari has airplay.
+        this.video.setAttribute("x-webkit-airplay", "allow");
+        if (!store.state.config.iosNativeVideo) {
+          // Need to set this for native video on iOS.
+          this.video.setAttribute("playsinline", "");
+        }
+      }
+
       this.video.addEventListener('loadedmetadata', () => {
+        // console.log('loaded metadata event');
         this.metadata_loaded = true;
         if (this.hls_loaded_metadata) {
           this.onLoadedmetadata();
-          // console.log('loaded metadata');
-          if (this.isSafari()) {
-            this.autoplay();
-          }
         }
       });
       this.video.addEventListener('play', () => { this.setState('playing'); });
@@ -340,7 +353,10 @@ export default defineComponent({
         this.video.textTracks.addEventListener('removetrack', () => this.onTexttracks_updated());
         this.video.textTracks.addEventListener('change', () => this.onTexttrack_changed());
       }
-      this.video.addEventListener('canplay', () => { if (!this.isSafari()) { this.autoplay(); } });
+
+      let autoplay_ev = this.isSafari() ? 'loadedmetadata' : 'canplay';
+      this.video.addEventListener(autoplay_ev, () => { this.autoplay(); });
+
       this.video.addEventListener('abort', () => this.onError());
       this.video.addEventListener('error', () => this.onError());
       this.video.oncontextmenu = () => false;
@@ -416,6 +432,7 @@ export default defineComponent({
           // console.log('autoplay prevented');
           this.setState('paused');
           this.bigPlayButton = true;
+          this.info = info;
           if (this.showcontrols < 2) {
             this.mouse(2);
           }
@@ -552,7 +569,9 @@ export default defineComponent({
         this.hls.destroy();
         this.hls = null;
       }
-      this.video.src = null;
+      if (this.video.src) {
+        this.video.src = null;
+      }
 
       // We need an absolute URL (for airplay).
       const url = new URL(item.src, window.location.origin).href;
@@ -603,15 +622,15 @@ export default defineComponent({
 
     // Event: play / pause / reload was clicked.
     onPlay() {
-      // console.log('play() state is', this.playState);
+      console.log('play() state is', this.playState);
       if (this.playState === 'ended') {
         this.video.currentTime = 0;
       }
       if (this.playState === 'playing') {
-        // console.log('calling pause');
+        console.log('calling pause');
         this.video.pause();
       } else {
-        // console.log('calling play');
+        console.log('calling play');
         this.video.play();
       }
       this.bigPlayButton = false;

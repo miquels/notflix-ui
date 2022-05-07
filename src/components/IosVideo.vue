@@ -6,10 +6,13 @@
 <template>
   <video
     controls
-    autoplay
     draggable="false"
     class="ios-video-video"
-    v-touch-swipe.mouse.right="() => exit()"
+    disablepictureinpicture
+    crossorigin
+    x-webkit-airplay="allow"
+    autoplay
+    preload="metadata"
     ref="video"
   />
 </template>
@@ -42,60 +45,52 @@ export default defineComponent({
     const store = useStore();
     const video = ref(null);
 
+    let exiting = false;
+    const exit = () => {
+      if (!exiting) {
+        exiting = true;
+        router.go(-1);
+      }
+    };
+
     onMounted(() => {
       const instance = getCurrentInstance();
 
       // This might happen after a reload. Go back.
       if (!store.state.currentVideo) {
-        instance.ctx.exit();
+        exit();
+        return;
       }
 
-      // Edge trigger. fullscreen -> not fullscreen: exit.
-      let isFullScreen = video.value.webkitDisplayingFullscreen;
-      const timer = () => {
-        const v = video.value;
-        if (!v || (isFullScreen && !v.webkitDisplayingFullscreen)) {
-          instance.ctx.exit();
-        } else {
-          isFullScreen = v.webkitDisplayingFullscreen;
-          setTimeout(timer, 1000);
-        }
-      };
-      timer();
+      video.value.addEventListener("webkitendfullscreen", () => {
+        exit();
+      });
+
+      // Need to wait for canplay when requesting full screen.
+      video.value.addEventListener('canplay', () => {
+        video.value.webkitEnterFullScreen();
+      });
 
       // start playing.
-      video.disablePictureInPicture = true;
       video.value.src = store.state.currentVideo.src;
+
     });
 
     onUnmounted(() => {
-      const instance = getCurrentInstance();
-      // Clean up after unmount. Not sure if this is neccesary.
+      // Clean up video after unmount.
       try {
-        if (instance.ctx.video) {
-          instance.ctx.video.src = '';
-          instance.ctx.video.load();
-          instance.ctx.video = null;
+        video.value.pause();
+        video.value.src = '';
+        video.value.load();
+        if (window.video) {
+          window.video = null;
         }
       } catch (err) { /* ignore */ }
     });
 
     return {
       video,
-      store,
-      router,
-      exiting: false,
     };
-  },
-
-  methods: {
-    exit() {
-      this.msg += 'exit\n';
-      if (!this.exiting) {
-        this.exiting = true;
-        this.router.go(-1);
-      }
-    },
   },
 });
 </script>
