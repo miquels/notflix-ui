@@ -497,6 +497,9 @@ export default defineComponent({
 
       for (let i = 0; i < this.video.textTracks.length; i += 1) {
         const t = this.video.textTracks[i];
+        if (!t.label && !t.language) {
+          continue;
+        }
         if (t.kind === 'subtitles' || t.kind === 'captions' || t.kind === 'forced') {
           this.textTracks.push({
             id: i,
@@ -517,6 +520,9 @@ export default defineComponent({
       for (let i = 0; i < this.video.textTracks.length; i += 1) {
         const t = this.video.textTracks[i];
         if (t.kind === 'subtitles' || t.kind === 'captions' || t.kind === 'forced') {
+          if (!t.label && !t.language) {
+            continue;
+          }
           if (t.mode === 'showing') {
             activeTrack = i;
             break;
