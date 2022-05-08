@@ -16,7 +16,7 @@
     <video
       class="html5video-video"
       ref="video"
-      disablePictureInPicture
+      disablepictureinpicture
       x-webkit-airplay="allow"
       crossorigin="anonymous"
     ></video>
@@ -282,7 +282,7 @@ export default defineComponent({
       audioTracks: ref([]),
       audioTrack: ref(0),
       castState: ref('no_devices'),
-      airplayAvailable: ref(false),
+      airplayAvailable: ref(window.airplayAvailable),
       fullScreenState,
       stopButton,
       showControls: ref(false),
@@ -336,6 +336,10 @@ export default defineComponent({
       this.video.addEventListener('ended', () => { this.setState('ended'); });
       this.video.addEventListener('timeupdate', () => {
         if (this.video) {
+          if (this.video.webkitCurrentPlaybackTargetIsWireless) {
+            // XXX FIXME this is a hack, need to put it in a different listener.
+            this.airplayAvailable = true;
+          }
           this.currentTime = this.video.currentTime;
         }
       });
@@ -364,9 +368,10 @@ export default defineComponent({
       if (window.WebKitPlaybackTargetAvailabilityEvent) {
         this.video.addEventListener('webkitplaybacktargetavailabilitychanged', (ev) => {
           console.log('airplay', ev.availability);
-          const nowPlaying = this.video.remote && this.video.remote.state === 'connected';
+          const airPlaying = this.video.webkitCurrentPlaybackTargetIsWireless;
           const isAvailable = ev.availability === 'available';
-          this.airplayAvailable = nowPlaying || isAvailable;
+          this.airplayAvailable = airPlaying || isAvailable;
+          window.airplayAvailable = airPlaying || isAvailable;
         });
       }
 

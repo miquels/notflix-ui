@@ -31,7 +31,7 @@
 import {
   defineComponent,
   getCurrentInstance,
-  onUnmounted,
+  onBeforeUnmount,
   onMounted,
   ref,
 } from 'vue';
@@ -61,6 +61,7 @@ export default defineComponent({
         exit();
         return;
       }
+      window.video = video.value;
 
       video.value.addEventListener("webkitendfullscreen", () => {
         exit();
@@ -87,8 +88,12 @@ export default defineComponent({
 
     });
 
-    onUnmounted(() => {
-      // Clean up video after unmount.
+    onBeforeUnmount(() => {
+      // Clean up video before unmount.
+      //
+      // It needs to be before, so any airplay session will stop as well.
+      // Unfortunately, airplay remains sort of connected, so when you
+      // play another video, it will re-connect to the airplay target :(
       try {
         video.value.pause();
         video.value.src = '';
