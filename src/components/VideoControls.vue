@@ -156,7 +156,7 @@ export default defineComponent({
   name: 'VideoControls',
   emits: [
     'play', 'seek', 'volume', 'texttrack', 'audiotrack',
-    'fullscreen', 'cast', 'stop', 'controlsActive', 'mute',
+    'fullscreen', 'cast', 'stop', 'controlsActive', 'mute', 'airplay',
   ],
 
   props: {

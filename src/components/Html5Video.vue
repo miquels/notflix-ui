@@ -47,7 +47,7 @@
           :audioTrack="audioTrack"
           :audioTracks="audioTracks"
           :castState="castState"
-          :airplayAvailable="airplayAvailable"
+          :airplayAvailable="airplayAvailable !== 0"
           :fullScreenState="fullScreenState"
           :stopButton="stopButton"
           @play="onPlay"
@@ -261,10 +261,15 @@ export default defineComponent({
         quasar.fullscreen.exit();
       }
     });
-    const isSafari = () => (quasar.platform.is.ios || quasar.platform.is.safari);
 
-    // Only use native HLS on apple iphone/ipad, or safari browsers.
+    // On iOS, or macos with the Safari browser, use native hls.
+    const isSafari = () => (quasar.platform.is.ios || quasar.platform.is.safari);
     const nativeHls = isSafari();
+
+    // With Safari 15.4 on iOS, in PWA mode the webkitplaybacktargetavailabilitychanged
+    // event (almost?) always reports 'not-available', while it _is_. So in that case
+    // just alwatys show the airplay button.
+    const airplayAvailable = ref((quasar.platform.is.ios && window.navigator.standalone) ? 2 : 0);
 
     const fullScreenState = ref(quasar.fullscreen.isCapable
       ? (quasar.fullscreen.isActive ? 'yes' : 'no') : null);
@@ -282,7 +287,7 @@ export default defineComponent({
       audioTracks: ref([]),
       audioTrack: ref(0),
       castState: ref('no_devices'),
-      airplayAvailable: ref(window.airplayAvailable),
+      airplayAvailable,
       fullScreenState,
       stopButton,
       showControls: ref(false),
@@ -319,27 +324,21 @@ export default defineComponent({
 
       if (this.isSafari()) {
         if (!store.state.config.iosNativeVideo) {
-          // Need to set this for native video on iOS.
+          // Need to set this, otherwise the native player starts on iPhone.
           this.video.setAttribute("playsinline", "");
         }
       }
 
       this.video.addEventListener('loadedmetadata', () => {
         // console.log('loaded metadata event');
-        this.metadata_loaded = true;
-        if (this.hls_loaded_metadata) {
-          this.onLoadedmetadata();
-        }
+        this.loaded_metadata = true;
+        this.onLoadedmetadata();
       });
       this.video.addEventListener('play', () => { this.setState('playing'); });
       this.video.addEventListener('pause', () => { this.setState('paused'); });
       this.video.addEventListener('ended', () => { this.setState('ended'); });
       this.video.addEventListener('timeupdate', () => {
         if (this.video) {
-          if (this.video.webkitCurrentPlaybackTargetIsWireless) {
-            // XXX FIXME this is a hack, need to put it in a different listener.
-            this.airplayAvailable = true;
-          }
           this.currentTime = this.video.currentTime;
         }
       });
@@ -368,10 +367,11 @@ export default defineComponent({
       if (window.WebKitPlaybackTargetAvailabilityEvent) {
         this.video.addEventListener('webkitplaybacktargetavailabilitychanged', (ev) => {
           console.log('airplay', ev.availability);
-          const airPlaying = this.video.webkitCurrentPlaybackTargetIsWireless;
-          const isAvailable = ev.availability === 'available';
-          this.airplayAvailable = airPlaying || isAvailable;
-          window.airplayAvailable = airPlaying || isAvailable;
+          if (this.airplayAvailable < 2) {
+            const airPlaying = this.video.webkitCurrentPlaybackTargetIsWireless;
+            const isAvailable = ev.availability === 'available';
+            this.airplayAvailable = (airPlaying || isAvailable) ? 1 : 0;
+          }
         });
       }
 
@@ -450,13 +450,6 @@ export default defineComponent({
       return this.bigPlayButton || (this.info && this.playState === 'paused');
     },
 
-    onManifestloaded() {
-      this.hls_loaded_metadata = true;
-      if (this.metadata_loaded) {
-        this.onLoadedmetadata();
-      }
-    },
-
     /*
     // This needs more thought.
     forced_subs() {
@@ -475,6 +468,11 @@ export default defineComponent({
     */
 
     onLoadedmetadata() {
+      // If Hls is active, both loaded_metadata and hls_loaded_metadata must be true.
+      if (!this.loaded_metadata || (this.hls && !this.hls_loaded_metadata)) {
+        return;
+      }
+
       this.currentTime = this.video.currentTime || 0;
       // console.log('duration now', this.duration, this.video.duration);
       if (!this.duration) {
@@ -575,6 +573,47 @@ export default defineComponent({
       }
     },
 
+    initHls() {
+      // console.log('creating new hls', this.video);
+      const hlsConfig = {
+        backBufferLength: 60,
+        maxMaxBufferLength: 120,
+        maxBufferSize: 64 * 1024 * 1024,
+        debug: false,
+        // broken in HLS.js 1.1, should be fixed in 1.2
+        // progressive: true,
+      };
+      this.hls = new Hls(hlsConfig);
+      this.hls.on(Hls.Events.MANIFEST_LOADED, () => {
+        this.hls_loaded_metadata = true;
+        this.onLoadedmetadata();
+      });
+      this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { this.hls.loadSource(url); });
+      this.hls.on(Hls.Events.ERROR, (event, data) => {
+        console.log('HLS ERROR', data);
+
+        // From the hls.js API docs.
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              // try to recover network error
+              console.log('fatal network error encountered, try to recover');
+              this.hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log('fatal media error encountered, try to recover');
+              this.hls.recoverMediaError();
+              break;
+            default:
+              // cannot recover
+              hls.destroy();
+              break;
+          }
+          return;
+        }
+      });
+    },
+
     load(item) {
       console.log('Html5Video: load method called', item);
       if (this.hls) {
@@ -582,52 +621,18 @@ export default defineComponent({
         this.hls = null;
       }
       if (this.video.src) {
-        this.video.src = null;
+        this.video.removeAttribute('src');
       }
 
       // We need an absolute URL (for airplay).
       const url = new URL(item.src, window.location.origin).href;
 
       if (url.endsWith('.m3u8') && !this.nativeHls) {
-        // console.log('creating new hls', this.video);
-        const hlsConfig = {
-          backBufferLength: 60,
-          maxMaxBufferLength: 120,
-          maxBufferSize: 64 * 1024 * 1024,
-          debug: false,
-          // broken in HLS.js 1.1, should be fixed in 1.2
-          // progressive: true,
-        };
-        this.hls = new Hls(hlsConfig);
-        this.hls.on(Hls.Events.MANIFEST_LOADED, () => this.onManifestloaded());
-        this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { this.hls.loadSource(url); });
-        this.hls.on(Hls.Events.ERROR, (event, data) => {
-          console.log('HLS ERROR', data);
-
-          // From the hls.js API docs.
-          if (data.fatal) {
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                // try to recover network error
-                console.log('fatal network error encountered, try to recover');
-                this.hls.startLoad();
-                break;
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                console.log('fatal media error encountered, try to recover');
-                this.hls.recoverMediaError();
-                break;
-              default:
-                // cannot recover
-                hls.destroy();
-                break;
-            }
-            return;
-          }
-        });
+        this.initHls();
+        // console.log('creating new Hls', this.video);
         this.hls.attachMedia(this.video);
       } else {
         // console.log('plain video load', url);
-        this.hls_loaded_metadata = true;
         this.video.src = url;
       }
     },
