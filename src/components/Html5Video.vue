@@ -744,7 +744,7 @@ export default defineComponent({
       if (newTime > this.duration) {
         newTime = this.duration;
       }
-      this.onSeek(newTime);
+      this.onSeek(newTime, true);
       // console.log('seek from', this.video.currentTime, 'to', newTime);
     },
 
