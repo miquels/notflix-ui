@@ -6,7 +6,7 @@
       :genres="genres"
       type="series"
       class="fit"
-      @select="show_clicked"
+      @selectItem="show_clicked"
    />
   </q-page>
 </template>

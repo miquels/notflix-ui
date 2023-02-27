@@ -30,7 +30,7 @@
               :imgHeight="imgHeight"
               :fontSize="fontSize"
               :hideImages="scrolling"
-              @select="$emit('select', $event)"
+              @selectItem="$emit('select-item', $event)"
             />
           </div>
         </q-item>

@@ -4,7 +4,7 @@
       :items="items"
       :genres="genres"
       class="fit"
-      @select="movie_clicked"/>
+      @selectItem="movie_clicked"/>
   </q-page>
 </template>
 
