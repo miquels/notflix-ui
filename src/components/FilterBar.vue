@@ -20,6 +20,7 @@
       flat
       icon="search"
       color="white"
+      tabindex="-1"
     />
   </q-item>
   <q-item class="col-sm col-xs-auto q-pa-none" />

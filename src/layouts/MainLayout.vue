@@ -21,15 +21,21 @@
             to="/movies/"
             @click="routeTab('/movies/')"
           />
-      </q-tabs>
+        </q-tabs>
       <div class="col"/>
       <CastButton class="on-right cursor-pointer" />
-      <q-icon
-        name="settings"
-        class="on-right hover-pointer"
-        size="24px"
-        @click="$router.push('/settings/');"
-      />
+      <q-btn square dense class="on-right" @click="$router.push('/settings/');">
+        <q-icon
+          name="settings"
+          size="24px"
+        />
+      </q-btn>
+      <q-btn square dense class="on-right" @click="refresh()">
+        <q-icon
+          name="refresh"
+          size="24px"
+        />
+      </q-btn>
       </q-toolbar>
     </q-header>
 
@@ -119,6 +125,10 @@ export default {
     castActive() {
       console.log('mainLayout: castActive:', this.store.state.castActive);
       return this.store.state.castActive;
+    },
+
+    refresh() {
+      window.location.assign('/');
     },
 
     // If the user clicks on 'TV Shows' or 'Movies' and that is already
