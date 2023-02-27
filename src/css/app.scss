@@ -1,9 +1,11 @@
 @import './mixins.scss';
 
-// For position: absolute fullscreen divs that
-// are a direct child element of <body>.
+// We set 'position: relative' to cater For 'position: absolute' fullscreen
+// divs that are a direct child element of <body>.
 body {
   position: relative;
+  color: white;
+  background-color: black;
 }
 
 .hover-pointer:hover {

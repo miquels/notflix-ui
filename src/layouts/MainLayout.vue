@@ -72,7 +72,7 @@
 </style>
 
 <script>
-import { ref, inject, onBeforeMount } from 'vue';
+import { ref, inject, onMounted, onBeforeMount } from 'vue';
 import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
 import Chromecast from 'components/Chromecast.vue';
@@ -94,10 +94,35 @@ export default {
 
     // XXX DEBUG
     window.store = store;
+    window.quasar = quasar;
+
+    if (quasar.platform.userAgent.match(/AOSP TV|Chromecast|Android TV/)) {
+      console.log('Android TV detected, patching quasar.platform');
+      quasar.platform.has.touch = false;
+      delete quasar.platform.is.mobile;
+      quasar.platform.is.desktop = true;
+      quasar.platform.is.tv = true;
+    }
 
     onBeforeMount(() => {
       if (!mobile && !quasar.platform.is.safari) {
         addPrettyScrollBars();
+      }
+    });
+
+    onMounted(() => {
+      const pf = quasar.platform;
+      const cl = document.body.classList;
+      // remove mobile and touch classes.
+      if (cl.contains('mobile') && !pf.is.mobile) {
+        cl.remove('mobile');
+      }
+      if (cl.contains('touch') && !pf.has.touch) {
+        cl.remove('touch');
+      }
+      // add desktop class.
+      if (!cl.contains('desktop') && pf.is.desktop) {
+        cl.add('desktop');
       }
     });
 

@@ -22,3 +22,6 @@ $positive  : #21BA45;
 $negative  : #C10015;
 $info      : #31CCEC;
 $warning   : #F2C037;
+
+// Set breakpoint at 960, for TVs.
+$breakpoint-sm: 959px !default
