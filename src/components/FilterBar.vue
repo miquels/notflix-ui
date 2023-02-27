@@ -35,6 +35,7 @@
     label="Sort by"
     style="width: 100%"
     class="inline"
+    options-selected-class="q-select-active-option"
   />
   </q-item>
   <div class="col-auto" />
@@ -53,6 +54,7 @@
     clearable
     style="width: 100%"
     class="q-pl-md"
+    options-selected-class="q-select-active-option"
   />
   </q-item>
 </div>

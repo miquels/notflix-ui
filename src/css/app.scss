@@ -15,3 +15,9 @@ body {
 .stroke {
   @include stroke;
 }
+
+// Use with q-select's options-selected-class option.
+.q-select-active-option {
+  color: white;
+  background-color: #555555;
+}
