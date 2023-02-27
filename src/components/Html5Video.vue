@@ -573,7 +573,7 @@ export default defineComponent({
       }
     },
 
-    initHls() {
+    initHls(url) {
       // console.log('creating new hls', this.video);
       const hlsConfig = {
         backBufferLength: 60,
@@ -628,7 +628,7 @@ export default defineComponent({
       const url = new URL(item.src, window.location.origin).href;
 
       if (url.endsWith('.m3u8') && !this.nativeHls) {
-        this.initHls();
+        this.initHls(url);
         // console.log('creating new Hls', this.video);
         this.hls.attachMedia(this.video);
       } else {
