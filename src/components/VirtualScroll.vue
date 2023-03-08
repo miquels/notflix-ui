@@ -4,12 +4,13 @@
     class="virtualscroll-scroller"
     @scroll="onScroll"
     @keydown.capture="onKeyDown"
+    @focusin="onRowFocusIn"
     ref="scrollerEl"
   >
   <slot name="header"></slot>
   <div :style="{ height: `${topFillerHeight}px` }" ref="topEl"/>
     <template v-for="item in visibleItems" :key="item.key">
-      <slot :item="item" :scrolling="fastScrolling" :onRowFocusIn="onRowFocusIn"></slot>
+      <slot :item="item" :scrolling="fastScrolling"></slot>
     </template>
     <div :style="{ height: `${bottomFillerHeight}px` }" />
   </div>
