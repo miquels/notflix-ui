@@ -17,7 +17,7 @@
         </q-item>
       </template>
 
-      <template v-slot:default="{ item, scrolling }">
+      <template v-slot:default="{ item, scrolling, onRowFocusIn }">
         <q-item class="row no-wrap justify-center q-pa-none" :style="{ height: item.height }">
           <div class="col-auto">
             <PosterRow
@@ -31,6 +31,7 @@
               :fontSize="fontSize"
               :hideImages="scrolling"
               @selectItem="$emit('select-item', $event)"
+              @focusin="onRowFocusIn($event, $el)"
             />
           </div>
         </q-item>

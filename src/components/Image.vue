@@ -54,7 +54,7 @@ export default defineComponent({
   setup(props) {
     const imgStyle = ref({});
     const style = ref({});
-    const onError = ref('');
+    const onError = ref("this.style.display='none'");
     const imgSrc = ref('');
 
     watchEffect(() => {

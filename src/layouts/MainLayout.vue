@@ -1,8 +1,11 @@
 <template>
+<lrud>
   <q-layout view="hHh lpR fFf">
 
     <q-header elevated class="bg-grey-10 text-white">
+      <lrud>
       <q-toolbar>
+        <lrud no-nav-inside steal-keys-outside keys="LR">
         <q-tabs shrink class="col">
           <q-route-tab name="home" to="/" >
             <q-toolbar-title class="col-auto q-pa-none q-ma-none">
@@ -22,6 +25,7 @@
             @click="routeTab('/movies/')"
           />
         </q-tabs>
+        </lrud>
       <div class="col"/>
       <CastButton class="on-right cursor-pointer" />
       <q-btn square dense class="on-right" @click="$router.push('/settings/');">
@@ -37,6 +41,7 @@
         />
       </q-btn>
       </q-toolbar>
+      </lrud>
     </q-header>
 
     <q-page-container>
@@ -53,6 +58,7 @@
     </q-footer>
 
   </q-layout>
+</lrud>
 </template>
 
 <style lang="scss">
@@ -79,6 +85,7 @@ import Chromecast from 'components/Chromecast.vue';
 import CastButton from 'components/CastButton.vue';
 import Play from 'components/Play.vue';
 import { isMobile, addPrettyScrollBars } from '../lib/util.js';
+import { fix_quasar_platform, fix_quasar_css } from '../lib/android-tv.js';
 
 export default {
   components: {
@@ -96,34 +103,15 @@ export default {
     window.store = store;
     window.quasar = quasar;
 
-    if (quasar.platform.userAgent.match(/AOSP TV|Chromecast|Android TV/)) {
-      console.log('Android TV detected, patching quasar.platform');
-      quasar.platform.has.touch = false;
-      delete quasar.platform.is.mobile;
-      quasar.platform.is.desktop = true;
-      quasar.platform.is.tv = true;
-    }
-
     onBeforeMount(() => {
       if (!mobile && !quasar.platform.is.safari) {
         addPrettyScrollBars();
       }
     });
 
+    fix_quasar_platform();
     onMounted(() => {
-      const pf = quasar.platform;
-      const cl = document.body.classList;
-      // remove mobile and touch classes.
-      if (cl.contains('mobile') && !pf.is.mobile) {
-        cl.remove('mobile');
-      }
-      if (cl.contains('touch') && !pf.has.touch) {
-        cl.remove('touch');
-      }
-      // add desktop class.
-      if (!cl.contains('desktop') && pf.is.desktop) {
-        cl.add('desktop');
-      }
+      fix_quasar_css()
     });
 
     const keepAlive = [

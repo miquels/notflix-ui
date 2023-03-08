@@ -1,4 +1,5 @@
 <template>
+  <lrud>
   <div class="tv-show-container q-pt-md">
     <div class="tv-show-header">
       <q-resize-observer @resize="onResize"/>
@@ -7,23 +8,23 @@
         <div class="col stroke">{{ title }}</div>
       </div>
       <div class="row text-h6">
-        <div class="col" v-if="seasons && seasons[currentSeason]">
-          <div v-if="seasons.length === 1">{{ seasons[currentSeason].name }}</div>
-          <q-btn-dropdown
-            v-else
-            class="tv-show-season-menu"
-            :label="seasons[currentSeason].name"
-          >
-            <q-list v-if="show">
-              <template v-for="(season, index) in seasons" :key="season.name">
-                <q-item clickable v-close-popup @click="currentSeason = index">
-                  <q-item-section>
-                    <q-item-label>{{ season.name }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-list>
-          </q-btn-dropdown>
+        <div class="col" v-if="seasons && currentSeason">
+          <div v-if="seasons.length === 1">{{ currentSeason.name }}</div>
+          <q-item class="col-xs-8 col-sm-auto relative q-pa-none">
+          <lrud v-if="seasons.length > 1" no-nav-inside steal-keys-outside>
+          <q-select
+              filled
+              dense
+              options-dense
+              :options="seasons"
+              option-label="name"
+              v-model="currentSeason"
+              style="width=100%"
+              options-selected-class="q-select-active-option"
+              autofocus
+          />
+          </lrud>
+          </q-item>
         </div>
       </div>
       <div class="row q-my-md">
@@ -43,12 +44,13 @@
         <div class="col-2 col-sm-6"></div>
       </div>
     </div>
-    <div v-if="seasons && seasons[currentSeason]" class="tv-show-episodes">
-      <template v-for="episode in seasons[currentSeason].episodes" :key="episode.name">
+    <div v-if="seasons && currentSeason" class="tv-show-episodes">
+      <template v-for="episode in currentSeason.episodes" :key="episode.name">
         <Episode :episode="episode" @play="playEpisode"/>
       </template>
     </div>
   </div>
+  </lrud>
 </template>
 
 <style>
@@ -63,6 +65,7 @@
   font-size: 1.2em;
   max-width: 1000px;
   margin: 0 auto;
+  scroll-behavior: smooth;
 }
 .tv-show-header {
   position: relative;
@@ -76,9 +79,6 @@
   z-index: -1;
   background-color: #000000;
   background-size: cover;
-}
-.tv-show-season-menu {
-  background: #444466;
 }
 .table {
   display: table;
@@ -132,7 +132,7 @@ export default defineComponent({
       bgimage: ref(null),
       show: ref(null),
       seasons: ref([]),
-      currentSeason: ref(0),
+      currentSeason: ref(null),
       playVideo: ref(null),
       api,
       store,
@@ -199,6 +199,7 @@ export default defineComponent({
           }
         }
         this.seasons.sort((a, b) => a.prio - b.prio);
+        this.currentSeason = this.seasons[0];
       });
     },
 
@@ -228,7 +229,7 @@ export default defineComponent({
     },
 
     playEpisode(episode) {
-      const seasonIdx = this.seasons[this.currentSeason].idx;
+      const seasonIdx = this.currentSeason.idx;
       const season = this.show.seasons[seasonIdx];
       const { show } = this;
       this.emitter.emit('playVideo', {

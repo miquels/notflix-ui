@@ -1,22 +1,27 @@
 <template>
+  <lrud no-scroll-into-view>
   <div
     class="virtualscroll-scroller"
     @scroll="onScroll"
+    @keydown.capture="onKeyDown"
     ref="scrollerEl"
+    id="vsc"
   >
   <slot name="header"></slot>
   <div :style="{ height: `${topFillerHeight}px` }" ref="topEl"/>
     <template v-for="item in visibleItems" :key="item.key">
-      <slot :item="item" :scrolling="fastScrolling"></slot>
+      <slot :item="item" :scrolling="fastScrolling" :onRowFocusIn="onRowFocusIn"></slot>
     </template>
     <div :style="{ height: `${bottomFillerHeight}px` }" />
   </div>
+  </lrud>
 </template>
 
 <style lang="scss">
 .virtualscroll-scroller {
   overflow-x: hidden;
   overflow-y: scroll;
+  position: relative;
 }
 </style>
 
@@ -52,10 +57,9 @@ export default defineComponent({
     const { items } = toRefs(props);
 
     onMounted(() => {
-      console.log('mounted');
       const instance = getCurrentInstance();
-      watch(items, () => {
-        console.log('items changed');
+      const updateItems = () => {
+        console.log('VirtualScroll: updateItems');
         theItems.value = items.value;
         let h = 0;
         for (const item of theItems.value) {
@@ -63,8 +67,9 @@ export default defineComponent({
         }
         totalHeight.value = h;
         instance.ctx.updateVisibleItems();
-      });
-      instance.ctx.updateVisibleItems();
+      };
+      watch(items, updateItems);
+      updateItems();
     });
 
     onActivated(() => {
@@ -72,17 +77,51 @@ export default defineComponent({
       scrollerEl.value.scrollTop = savedScrollTop.value;
     });
 
-    // Restore scroll position after DOM update.
-    onBeforeUpdate(() => {
-      if (scrollerEl.value) {
-        scrollTop.value = scrollerEl.value.scrollTop;
+    // An element in one of the rows got the focus. See if we need
+    // to scroll to bring it into view.
+    function onRowFocusIn(ev, el) {
+      let elem = ev.target;
+      while (elem.parentElement !== scrollerEl.value) {
+        if (!elem.parentElement) {
+          console.log('VirtualScroller: onRowFocusIn: lost focus');
+          return;
+        }
+        elem = elem.parentElement;
       }
-    });
-    onUpdated(() => {
-      if (scrollerEl.value) {
-        scrollerEl.value.scrollTop = scrollTop.value;
+
+      // See if we need to scroll the row into view.
+      const top = scrollerEl.value.scrollTop;
+      const height = scrollerEl.value.clientHeight;
+      const bottom = top + height;
+      let scrollTo = null;
+
+      if (elem.offsetTop < top) {
+        scrollTo = elem.offsetTop - 12;
+        if (scrollTo <= topEl.value.offsetTop) {
+          scrollTo = 0;
+        }
+      } else if (elem.offsetTop + elem.offsetHeight >= bottom) {
+        scrollTo = elem.offsetTop + elem.offsetHeight - height + 4;
       }
-    });
+
+      // Alas, if we scroll to a new position while already
+      // smooth-scrolling, the scrolling gets choppy :(
+      if (scrollTo !== null) {
+        scrollerEl.value.scrollTo({
+          left: 0,
+          top: scrollTo,
+          behavior: 'smooth',
+        });
+      }
+    }
+
+    // Escape brings you back to the top.
+    function onKeyDown(ev) {
+      if (ev.key === 'Escape' && scrollerEl.value.scrollTop !== 0) {
+        scrollerEl.value.scrollTop = 0;
+        ev.stopPropagation();
+      }
+    }
 
     return {
       theItems,
@@ -90,8 +129,6 @@ export default defineComponent({
       totalHeight,
       topFillerHeight,
       bottomFillerHeight,
-      updating: false,
-      scrollTop,
       savedScrollTop,
       topEl,
       scrollerEl,
@@ -101,6 +138,8 @@ export default defineComponent({
       fastScrolling,
       scrollPps: 0,
       counter: 0,
+      onRowFocusIn,
+      onKeyDown,
     };
   },
 
@@ -135,7 +174,7 @@ export default defineComponent({
         if (pps > 0) {
           const d = dt > 1000 ? 1 : dt / 1000;
           this.scrollPps = (1 - d) * this.scrollPps + d * pps;
-          console.log('pps: ', this.scrollPps);
+          //console.log('pps: ', this.scrollPps);
         } else {
           this.scrollPps = 0;
         }
@@ -183,7 +222,8 @@ export default defineComponent({
       while (idx < this.theItems.length) {
         const item = this.theItems[idx];
         if (curPos + item.height > bottom + renderThresHold) {
-          break;
+          if (visibleItems.length != this.visibleItems.length - 1)
+            break;
         }
         visibleItems.push(item);
         curPos += item.height;

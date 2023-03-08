@@ -1,9 +1,14 @@
 <template>
+<lrud>
 <div class="row justify-start">
   <q-item shrink class="col-xs-12 col-sm-5 col-md-3 q-pa-none relative">
+    <lrud-focus-enter>
     <q-input
       :modelValue="search"
+      autocapitalize="off"
+      autocomplete="off"
       @update:modelValue="$emit('update:search', $event)"
+      @keydown.enter="search_enter()"
       placeholder="Search titles"
       dark
       clearable
@@ -14,17 +19,17 @@
       type="search"
       color="white"
       style="width: 100%"
-    />
-    <q-btn
-      dense
-      flat
-      icon="search"
-      color="white"
-      tabindex="-1"
-    />
+      ref="input"
+    >
+      <template v-slot:append>
+          <q-icon name="search" />
+      </template>
+    </q-input>
+    </lrud-focus-enter>
   </q-item>
   <q-item class="col-sm col-xs-auto q-pa-none" />
   <q-item class="col-xs-4 col-sm-auto q-pa-none relative">
+  <lrud no-nav-inside steal-keys-outside>
   <q-select
     filled
     dense
@@ -37,9 +42,11 @@
     class="inline"
     options-selected-class="q-select-active-option"
   />
+  </lrud>
   </q-item>
   <div class="col-auto" />
   <q-item class="col-xs-8 col-sm-auto relative q-pa-none">
+  <lrud no-nav-inside steal-keys-outside>
   <q-select
     filled
     dense
@@ -56,8 +63,10 @@
     class="q-pl-md"
     options-selected-class="q-select-active-option"
   />
+  </lrud>
   </q-item>
 </div>
+</lrud>
 </template>
 
 <style lang="scss">
@@ -87,7 +96,6 @@ export default {
   },
 
   setup(props) {
-    // const sortByKey = ref(null);
     let sortByOptions = [
       'Added',
       'Rating',
@@ -107,6 +115,11 @@ export default {
     genreDisplayValue() {
       const val = this.genreFilter && this.genreFilter.length ? this.genreFilter.join(' ') : 'All';
       return `<span class="filterbar-genre-display">${val}</span>`;
+    },
+
+    search_enter() {
+      console.log('enter');
+      // this.$refs.input.blur();
     },
   },
 };

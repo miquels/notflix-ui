@@ -1,11 +1,17 @@
 <template>
-  <div :style="{ height: `${height}px` }" class="relative">
+  <div
+    :style="{ height: `${height}px` }"
+    class="relative"
+    rel="el"
+    @focusin="$emit('rowfocusin', $event, $el)"
+  >
     <div
       v-for="item in items"
       :key="item.key"
       class="poster-row-thumb relative"
       :style="{ padding: `${padding}px` }"
       @click="$emit('select-item', item.relPath)"
+      tabindex="0"
     >
       <Image
         :src="item.url"
@@ -30,10 +36,11 @@
 .poster-row-thumb {
   position: relative;
   display: inline-block;
+  outline: 0;
   // removes padding between image and name
   font-size: 0px;
 }
-.poster-row-thumb:hover {
+.poster-row-thumb:hover, .poster-row-thumb:focus {
   transform: scale(1.1);
   transition: all .2s ease-in-out;
   cursor: pointer;
@@ -52,6 +59,7 @@
 <script>
 import {
   defineComponent,
+  ref,
 } from 'vue';
 import Image from 'components/Image.vue';
 
@@ -76,6 +84,11 @@ export default defineComponent({
     hideImages: Boolean,
     padding: Number,
     fontSize: Number,
+  },
+
+  setup() {
+    const el = ref(null);
+    return { el }
   },
 
   methods: {

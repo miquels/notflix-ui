@@ -30,6 +30,7 @@ module.exports = configure((ctx) => ({
     'emitter.js',
     'chromecast.js',
     'config.js',
+    'global-components.js',
     'pwa.js',
   ],
 

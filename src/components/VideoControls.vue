@@ -1,4 +1,5 @@
 <template>
+    <lrud>
     <div
        class=videocontrols-container
        ref="el"
@@ -8,6 +9,7 @@
        @touchend.capture="onTouchEnd($event)"
     >
       <div class="row q-mx-md videocontrols-slider">
+        <lrud no-nav-inside steal-keys-outside>
         <q-slider
            :modelValue="currentTime"
            @update:modelValue="(val) => { seekTo = val; }"
@@ -21,21 +23,28 @@
            :label-value="hhmmss(seekTo || currentTime)"
            dark
            ref="sliderEl"
+           tabindex="0"
+           autofocus
         />
+        </lrud>
       </div>
+      <lrud>
       <div class="row q-pb-sm">
         <div class="col-auto q-ml-sm">
           <q-icon
             name="stop" v-if="stopButton" size="32px"
             class="on-left hover-pointer" @click="$emit('stop')"
+            tabindex="0"
           />
           <q-icon
             :name="play_icon()" size="32px"
             class="on-left hover-pointer" @click="$emit('play')"
+            tabindex="0"
           />
           <q-icon
             :name="volume_icon()" size="32px"
             class="on-left hover-pointer" @click="$emit('mute')"
+            tabindex="0"
           />
           <span class="on-left" v-if="duration">{{ time_info() }}</span>
         </div>
@@ -48,6 +57,7 @@
           <q-icon
             name="language" size="32px"
             class="on-right hover-pointer" v-if="audioTracks.length > 1"
+            tabindex="0"
           >
             <q-menu
               anchor="top end"
@@ -71,9 +81,11 @@
             </q-menu>
           </q-icon>
 
+          <lrud>
           <q-icon
             name="closed_caption" size="32px"
            class="on-right hover-pointer" v-if="textTracks.length"
+           tabindex="0"
           >
             <q-menu
               anchor="top end"
@@ -104,6 +116,7 @@
               </q-list>
             </q-menu>
           </q-icon>
+          </lrud>
 
           <q-icon
             :name="'airplay'"
@@ -111,6 +124,7 @@
             class="on-right hover-pointer"
             v-if="airplayAvailable"
             @click="$emit('airplay')"
+            tabindex="0"
           />
           <q-icon
             :name="cast_icon()"
@@ -118,6 +132,7 @@
             class="on-right hover-pointer"
             v-if="castState && castState !== 'no_devices'"
             @click="$emit('cast')"
+            tabindex="0"
           />
           <q-icon
             :name="fullscreen_icon()"
@@ -125,10 +140,13 @@
             class="on-right hover-pointer"
             v-if="!!fullScreenState"
             @click="$emit('fullscreen')"
+            tabindex="0"
           />
         </div>
       </div>
+      </lrud>
     </div>
+    </lrud>
 </template>
 
 <style>

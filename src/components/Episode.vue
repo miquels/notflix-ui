@@ -12,6 +12,7 @@
             size="48px"
             class="episode-play col-auto on-left"
             @click="$emit('play', episode)"
+            tabindex = 0
           />
           <div class="col" style="margin: auto">
             {{ episode.name }}. {{ episode.nfo.title }}

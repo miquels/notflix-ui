@@ -1,4 +1,5 @@
 <template>
+  <lrud>
   <div
     class="html5video-container"
     tabindex="0"
@@ -65,6 +66,7 @@
       </div>
     </q-slide-transition>
   </div>
+  </lrud>
 </template>
 
 <style lang="scss">
