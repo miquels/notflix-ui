@@ -95,11 +95,12 @@
     const top = scrollerEl.value.scrollTop;
     const height = scrollerEl.value.clientHeight;
     const bottom = top + height;
+    const headerHeight = topEl.value.offsetTop;
     let scrollTo = null;
 
-    if (elem.offsetTop < top) {
+    if (elem.offsetTop < top || (elem.offsetTop == headerHeight && top < headerHeight)) {
       scrollTo = elem.offsetTop - 12;
-      if (scrollTo <= topEl.value.offsetTop) {
+      if (scrollTo <= headerHeight) {
         scrollTo = 0;
       }
     } else if (elem.offsetTop + elem.offsetHeight >= bottom) {

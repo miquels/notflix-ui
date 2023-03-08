@@ -27,7 +27,7 @@
         </q-tabs>
         </lrud>
       <div class="col"/>
-      <CastButton class="on-right cursor-pointer" />
+      <CastButton v-if="canCast" class="on-right cursor-pointer" />
       <q-btn square dense class="on-right" @click="$router.push('/settings/');">
         <q-icon
           name="settings"
@@ -52,7 +52,12 @@
       </router-view>
     </q-page-container>
 
-    <q-footer :modelValue="castActive()" elevated class="bg-grey-10 text-white cursor-pointer">
+    <q-footer
+      v-if="canCast()"
+      :modelValue="castActive()"
+      elevated
+      class="bg-grey-10 text-white cursor-pointer">
+    >
       <Chromecast/>
       <Play />
     </q-footer>
@@ -114,6 +119,11 @@ export default {
       fix_quasar_css()
     });
 
+    function canCast() {
+      return quasar.platform.is.chrome &&
+        !(quasar.platform.is.ios || quasar.platform.is.tv)
+    }
+
     const keepAlive = [
       'PageTvShows',
       'PageMovies',
@@ -129,6 +139,7 @@ export default {
     ];
 
     return {
+      canCast,
       keepAlive,
       emitter,
       store,

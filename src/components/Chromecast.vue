@@ -76,6 +76,12 @@ export default defineComponent({
     const emitter = inject('emitter');
     const store = useStore();
 
+    // Load the Cast framework.
+    let cast = document.createElement('script');
+    cast.setAttribute( 'src', 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1');
+    cast.async = true;
+    document.body.appendChild(cast);
+
     return {
       playState: ref('idle'),
       currentTime: ref(0),

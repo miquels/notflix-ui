@@ -81,7 +81,6 @@ export default store(() => {
       },
 
       currentView(state, value) {
-        console.log('update currentView', value);
         Object.entries(value).forEach(([key, val]) => {
           state.currentView[key] = val;
         });
