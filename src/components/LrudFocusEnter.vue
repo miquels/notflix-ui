@@ -1,7 +1,7 @@
 <template>
-  <q-item ref="el" tabindex="0">
+  <div ref="el" tabindex="0">
     <slot></slot>
-  </q-item>
+  </div>
 </template>
 
 <script>
@@ -21,7 +21,7 @@ export default {
     onMounted(() => {
 
       // Find the input element.
-      input = el.value.$el.querySelector(':scope input');
+      input = el.value.querySelector(':scope input');
       if (!input) {
         return;
       }
@@ -30,19 +30,19 @@ export default {
       // Handle keyboard events.
       handler = (ev) => {
         if (ev.key === 'Enter') {
-          if (document.activeElement === el.value.$el) {
+          if (document.activeElement === el.value) {
             input.focus();
           } else if (document.activeElement === input) {
-            el.value.$el.focus();
+            el.value.focus();
           }
         }
       }
-      el.value.$el.addEventListener('keydown', handler);
+      el.value.addEventListener('keydown', handler);
     });
 
     onBeforeUnmount(() => {
       if (handler) {
-        el.value.$el.removeEventListener('keydown', handler);
+        el.value.removeEventListener('keydown', handler);
       }
     });
 
