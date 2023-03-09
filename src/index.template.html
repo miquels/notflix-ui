@@ -11,6 +11,9 @@
     <script>
 	// Hack to get better scaling on a TV screen.
 	// Should fix this with CSS instead (TODO).
+	//
+	// Note. cssPixelRatio can now be calculated as
+	// window.devicePixelRatio * window.outerWidth / window.innerWidth
 	if (navigator.userAgent.match(/AOSP TV|Chromecast|Android TV/)) {
 	    const mvp = document.getElementById('viewport');
 	    mvp.setAttribute('content','user-scalable=no, width=1280');

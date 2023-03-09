@@ -134,11 +134,15 @@ export default {
     'steal-keys-outside': Boolean,
     'no-nav-inside': Boolean,
     'no-scroll-into-view': Boolean,
+    'filter-keys': String,
+    'tabindex': [ String, Number ],
   },
   setup (props, { slots }) {
-    const stealKeysOutside = props.stealKeysOutside;
     const noNavInside = props.noNavInside;
     const noScrollIntoView = props.noScrollIntoView;
+    const filterKeys = props.filterKeys;
+    const stealKeysOutside = props.stealKeysOutside;
+    const tabindex = props.tabindex;
 
     const keys = props.keys || 'LRUDE';
     let hasMenu = false;
@@ -158,15 +162,26 @@ export default {
           // The 'back' button on android tv remotes has been mapped to
           // escape. So if a menu is open, close it, otherwise do the
           // history go(-1) thing.
-          if (quasar.platform.is.tv) {
+          if (quasar.platform.is.tv && !stealKeysOutside) {
             if (ev.key === 'Escape') {
               if (hasMenuOpen) {
                 return;
               } else {
                 ev.stopPropagation();
-                console.log('would go back');
-                // history.go(-1);
+                history.go(-1);
               }
+              return;
+            }
+          }
+
+          // If the 'filter-keys' prop was set, and this key matches that
+          // key, stop the propagation and fire an alternative event.
+          if (filterKeys) {
+            const m = keymap[ev.key];
+            if (m && filterKeys.indexOf(m[0])) {
+              const keydown_lrud = new KeyboardEvent('keydown_lrud', ev);
+              ev.stopPropagation();
+              ev.target.dispatchEvent(keydown_lrud, { bubbles: true });
               return;
             }
           }
@@ -245,21 +260,24 @@ export default {
           // (we're in the capturing phase!) but dispatch a similar event from
           // the target, so that an outer <Lrud> can catch the event.
           if (stealKeysOutside && !dest) {
-            const cloned_ev = new KeyboardEvent('keydown_cloned', ev);
+            const keydown_lrud = new KeyboardEvent('keydown_lrud', ev);
             ev.stopPropagation();
-            ev.target.dispatchEvent(cloned_ev, { bubbles: true });
+            ev.target.dispatchEvent(keydown_lrud, { bubbles: true });
           }
         };
 
+        if (tabindex !== undefined) {
+          el.setAttribute('tabindex', '' + tabindex);
+        }
         el.addEventListener('keydown', handler, stealKeysOutside);
         if (!stealKeysOutside)
-          el.addEventListener('keydown_cloned', handler);
+          el.addEventListener('keydown_lrud', handler);
       },
 
       // Unregister keyboard handler.
       unmounted (el) {
         el.removeEventListener('keydown', handler, stealKeysOutside);
-        el.removeEventListener('keydown_cloned', handler);
+        el.removeEventListener('keydown_lrud', handler);
       },
     };
 

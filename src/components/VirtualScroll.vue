@@ -75,8 +75,8 @@
   });
 
   onActivated(() => {
-    console.log('activated, set scrollTop to', savedScrollTop.value);
-    scrollerEl.value.scrollTop = savedScrollTop.value;
+    scrollerEl.value.scrollTop = savedScrollTop;
+    updateVisibleItems();
   });
 
   // An element in one of the rows got the focus. See if we need

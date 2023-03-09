@@ -9,7 +9,7 @@
        @touchend.capture="onTouchEnd($event)"
     >
       <div class="row q-mx-md videocontrols-slider">
-        <lrud no-nav-inside steal-keys-outside>
+        <lrud no-nav-inside steal-keys-outside tabindex="0">
         <q-slider
            :modelValue="currentTime"
            @update:modelValue="(val) => { seekTo = val; }"
@@ -23,7 +23,6 @@
            :label-value="hhmmss(seekTo || currentTime)"
            dark
            ref="sliderEl"
-           tabindex="0"
            autofocus
         />
         </lrud>

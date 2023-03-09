@@ -84,7 +84,7 @@ export default defineComponent({
         onError.value = `this.src='${props.errorSrc}'`;
       }
 
-      const ratio = window.devicePixelRatio || 1;
+      const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
       if (props.width) {
         const w = ratio * clamp(props.width, WIDTHS);
         imgSrc.value += `&w=${w}`;

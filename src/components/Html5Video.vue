@@ -8,10 +8,12 @@
     @click="mouseEvent(m.CLICK_CONTAINER, $event)"
     @mousemove="mouseEvent(m.MOVE_CONTAINER, $event)"
     @mouseleave="mouseEvent(m.LEAVE_CONTAINER, $event)"
+    @keydown.capture="mouseEvent(m.MOVE_CONTAINER, $event)"
     @keyup.f="onFullscreen()"
     @keyup.space="onPlay()"
-    @keyup.left="relSeek(-15)"
-    @keyup.right="relSeek(15)"
+    @keydown.left="relSeek(-15)"
+    @keydown.right="relSeek(15)"
+    @focusout="onFocusOut"
     ref="el"
   >
     <video
@@ -273,7 +275,7 @@ export default defineComponent({
     // just alwatys show the airplay button.
     const airplayAvailable = ref((quasar.platform.is.ios && window.navigator.standalone) ? 2 : 0);
 
-    const fullScreenState = ref(quasar.fullscreen.isCapable
+    const fullScreenState = ref(quasar.fullscreen.isCapable && !quasar.platform.is.tv
       ? (quasar.fullscreen.isActive ? 'yes' : 'no') : null);
     const stopButton = ref(quasar.fullscreen.isActive);
 
@@ -748,6 +750,24 @@ export default defineComponent({
       }
       this.onSeek(newTime, true);
       // console.log('seek from', this.video.currentTime, 'to', newTime);
+    },
+
+    // Make sure we keep focus.
+    onFocusOut(ev) {
+      // Kind of a hack.
+      setTimeout(() => {
+        let elem = document.activeElement;
+        if (!elem || !this || !this.el) {
+          return;
+        }
+        while (elem.parentElement) {
+          if (elem === this.el) {
+            return;
+          }
+          elem = elem.parentElement;
+        }
+        this.el.focus();
+      }, 0);
     },
 
     setDisplayState(state, timeout) {

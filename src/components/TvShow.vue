@@ -207,7 +207,7 @@ export default defineComponent({
       if (!this.bgimage) {
         return {};
       }
-      const ratio = window.devicePixelRatio || 1;
+      const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
       const height = 250 * ratio;
       const img = `${this.bgimage}?q=90&h=${height}`;
       const style = {

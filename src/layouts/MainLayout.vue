@@ -53,12 +53,11 @@
     </q-page-container>
 
     <q-footer
-      v-if="canCast()"
       :modelValue="castActive()"
       elevated
       class="bg-grey-10 text-white cursor-pointer">
     >
-      <Chromecast/>
+      <Chromecast v-if="canCast()"/>
       <Play />
     </q-footer>
 
