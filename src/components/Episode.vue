@@ -61,24 +61,11 @@
 }
 </style>
 
-<script>
-import {
-  defineComponent,
-} from 'vue';
+<script setup>
 import Image from 'components/Image.vue';
 
-export default defineComponent({
-  name: 'Episode',
-  components: {
-    Image,
-  },
-  props: {
-    episode: Object,
-  },
-  methods: {
-    thumb() {
-      return this.episode.thumb || '/img/static.jpg';
-    },
-  },
-});
+const { episode } = defineProps();
+function thumb() {
+  return this.episode.thumb || '/img/static.jpg';
+}
 </script>
