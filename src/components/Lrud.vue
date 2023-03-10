@@ -18,6 +18,12 @@ function label_for(el) {
   return outer_el;
 }
 
+// A FocussedElem is the element that is now focussed.
+//
+// We figure out the shape of the element, its center point,
+// and the areas it can 'see' in all directions.
+// Based on that, given a set of other elements, we can
+// figure out which one is the closest by in a certain direction.
 class FocussedElem {
   constructor(el) {
     const rect = label_for(el).getBoundingClientRect();
@@ -41,44 +47,51 @@ class FocussedElem {
   }
 
   // Spational navigation.
-  // Calculate the direction elem is in relative to ourself.
-  // We use the LRUD 'frustrum' algorithm proposed by
-  // https://netflixtechblog.com/pass-the-remote-user-input-on-tv-devices-923f6920c9a8
-  direction(rect) {
+  // Calculate the distance to 'rect' in a certain direction.
+  distance(rect, dir) {
 
-    // get the middle coordinates of elem's bounding rectangle.
-    const x2 = rect.left + (rect.right - rect.left) / 2;
-    const y2 = rect.top + (rect.bottom - rect.top) / 2;
+    // Start by finding out to which edge or corner of 'rect'
+    // we need to measure the distance to.
+    let x2 = this.x;
+    let y2 = this.y;
 
-    // horizontal distance between 'this' and 'elem'.
-    const dx = this.x - x2;
+    if (dir === 'left' || dir === 'right') {
+      if (dir === 'left') {
+        if (rect.right > this.x)
+          return;
+        x2 = rect.right;
+      } else {
+        if (rect.left < this.x)
+          return;
+        x2 = rect.left;
+      }
+      if (rect.bottom < this.y) {
+        y2 = rect.bottom;
+      } else if (rect.top > this.y) {
+        y2 = rect.top;
+      }
+    }
 
-    // There is a line going through (this.left, this.bottom) <=> (this.right, this.top).
-    // For a certain x position of the line, we can calculate where y is.
-    // Then check if the point is above that virtual line.
-    const liney1 = this.y + this.factor * dx;
-    const above1 = y2 <= liney1;
+    if (dir === 'up' || dir === 'down') {
+      if (dir === 'up') {
+        if (rect.bottom > this.y)
+          return;
+        y2 = rect.bottom;
+      } else {
+        if (rect.top < this.y)
+          return;
+        y2 = rect.top;
+      }
+      if (rect.right < this.x) {
+        x2 = rect.right;
+      } else if (rect.left > this.x) {
+        x2 = rect.left;
+      }
+    }
 
-    // Ditto for the line going through (this.left, this.top) <=> (this.right, this.bottom).
-    const liney2 = this.y - this.factor * dx;
-    const above2 = y2 <= liney2;
-
-    // Now we can calculate if 'rect' is left, right, up or down relative to this.
-    let dir;
-    if (above1 && above2) dir = 'up';
-    if (above1 && !above2) dir = 'left';
-    if (!above1 && !above2) dir = 'down';
-    if (!above1 && above2) dir = 'right';
-
-    return dir;
-  }
-
-  // Calculate the distance from 'this' to rect.
-  distance(rect) {
-    let x = rect.left + rect.width / 2;
-    let y = rect.top + rect.height / 2;
-    let a = Math.abs(this.x - x);
-    let b = Math.abs(this.y - y);
+    // Distance.
+    let a = Math.abs(this.x - x2);
+    let b = Math.abs(this.y - y2);
     return Math.sqrt(a ** 2 + b ** 2);
   }
 
@@ -87,13 +100,9 @@ class FocussedElem {
   update_nearest(dir, el) {
     const r2 = label_for(el).getBoundingClientRect();
 
-    if (dir != this.direction(r2)) {
-      // console.log('wrong dir', r2, this.direction(r2), el);
-      return;
-    }
-    const dist = this.distance(r2);
+    const dist = this.distance(r2, dir);
     // console.log('distance', dist, el);
-    if (!this.dist || dist < this.dist) {
+    if (dist && (!this.dist || dist < this.dist)) {
       this.to = el;
       this.dist = dist;
     }
