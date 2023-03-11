@@ -1,6 +1,8 @@
 <template>
-  <lrud>
+  <lrud no-scroll-into-view>
   <div class="tv-show-container q-pt-md">
+    <div class="row justify-center">
+    <div class="col-12 col-sm-10 tv-show-inner">
     <div class="tv-show-header">
       <q-resize-observer @resize="onResize"/>
       <div class="tv-show-header-img" :style="bgImage()"/>
@@ -9,9 +11,11 @@
       </div>
       <div class="row text-h6">
         <div class="col" v-if="seasons && currentSeason">
-          <div v-if="seasons.length === 1">{{ currentSeason.name }}</div>
-          <q-item class="col-xs-8 col-sm-auto relative q-pa-none">
-          <lrud v-if="seasons.length > 1" no-nav-inside steal-keys-outside>
+          <q-item @focusin="scrollToTop" class="col-xs-8 col-sm-auto relative q-pa-none">
+          <div v-if="seasons.length === 1">
+            {{ currentSeason.name }}
+          </div>
+          <lrud no-scroll-into-view v-if="seasons.length > 1" no-nav-inside steal-keys-outside>
           <q-select
               filled
               dense
@@ -28,8 +32,8 @@
         </div>
       </div>
       <div class="row q-my-md">
-        <div class="col">{{ plot }}
-         </div>
+        <div class="col tvshow-plot">{{ plot }}
+        </div>
         <div class="col-2 col-sm-6"></div>
       </div>
       <div class="row">
@@ -45,10 +49,12 @@
       </div>
     </div>
     <div v-if="seasons && currentSeason" class="tv-show-episodes">
-      <template v-for="episode in currentSeason.episodes" :key="episode.name">
-        <Episode :episode="episode" @play="playEpisode"/>
+      <template v-for="(episode, index) in currentSeason.episodes" :key="episode.name">
+        <Episode :episode="episode" @play="playEpisode(episode)" @focusin="scrollIntoView($event, index)"/>
       </template>
     </div>
+  </div>
+  </div>
   </div>
   </lrud>
 </template>
@@ -62,10 +68,14 @@
   */
   font-family: sans-serif;
   font-weight: 500;
-  font-size: 1.2em;
-  max-width: 1000px;
+  font-size: 1.1em;
   margin: 0 auto;
-  scroll-behavior: smooth;
+  height: calc(100vh - 75px);
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+.tv-show-inner {
+  max-width: 1000px;
 }
 .tv-show-header {
   position: relative;
@@ -79,6 +89,13 @@
   z-index: -1;
   background-color: #000000;
   background-size: cover;
+}
+.tvshow-plot {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  white-space: pre-wrap;
 }
 .table {
   display: table;
@@ -238,6 +255,21 @@ export default defineComponent({
         season,
         episode,
       });
+    },
+
+    scrollIntoView(ev, epIndex) {
+      if (epIndex === 0) {
+        this.scrollToTop();
+        return;
+      }
+      ev.currentTarget.scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth',
+      });
+    },
+
+    scrollToTop() {
+      this.$el.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
     },
   },
 });

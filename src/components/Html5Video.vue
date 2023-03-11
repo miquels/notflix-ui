@@ -8,13 +8,12 @@
     @click="mouseEvent(m.CLICK_CONTAINER, $event)"
     @mousemove="mouseEvent(m.MOVE_CONTAINER, $event)"
     @mouseleave="mouseEvent(m.LEAVE_CONTAINER, $event)"
-    @keydown.capture="mouseEvent(m.MOVE_CONTAINER, $event)"
+    @keydown="onKeyDown"
     @keyup.f="onFullscreen()"
     @keyup.space="onPlay()"
-    @keydown.left="relSeek(-15)"
-    @keydown.right="relSeek(15)"
-    @focusout="onFocusOut"
+    @xxfocusout="onFocusOut"
     ref="el"
+    autofocus
   >
     <video
       class="html5video-video"
@@ -163,6 +162,7 @@ import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import VideoControls from 'components/VideoControls.vue';
+import { ControlsEvent } from 'components/VideoControls.vue';
 import Hls from 'hls.js';
 
 const MouseEvent = {
@@ -171,12 +171,6 @@ const MouseEvent = {
   LEAVE_CONTAINER: 'leave_container',
 };
 Object.freeze(MouseEvent);
-
-const ControlsEvent = {
-  IDLE: 'controls_idle',
-  ACTIVE: 'controls_active',
-};
-Object.freeze(ControlsEvent);
 
 const PlayEvent = {
   PLAYING: 'playing',
@@ -770,6 +764,20 @@ export default defineComponent({
       }, 0);
     },
 
+    onKeyDown(ev) {
+      console.log('key event', ev);
+      switch (ev.key) {
+        case 'ArrowLeft':
+        case 'ArrowRight':
+        case 'ArrowUp':
+        case 'ArrowDown':
+        case 'Enter':
+          console.log('arrow');
+          this.onControlsActive(ControlsEvent.ACTIVE);
+          break;
+      }
+    },
+
     setDisplayState(state, timeout) {
       // Clear timer.
       if (this.displayTimer) {
@@ -803,8 +811,8 @@ export default defineComponent({
       this.displayState = state;
     },
 
-    onControlsActive(active) {
-      this.handleEvent(active ? ControlsEvent.ACTIVE : ControlsEvent.IDLE);
+    onControlsActive(event) {
+      this.handleEvent(event);
     },
 
     fromControls(ev) {
@@ -857,10 +865,11 @@ export default defineComponent({
         this.setDisplayState(DisplayState.CONTROLSACTIVE);
       }
 
-      if (ev === ControlsEvent.IDLE) {
-        // console.log('ControlsEvent.IDLE');
+      if (ev === ControlsEvent.IDLE || ev === ControlsEvent.OFF) {
+        // console.log('ControlsEvent.IDLE', canHide);
         if (canHide) {
-          this.setDisplayState(DisplayState.HIDDEN, 3000);
+          const tmout = ev === ControlsEvent.IDLE ? 3000 : 500;
+          this.setDisplayState(DisplayState.HIDDEN, tmout);
         } else if (this.playState === 'paused' && this.isTouch) {
           this.setDisplayState(DisplayState.PAUSED);
         }

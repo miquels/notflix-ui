@@ -7,23 +7,34 @@
        @mousemove.capture="onMouseMove($event)"
        @touchstart.passive.capture="onTouchStart($event)"
        @touchend.capture="onTouchEnd($event)"
+       @keydown.capture="onControlsFocusIn()"
+       @focusin="onControlsFocusIn()"
     >
-      <div class="row q-mx-md videocontrols-slider">
-        <lrud no-nav-inside steal-keys-outside tabindex="0">
+      <div class="row q-mx-md videocontrols-slider-div">
+        <lrud no-nav-inside filter-keys="D" tabindex="0" :center-x=0>
         <q-slider
            :modelValue="currentTime"
            @update:modelValue="(val) => { seekTo = val; }"
-           @change="seek(seekTo); onSliderFocusOut()"
-           @mousedown.capture="onSliderFocusIn()"
+           @change="seek(seekTo)"
+           @mousedown.capture="onControlsFocusIn()"
+           @keydown.stop.up="onControlsFocusOut(800)"
+           @keydown.stop.enter="$emit('play')"
+           @keydown.stop.left="seek(currentTime - 15)"
+           @keydown.stop.right="seek(currentTime + 15)"
+           @keydown.stop.m="seek(currentTime + 15)"
+           @focusin="onSliderFocusIn"
+           @focusout="onSliderFocusOut"
            :min="0"
            :max="duration || 1"
            :step="0"
-           color="blue"
+           :color="sliderColor"
+           :inner-track-color="sliderTrackColor"
            :label="!!this.duration"
            :label-value="hhmmss(seekTo || currentTime)"
            dark
            ref="sliderEl"
            autofocus
+           class="no-outline videocontrols-slider"
         />
         </lrud>
       </div>
@@ -32,17 +43,17 @@
         <div class="col-auto q-ml-sm">
           <q-icon
             name="stop" v-if="stopButton" size="32px"
-            class="on-left hover-pointer" @click="$emit('stop')"
+            class="on-left hover-pointer focus-white" @click="$emit('stop')"
             tabindex="0"
           />
           <q-icon
             :name="play_icon()" size="32px"
-            class="on-left hover-pointer" @click="$emit('play')"
+            class="on-left hover-pointer focus-white" @click="$emit('play')"
             tabindex="0"
           />
           <q-icon
             :name="volume_icon()" size="32px"
-            class="on-left hover-pointer" @click="$emit('mute')"
+            class="on-left hover-pointer focus-white" @click="$emit('mute')"
             tabindex="0"
           />
           <span class="on-left" v-if="duration">{{ time_info() }}</span>
@@ -107,6 +118,7 @@
                 <q-item
                   v-close-popup
                   clickable
+                  tabindex="0"
                   :active="textTrack === null"
                   @click="$emit('texttrack', null)"
                 >
@@ -120,7 +132,7 @@
           <q-icon
             :name="'airplay'"
             size="32px"
-            class="on-right hover-pointer"
+            class="on-right hover-pointer focus-white"
             v-if="airplayAvailable"
             @click="$emit('airplay')"
             tabindex="0"
@@ -128,7 +140,7 @@
           <q-icon
             :name="cast_icon()"
             size="32px"
-            class="on-right hover-pointer"
+            class="on-right hover-pointer focus-white"
             v-if="castState && castState !== 'no_devices'"
             @click="$emit('cast')"
             tabindex="0"
@@ -136,7 +148,7 @@
           <q-icon
             :name="fullscreen_icon()"
             size="32px"
-            class="on-right hover-pointer"
+            class="on-right hover-pointer focus-white"
             v-if="!!fullScreenState"
             @click="$emit('fullscreen')"
             tabindex="0"
@@ -152,9 +164,16 @@
 .videocontrols-container {
   position: relative;
   width: 100%;
+  color: #bbbbbb;
+}
+.videocontrols-slider-div {
+  position: relative;
 }
 .videocontrols-slider {
-  position: relative;
+  color: #dddddd;
+}
+.videocontrols-slider:focus {
+  color: #ffffff;
 }
 .videocontrols-fix-zindex {
   z-index: 7001;
@@ -168,6 +187,14 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import { hhmmss } from '../lib/util.js';
+import QListKbdNav from './QListKbdNav.vue';
+
+export const ControlsEvent = {
+  IDLE: 'controls_idle',
+  CLOSE: 'controls_idle',
+  ACTIVE: 'controls_active',
+};
+Object.freeze(ControlsEvent);
 
 export default defineComponent({
   name: 'VideoControls',
@@ -217,6 +244,8 @@ export default defineComponent({
     const store = useStore();
 
     return {
+      sliderColor: ref('blue-10'),
+      sliderTrackColor: ref('grey-8'),
       showLabel: ref(false),
       cur_play_icon: 'play_arrow',
       isActive: false,
@@ -297,6 +326,8 @@ export default defineComponent({
 
     seek(seekTo) {
       const newTime = toRaw(seekTo);
+      if (newTime < 0)
+        newTime = 0;
       this.$emit('seek', Math.floor(newTime));
       this.seekTo = 0;
       if (this.playState === 'ended') {
@@ -306,14 +337,17 @@ export default defineComponent({
 
     menuOpen() {
       if (!this.isActive) {
-        this.$emit('controlsActive', true);
+        this.$emit('controlsActive', ControlsEvent.ACTIVE);
       }
       this.isActive = true;
       this.isMenuOpen = true;
     },
 
     menuClose() {
-      this.$emit('controlsActive', false);
+      // FIXME: if we don't emit this, the menu might stay open.
+      // But if we do, the controls hide while we might still
+      // be active in the control area. Teleporting sucks.
+      this.$emit('controlsActive', ControlsEvent.IDLE);
       this.isMenuOpen = false;
     },
 
@@ -321,7 +355,7 @@ export default defineComponent({
       if (!document.hasFocus() || this.isTouch) return;
       // console.log('onMouseMove');
       // if (!this.isActive && !this.isMenuOpen) {
-      this.$emit('controlsActive', true);
+      this.$emit('controlsActive', ControlsEvent.ACTIVE);
       this.isActive = true;
     },
 
@@ -329,7 +363,7 @@ export default defineComponent({
       if (this.isTouch) return;
       // console.log('onMouseLeave');
       if (this.isActive && !this.isMenuOpen) {
-        this.$emit('controlsActive', false);
+        this.$emit('controlsActive', ControlsEvent.IDLE);
       }
       // console.log('onMouseLeave');
       this.isActive = false;
@@ -339,7 +373,7 @@ export default defineComponent({
       // console.log('onTouchStart');
       this.isTouch = true;
       if (!this.isActive && !this.isMenuOpen) {
-        this.$emit('controlsActive', true);
+        this.$emit('controlsActive', ControlsEvent.ACTIVE);
       }
       this.isActive = true;
     },
@@ -348,29 +382,42 @@ export default defineComponent({
       // console.log('onTouchEnd');
       this.isTouch = true;
       if (this.isActive && !this.isMenuOpen) {
-        this.$emit('controlsActive', false);
+        this.$emit('controlsActive', ControlsEvent.IDLE);
       }
       this.isActive = false;
     },
 
-    onSliderFocusIn() {
+    onControlsFocusIn() {
       if (this.isTouch) return;
       // console.log('sliderFocusIn');
       if (!this.isActive) {
-        this.$emit('controlsActive', true);
+        this.$emit('controlsActive', ControlsEvent.ACTIVE);
       }
       this.isActive = true;
       this.isMenuOpen = true;
     },
 
-    onSliderFocusOut() {
+    onControlsFocusOut(fromKey) {
       if (this.isTouch) return;
       // console.log('sliderFocusOut');
-      if (!this.isActive) {
-        this.$emit('controlsActive', false);
+      if (this.isActive) {
+        this.$emit('controlsActive', fromKey ? ControlsEvent.OFF : ControlsEvent.IDLE);
       }
       this.isMenuOpen = false;
+      this.isActive = false;
     },
+
+    onSliderFocusIn() {
+      console.log('sliderFocusIn');
+      this.sliderColor = 'blue-3';
+      this.sliderTrackColor = 'grey-7';
+    },
+
+    onSliderFocusOut() {
+      console.log('sliderFocusOut');
+      this.sliderColor = 'blue-10';
+      this.sliderTrackColor = 'grey-8';
+    }
   },
 });
 </script>

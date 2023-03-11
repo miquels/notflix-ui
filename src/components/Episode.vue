@@ -10,16 +10,16 @@
           <q-icon
             name="play_circle"
             size="48px"
-            class="episode-play col-auto on-left"
+            class="episode-play col-auto on-left no-outline"
             @click="$emit('play', episode)"
-            tabindex = 0
+            tabindex="0"
           />
           <div class="col" style="margin: auto">
             {{ episode.name }}. {{ episode.nfo.title }}
           </div>
           </div>
         </div>
-        <div class="col-12 q-pt-md">
+        <div class="col-12 q-pt-md episode-plot">
           {{ episode.nfo.plot }}
         </div>
       </div>
@@ -37,12 +37,15 @@
   </div>
 </template>
 
-<style>
+<style lang="scss">
 .episode-container {
   margin-top: 1em;
   margin-bottom: 1em;
   background: #19192c;
   position: relative;
+}
+.episode-container:focus-within, .episode-container:focus-within:hover {
+  background: #252530;
 }
 .episode-left {
   background: black;
@@ -50,22 +53,36 @@
 .episode-left img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+}
+.episode-plot {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  white-space: pre-wrap;
 }
 .episode-middle {
 }
 .episode-right {
 }
+.episode-play {
+  color: #dddddd;
+}
 .episode-play:hover {
+  color: #ffffff;
   cursor: pointer;
+}
+.episode-play:focus {
+  color: #ffffff;
 }
 </style>
 
 <script setup>
 import Image from 'components/Image.vue';
 
-const { episode } = defineProps();
+const { episode } = defineProps({ episode: Object });
+//const { episode } = toRefs(props);
 function thumb() {
-  return this.episode.thumb || '/img/static.jpg';
+  return episode.thumb || '/img/static.jpg';
 }
 </script>

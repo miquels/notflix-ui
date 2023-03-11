@@ -18,6 +18,11 @@ function label_for(el) {
   return outer_el;
 }
 
+function toNumber(val, dfl) {
+  const r = parseFloat(val);
+  return isNaN(r) ? dfl : val;
+}
+
 // A FocussedElem is the element that is now focussed.
 //
 // We figure out the shape of the element, its center point,
@@ -40,10 +45,9 @@ class FocussedElem {
       top -= (16 - height);
       height = 16;
     }
-    this.x = left + width / 2;
-    this.y = top + height / 2;
+    this.x = left + width * (toNumber(el.dataset.__centerX, 50) / 100);
+    this.y = top + height * (toNumber(el.dataset.__centerY, 50) / 100);
     this.factor = height / width;
-    // console.log('focussed-elem', this);
   }
 
   // Spational navigation.
@@ -101,7 +105,7 @@ class FocussedElem {
     const r2 = label_for(el).getBoundingClientRect();
 
     const dist = this.distance(r2, dir);
-    // console.log('distance', dist, el);
+    console.log('distance', dist, el);
     if (dist && (!this.dist || dist < this.dist)) {
       this.to = el;
       this.dist = dist;
@@ -143,20 +147,31 @@ export default {
     'steal-keys-outside': Boolean,
     'no-nav-inside': Boolean,
     'no-scroll-into-view': Boolean,
+    'attach-to-parent': Boolean,
+    'focus': Boolean,
     'filter-keys': String,
     'tabindex': [ String, Number ],
+    'center-x': [ String, Number ],
+    'center-y': [ String, Number ],
   },
   setup (props, { slots }) {
+    const stealKeysOutside = props.stealKeysOutside;
     const noNavInside = props.noNavInside;
     const noScrollIntoView = props.noScrollIntoView;
+    const attachToParent = props.attachToParent;
+    const focusElement = props.focus;
     const filterKeys = props.filterKeys;
-    const stealKeysOutside = props.stealKeysOutside;
-    const tabindex = props.tabindex;
+    let tabindex = props.tabindex;
+    const centerX = props.centerX;
+    const centerY = props.centerY;
 
     const keys = props.keys || 'LRUDE';
     let hasMenu = false;
     let handler;
 
+    if (!tabindex && focusElement) {
+      tabindex = "-1";
+    }
     const quasar = useQuasar();
 
     // custom directive.
@@ -185,7 +200,7 @@ export default {
 
           // If the 'filter-keys' prop was set, and this key matches that
           // key, stop the propagation and fire an alternative event.
-          if (filterKeys) {
+          if (filterKeys && ev.trusted) {
             const m = keymap[ev.key];
             if (m && filterKeys.indexOf(m[0])) {
               const keydown_lrud = new KeyboardEvent('keydown_lrud', ev);
@@ -226,22 +241,24 @@ export default {
 
           // Bubble through the elements until we Find the focusable element.
           let target = ev.target;
-          while (!target.matches(':is([tabindex="0"], button, input, a[href])')) {
+          while (!target.matches(':is([tabindex-"0"], button, input, a[href], .q-focusable)')) {
             target = target.parentElement;
             if (!target) {
-              console.log('target not found from', ev.target);
+              console.log('lrud: target not found from', ev.target);
               return;
             }
           }
 
           // Find all focusable child elements in this scope.
           const elems = Array.from(
-            el.querySelectorAll(':scope :is([tabindex="0"], button, input, a[href])')
+            el.querySelectorAll(':scope :is([tabindex="0"], button, input, a[href], .q-focusable)')
           );
+          console.log('children', elems);
 
           // Find the nearest in the direction of the arrowkey pressed.
           const fe = new FocussedElem(target);
           const dest = fe.navigate(ev, key, elems);
+          console.log('key', key, 'dest', dest);
 
           // Found nearest, focus and stop.
           if (dest && !noNavInside) {
@@ -275,12 +292,22 @@ export default {
           }
         };
 
+        if (attachToParent) {
+          el = el.parentElement;
+        }
         if (tabindex !== undefined) {
           el.setAttribute('tabindex', '' + tabindex);
         }
         el.addEventListener('keydown', handler, stealKeysOutside);
         if (!stealKeysOutside)
           el.addEventListener('keydown_lrud', handler);
+
+        if (focusElement) {
+          el.focus();
+        }
+
+        el.dataset.__centerX = centerX;
+        el.dataset.__centerY = centerY;
       },
 
       // Unregister keyboard handler.
@@ -294,6 +321,10 @@ export default {
     return () => {
       let node = slots.default && slots.default()[0];
       if (node) {
+        if (node.type.name === 'QList') {
+          console.log('LRUD node', node, 'slots', slots);
+          console.log('LRUD default slot', (node.children && node.children.default && node.children.default()));
+        }
         node = withDirectives(node, [
           [directive]
         ]);

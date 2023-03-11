@@ -1,10 +1,6 @@
 <template>
   <q-page class="flex-center">
-    <div class="row justify-center">
-      <div class="col-12 col-sm-10">
-        <TvShow :collection="collection" :name="name"/>
-      </div>
-    </div>
+    <TvShow :collection="collection" :name="name"/>
   </q-page>
 </template>
 

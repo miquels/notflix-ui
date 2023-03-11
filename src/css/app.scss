@@ -12,6 +12,11 @@ body {
   cursor: pointer;
 }
 
+.focus-white:focus {
+  color: #ffffff;
+  outline: none;
+}
+
 .stroke {
   @include stroke;
 }
