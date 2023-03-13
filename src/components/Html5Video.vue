@@ -13,7 +13,7 @@
     @keyup.space="onPlay()"
     @xxfocusout="onFocusOut"
     ref="el"
-    autofocus
+    v-autofocus="'.html5video-autofocus'"
   >
     <video
       class="html5video-video"
@@ -22,6 +22,12 @@
       x-webkit-airplay="allow"
       crossorigin="anonymous"
     ></video>
+    <div
+      class="html5video-overlay column fit no-outline html5video-autofocus"
+      tabindex="-1"
+    >
+      &nbsp
+    </div>
     <div class="html5video-overlay column fit" v-if="overlay()">
       <div class="row justify-center items-center fit absolute">
         <div v-if="bigPlayButton" class="col-auto">
@@ -774,6 +780,10 @@ export default defineComponent({
         case 'Enter':
           console.log('arrow');
           this.onControlsActive(ControlsEvent.ACTIVE);
+          break;
+        case 'Escape':
+          ev.stopPropagation();
+          this.$router.go(-1);
           break;
       }
     },

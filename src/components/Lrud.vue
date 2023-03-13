@@ -105,7 +105,6 @@ class FocussedElem {
     const r2 = label_for(el).getBoundingClientRect();
 
     const dist = this.distance(r2, dir);
-    console.log('distance', dist, el);
     if (dist && (!this.dist || dist < this.dist)) {
       this.to = el;
       this.dist = dist;
@@ -184,18 +183,18 @@ export default {
           //console.log('keypress:', ev);
 
           // The 'back' button on android tv remotes has been mapped to
-          // escape. So if a menu is open, close it, otherwise do the
-          // history go(-1) thing.
-          if (quasar.platform.is.tv && !stealKeysOutside) {
-            if (ev.key === 'Escape') {
-              if (hasMenuOpen) {
-                return;
-              } else {
+          // escape. So if we're sure that this is an actual keypress
+          // and it's not being handled by anything else, go back.
+          if (quasar.platform.is.tv &&
+              (ev.eventPhase === Event.AT_TARGET ||
+               ev.eventPhase === Event.BUBBLING_PHASE ||
+               hasMenu) &&
+              ev.key === 'Escape' &&
+              !hasMenuOpen &&
+              ev.isTrusted &&
+              !ev.defaultPrevented) {
                 ev.stopPropagation();
                 history.go(-1);
-              }
-              return;
-            }
           }
 
           // If the 'filter-keys' prop was set, and this key matches that
@@ -225,7 +224,8 @@ export default {
           // Enter is click.
           if (key === 'enter') {
             if (!noNavInside) {
-              //console.log('enter - click eventphase is', ev.eventPhase);
+              console.log('enter - click eventphase is', ev.eventPhase);
+              console.log('enter - event is', ev);
               ev.target.click();
               ev.stopPropagation();
             } else {
@@ -241,7 +241,7 @@ export default {
 
           // Bubble through the elements until we Find the focusable element.
           let target = ev.target;
-          while (!target.matches(':is([tabindex-"0"], button, input, a[href], .q-focusable)')) {
+          while (!target.matches(':is([tabindex="0"], button, input, a[href])')) {
             target = target.parentElement;
             if (!target) {
               console.log('lrud: target not found from', ev.target);
@@ -251,14 +251,12 @@ export default {
 
           // Find all focusable child elements in this scope.
           const elems = Array.from(
-            el.querySelectorAll(':scope :is([tabindex="0"], button, input, a[href], .q-focusable)')
+            el.querySelectorAll(':scope :is([tabindex="0"], button, input, a[href])')
           );
-          console.log('children', elems);
 
           // Find the nearest in the direction of the arrowkey pressed.
           const fe = new FocussedElem(target);
           const dest = fe.navigate(ev, key, elems);
-          console.log('key', key, 'dest', dest);
 
           // Found nearest, focus and stop.
           if (dest && !noNavInside) {
@@ -306,8 +304,8 @@ export default {
           el.focus();
         }
 
-        el.dataset.__centerX = centerX;
-        el.dataset.__centerY = centerY;
+        if  (centerX !== undefined) el.dataset.__centerX = centerX;
+        if  (centerY !== undefined) el.dataset.__centerY = centerY;
       },
 
       // Unregister keyboard handler.
@@ -321,10 +319,6 @@ export default {
     return () => {
       let node = slots.default && slots.default()[0];
       if (node) {
-        if (node.type.name === 'QList') {
-          console.log('LRUD node', node, 'slots', slots);
-          console.log('LRUD default slot', (node.children && node.children.default && node.children.default()));
-        }
         node = withDirectives(node, [
           [directive]
         ]);

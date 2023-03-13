@@ -7,7 +7,7 @@
        @mousemove.capture="onMouseMove($event)"
        @touchstart.passive.capture="onTouchStart($event)"
        @touchend.capture="onTouchEnd($event)"
-       @keydown.capture="onControlsFocusIn()"
+       @xkeydown.capture="onControlsFocusIn()"
        @focusin="onControlsFocusIn()"
     >
       <div class="row q-mx-md videocontrols-slider-div">
@@ -33,8 +33,7 @@
            :label-value="hhmmss(seekTo || currentTime)"
            dark
            ref="sliderEl"
-           autofocus
-           class="no-outline videocontrols-slider"
+           class=" videocontrols-slider"
         />
         </lrud>
       </div>
@@ -64,10 +63,13 @@
         </div>
         <div class="col"></div>
         <div class="col-auto q-mr-sm">
+          <lrud no-nav-inside>
           <q-icon
+            v-if="audioTracks.length > 1"
             name="language" size="32px"
-            class="on-right hover-pointer" v-if="audioTracks.length > 1"
+            class="on-right hover-pointer focus-white"
             tabindex="0"
+            @keydown.enter.stop=''
           >
             <q-menu
               anchor="top end"
@@ -76,7 +78,7 @@
               @show="menuOpen()"
               @hide="menuClose()"
             >
-              <q-list style="min-width: 10em" bordered dense>
+              <q-list-kbd-nav style="min-width: 10em" bordered dense>
                 <q-item
                   v-for="a in audioTracks"
                   :key="a.id"
@@ -84,18 +86,22 @@
                   clickable
                   :active="audioTrack === a.id"
                   @click="$emit('audiotrack', a.id)"
+                  @focus="audioTrack = a.id"
                 >
                   {{a.label}}
                 </q-item>
-              </q-list>
+              </q-list-kbd-nav>
             </q-menu>
           </q-icon>
+          </lrud>
 
-          <lrud>
+          <lrud no-nav-inside>
           <q-icon
-            name="closed_caption" size="32px"
-           class="on-right hover-pointer" v-if="textTracks.length"
+           v-if="textTracks.length"
+           name="closed_caption" size="32px"
+           class="on-right hover-pointer focus-white"
            tabindex="0"
+           @keydown.enter.stop=''
           >
             <q-menu
               anchor="top end"
@@ -104,27 +110,28 @@
               @show="menuOpen()"
               @hide="menuClose()"
             >
-              <q-list style="min-width: 10em" bordered dense>
+              <q-list-kbd-nav style="min-width: 10em" bordered dense>
                 <q-item
-                  v-for="s in textTracks"
+                  v-for="(s, index) in textTracks"
                   :key="s.id"
                   v-close-popup
                   clickable
                   :active="textTrack === s.id"
                   @click="$emit('texttrack', s.id)"
+                  @focus="setTextTrack(s.id, index)"
                 >
                   {{s.label}}
                 </q-item>
                 <q-item
                   v-close-popup
                   clickable
-                  tabindex="0"
                   :active="textTrack === null"
                   @click="$emit('texttrack', null)"
+                  @focus="setTextTrack(null, -1)"
                 >
                   Off
                 </q-item>
-              </q-list>
+              </q-list-kbd-nav>
             </q-menu>
           </q-icon>
           </lrud>
@@ -174,6 +181,7 @@
 }
 .videocontrols-slider:focus {
   color: #ffffff;
+  outline: none;
 }
 .videocontrols-fix-zindex {
   z-index: 7001;
@@ -182,6 +190,7 @@
 <script>
 import {
   defineComponent,
+  onMounted,
   ref,
   toRaw,
 } from 'vue';
@@ -202,7 +211,9 @@ export default defineComponent({
     'play', 'seek', 'volume', 'texttrack', 'audiotrack',
     'fullscreen', 'cast', 'stop', 'controlsActive', 'mute', 'airplay',
   ],
-
+  components: {
+    QListKbdNav,
+  },
   props: {
     currentTime: Number,
     playState: String,
@@ -239,9 +250,17 @@ export default defineComponent({
     deviceName: String,
   },
 
-  setup() {
+  setup(props) {
     const el = ref(null);
+    const sliderEl = ref(null);
     const store = useStore();
+    let textTrack = ref(props.textTrack);
+    let audioTrack = ref(props.audioTrack);
+
+    onMounted(() => {
+      console.log('sliderEl', sliderEl.value);
+      setTimeout(() => sliderEl.value.$el.focus(), 0);
+    });
 
     return {
       sliderColor: ref('blue-10'),
@@ -254,10 +273,18 @@ export default defineComponent({
       hhmmss,
       store,
       el,
+      sliderEl,
+      textTrack,
+      audioTrack,
     };
   },
 
   methods: {
+    setTextTrack(track, index) {
+      console.log('setTextTrack id', track, 'index', index);
+      this.textTrack = track;
+    },
+
     // current time and duration info: 00:08:51 / 20:00:00.
     time_info() {
       if (!this.duration) {
@@ -325,7 +352,7 @@ export default defineComponent({
     },
 
     seek(seekTo) {
-      const newTime = toRaw(seekTo);
+      let newTime = toRaw(seekTo);
       if (newTime < 0)
         newTime = 0;
       this.$emit('seek', Math.floor(newTime));
@@ -394,12 +421,11 @@ export default defineComponent({
         this.$emit('controlsActive', ControlsEvent.ACTIVE);
       }
       this.isActive = true;
-      this.isMenuOpen = true;
+      this.isMenuOpen = false;
     },
 
     onControlsFocusOut(fromKey) {
       if (this.isTouch) return;
-      // console.log('sliderFocusOut');
       if (this.isActive) {
         this.$emit('controlsActive', fromKey ? ControlsEvent.OFF : ControlsEvent.IDLE);
       }
@@ -408,13 +434,11 @@ export default defineComponent({
     },
 
     onSliderFocusIn() {
-      console.log('sliderFocusIn');
       this.sliderColor = 'blue-3';
       this.sliderTrackColor = 'grey-7';
     },
 
     onSliderFocusOut() {
-      console.log('sliderFocusOut');
       this.sliderColor = 'blue-10';
       this.sliderTrackColor = 'grey-8';
     }

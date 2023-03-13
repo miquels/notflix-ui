@@ -1,26 +1,30 @@
 <template>
-  <google-cast-launcher :style="castStyle"></google-cast-launcher>
+  <google-cast-launcher
+    class="castbutton"
+    :style="castStyle"
+    tabindex="0"
+  />
 </template>
 
-<script>
-import { defineComponent } from 'vue';
+<style lang="scss">
+.castbutton:hover, .castbutton:focus-inside {
+  background-color: #222222;
+  outline: none;
+}
+</style>
 
-export default defineComponent({
-  name: 'CastButton',
-  props: {
-    size: {
-      type: Number,
-      default: 28,
-    },
-  },
-  setup(props) {
-    const castStyle = {
-      width: `${props.size}px`,
-      height: `${props.size}px`,
-    };
-    return {
-      castStyle,
-    };
+<script setup>
+import { useQuasar } from 'quasar';
+
+const props = defineProps({
+  size: {
+    type: Number,
+    default: 28,
   },
 });
+
+const castStyle = {
+  width: `${props.size}px`,
+  height: `${props.size}px`,
+};
 </script>

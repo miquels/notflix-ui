@@ -4,7 +4,7 @@
   </div>
   <div class="row q-pa-md">
 
-    <q-card dark bordered class="col-auto q-ma-md bg-grey-10 my-card">
+    <q-card v-if="canCast()" dark bordered class="col-auto q-ma-md bg-grey-10 my-card">
       <q-card-section>
         <div class="text-h6">Chromecast</div>
       </q-card-section>
@@ -67,8 +67,13 @@ import {
 } from 'vue';
 import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
+import { canCast } from 'components/Chromecast';
 
-export default defineComponent({
+export function hasSettings() {
+  return quasar.platform.is.ios || canCast();
+}
+
+export const Settings = defineComponent({
   name: 'Settings',
 
   setup() {
@@ -102,6 +107,7 @@ export default defineComponent({
     const iosSelected = ref(store.state.config.iosNativeVideo ? 'native' : 'notflix');
 
     return {
+      canCast,
       castOptions,
       castSelected,
       castReceiverId,
@@ -137,4 +143,5 @@ export default defineComponent({
   },
 
 });
+export default Settings;
 </script>

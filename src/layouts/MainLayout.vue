@@ -1,12 +1,18 @@
 <template>
 <lrud>
-  <q-layout view="hHh lpR fFf">
+<q-layout view="hHh lpR fFf">
 
-    <q-header elevated class="bg-grey-10 text-white">
+    <q-header
+      elevated
+      class="bg-grey-10 text-white opacity-transition"
+      @focusin="headerFocus(true)"
+      @focusout="headerFocus(false)"
+      :style="showHeader()"
+    >
       <lrud>
       <q-toolbar>
         <lrud no-nav-inside steal-keys-outside keys="LR">
-        <q-tabs shrink class="col">
+        <q-tabs shrink class="col" v-autofocus="'.q-tab--active'">
           <q-route-tab name="home" to="/" >
             <q-toolbar-title class="col-auto q-pa-none q-ma-none">
               <span class="reverse-n">&#7438;</span>otflix
@@ -27,8 +33,13 @@
         </q-tabs>
         </lrud>
       <div class="col"/>
-      <CastButton v-if="canCast" class="on-right cursor-pointer" />
-      <q-btn square dense class="on-right" @click="$router.push('/settings/');">
+      <CastButton v-if="canCast()" class="on-right cursor-pointer" />
+      <q-btn
+        v-if="hasSettings()"
+        square dense
+        class="on-right"
+        @click="$router.push('/settings/');"
+      >
         <q-icon
           name="settings"
           size="24px"
@@ -79,13 +90,18 @@
   padding-left: 8px;
   padding-right: 8px;
 }
+.opacity-transition {
+  transition: opacity .8s ease-out;
+}
+
 </style>
 
 <script>
 import { ref, inject, onMounted, onBeforeMount } from 'vue';
 import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
-import Chromecast from 'components/Chromecast.vue';
+import { Chromecast, canCast } from 'components/Chromecast.vue';
+import { hasSettings } from 'pages/Settings.vue';
 import CastButton from 'components/CastButton.vue';
 import Play from 'components/Play.vue';
 import { isMobile, addPrettyScrollBars } from '../lib/util.js';
@@ -118,11 +134,6 @@ export default {
       fix_quasar_css()
     });
 
-    function canCast() {
-      return quasar.platform.is.chrome &&
-        !(quasar.platform.is.ios || quasar.platform.is.tv)
-    }
-
     const keepAlive = [
       'PageTvShows',
       'PageMovies',
@@ -137,11 +148,15 @@ export default {
       'VirtualScroll',
     ];
 
+    const headerHasFocus = ref(true);
+
     return {
       canCast,
       keepAlive,
       emitter,
       store,
+      headerHasFocus,
+      hasSettings,
     };
   },
   methods: {
@@ -150,8 +165,29 @@ export default {
       return this.store.state.castActive;
     },
 
+    showHeader() {
+      console.log('route is', this.$route);
+      console.log('is tv', this.$q.platform.is.tv);
+      if (!this.$q.platform.is.tv)
+        return {};
+      switch (this.$route.path) {
+        case '/':
+        case '/movies/':
+        case '/tv-shows/':
+        case '/settings/':
+          return {};
+      }
+      return { opacity: this.headerHasFocus ? '1' : '0' };
+    },
+
+    headerFocus(focus) {
+      this.headerHasFocus = focus;
+    },
+
     refresh() {
-      window.location.assign('/');
+      const url = new URL(window.location.origin);
+      url.searchParams.set('reloadTime', Date.now().toString());
+      window.location.href = url.toString();
     },
 
     // If the user clicks on 'TV Shows' or 'Movies' and that is already

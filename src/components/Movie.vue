@@ -6,7 +6,7 @@
         <div class="col stroke">{{ title }}</div>
       </div>
       <div class="row q-my-md">
-        <div class="col">{{ plot }}
+        <div class="col movie-plot">{{ plot }}
          </div>
         <div class="col-2 col-sm-6"></div>
       </div>
@@ -24,7 +24,16 @@
     </div>
     <div class="row q-my-md">
       <div class="col">
-        <q-btn size="lg" color="blue" icon="play_arrow" label="Play" @click="playMovie" />
+        <q-btn
+          size="lg"
+          color="blue"
+          text-color="grey-5"
+          icon="play_arrow"
+          label="Play"
+          class="movie-play"
+          @click="playMovie"
+          v-autofocus
+        />
       </div>
     </div>
   </div>
@@ -45,17 +54,34 @@
 }
 .movie-header {
   position: relative;
-  min-height: 250px;
+  min-height: 60vh;
 }
 .movie-header-img {
   position: absolute;
-  left: 40%;
+  left: calc(30% + 0.2px);
   right: 0;
   top: 0;
   bottom: 0;
   z-index: -1;
   background-color: #000000;
   background-size: cover;
+}
+.movie-plot {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  white-space: pre-wrap;
+}
+.movie-play {
+  color: #111111;
+}
+.movie-play:hover {
+  color: #ffffff !important;
+}
+movie-play:focus {
+  color: #ffffff !important;
+  outline: solid red 2px !important;
 }
 .table {
   display: table;
@@ -153,7 +179,12 @@ export default defineComponent({
     },
 
     bgImage() {
-      const img = `${this.bgimage}?q=90&h=250`;
+      if (!this.bgimage) {
+        return {};
+      }
+      const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
+      const height = Math.trunc(250 * ratio);
+      const img = `${this.bgimage}?q=90&h=${height}`;
       const style = {
         backgroundImage:
           `linear-gradient(to right, rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${img})`,

@@ -25,7 +25,7 @@
               v-model="currentSeason"
               style="width=100%"
               options-selected-class="q-select-active-option"
-              autofocus
+              v-autofocus="'input'"
           />
           </lrud>
           </q-item>
@@ -50,7 +50,12 @@
     </div>
     <div v-if="seasons && currentSeason" class="tv-show-episodes">
       <template v-for="(episode, index) in currentSeason.episodes" :key="episode.name">
-        <Episode :episode="episode" @play="playEpisode(episode)" @focusin="scrollIntoView($event, index)"/>
+        <Episode 
+          v-autofocus="{ v_if: seasons.length === 1 && index === 0, selector: '.q-icon' }"
+          :episode="episode"
+          @play="playEpisode(episode)"
+          @focusin="scrollIntoView($event, index)"
+        />
       </template>
     </div>
   </div>
@@ -59,7 +64,7 @@
   </lrud>
 </template>
 
-<style>
+<style lang="scss">
 .tv-show-container {
   position: relative;
   /*
@@ -82,7 +87,14 @@
 }
 .tv-show-header-img {
   position: absolute;
-  left: 40%;
+  // Chrome has a bug where a linear gradient over a background image
+  // sometimes leaves an artifact of about 1 pixel. This seems to happen
+  // when the size is not (near) an integer number of pixels. The below
+  // is somewhat of a workaround, at least for 1280x720 (TV).
+  // See:
+  // https://stackoverflow.com/questions/64436505/linear-gradient-not-covering-whole-image-leaves-1px-border
+  //
+  left: calc(40% + 0.2px);
   right: 0;
   top: 0;
   bottom: 0;
@@ -225,11 +237,11 @@ export default defineComponent({
         return {};
       }
       const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
-      const height = 250 * ratio;
+      const height = Math.trunc(250 * ratio);
       const img = `${this.bgimage}?q=90&h=${height}`;
       const style = {
         backgroundImage:
-          `linear-gradient(to right, rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${img})`,
+          `linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${img})`,
       };
       return style;
     },

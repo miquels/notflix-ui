@@ -27,10 +27,10 @@ module.exports = configure((ctx) => ({
   // --> boot files are part of "main.js"
   // https://quasar.dev/quasar-cli/boot-files
   boot: [
-    'emitter.js',
     'chromecast.js',
     'config.js',
-    'global-components.js',
+    'emitter.js',
+    'globals.js',
     'pwa.js',
   ],
 

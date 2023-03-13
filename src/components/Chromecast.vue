@@ -53,10 +53,17 @@ import {
   ref,
 } from 'vue';
 import { useStore } from 'vuex';
+import { useQuasar } from 'quasar';
 import VideoControls from 'components/VideoControls.vue';
 import { sxe } from '../lib/util.js';
 
-export default defineComponent({
+export function canCast() {
+  const quasar = useQuasar();
+  return quasar.platform.is.chrome &&
+    !(quasar.platform.is.ios || quasar.platform.is.tv)
+}
+
+export const Chromecast = defineComponent({
   name: 'Chromecast',
   components: {
     VideoControls,
@@ -635,4 +642,5 @@ export default defineComponent({
     },
   },
 });
+export default Chromecast;
 </script>

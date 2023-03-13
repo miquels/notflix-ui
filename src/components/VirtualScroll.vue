@@ -61,7 +61,6 @@
 
   onMounted(() => {
     const updateItems = () => {
-      console.log('VirtualScroll: updateItems');
       theItems.value = items.value;
       let h = 0;
       for (const item of theItems.value) {
@@ -85,8 +84,14 @@
     let elem = ev.target;
     while (elem.parentElement !== scrollerEl.value) {
       if (!elem.parentElement) {
-        console.log('VirtualScroller: onRowFocusIn: lost focus');
-        return;
+        // Ayayay. Find the first element with a tabindex and focus that.
+        elem = scrollerEl.value.querySelector(':scope [tabindex="0"]');
+        if (!elem) {
+          console.log('VirtualScroller: onRowFocusIn: lost focus');
+          return;
+        }
+        console.log('VirtualScroller: onRowFocusIn: lost focus - refocussing');
+        break;
       }
       elem = elem.parentElement;
     }
