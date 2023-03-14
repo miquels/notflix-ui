@@ -25,6 +25,9 @@ export default defineComponent({
       // XXX FIMXE
       collection: 'TV%20Shows',
       name: route.params.name,
+      season: route.params.season,
+      episode: route.params.episode,
+      play: route.params.play,
     };
   },
 });

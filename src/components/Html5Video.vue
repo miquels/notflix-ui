@@ -91,6 +91,7 @@
   @include stroke();
 }
 .html5video-focus {
+  position: fixed;
   width: 2em;
   height: 1em;
   outline: none;

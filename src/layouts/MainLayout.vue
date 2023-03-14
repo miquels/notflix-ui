@@ -13,7 +13,7 @@
       <q-toolbar>
         <lrud no-nav-inside steal-keys-outside keys="LR">
         <q-tabs shrink class="col" v-autofocus="'.q-tab--active'">
-          <q-route-tab name="home" to="/" >
+          <q-route-tab name="home" to="/home/">
             <q-toolbar-title class="col-auto q-pa-none q-ma-none">
               <span class="reverse-n">&#7438;</span>otflix
             </q-toolbar-title>
@@ -22,13 +22,13 @@
             name="tv-shows"
             label="TV Shows"
             to="/tv-shows/"
-            @click="routeTab('/tv-shows/')"
+            @click="routeTab($event, '/tv-shows/')"
           />
           <q-route-tab
             name="movies"
             label="Movies"
             to="/movies/"
-            @click="routeTab('/movies/')"
+            @click="routeTab($event, '/movies/')"
           />
         </q-tabs>
         </lrud>
@@ -189,9 +189,11 @@ export default {
 
     // If the user clicks on 'TV Shows' or 'Movies' and that is already
     // the current route, emit a 'scrollToTop' event.
-    routeTab(to) {
-      if (to === this.$route.fullPath) {
+    routeTab(ev, to) {
+      console.log('to', to, 'path', this.$route.path);
+      if (to === this.$route.path || to === this.$route.path + '/') {
         this.emitter.emit('scrollToTop');
+        ev.stopPropagation();
       }
     },
   },

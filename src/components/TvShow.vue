@@ -1,5 +1,5 @@
 <template>
-  <lrud no-scroll-into-view>
+  <lrud no-scroll-into-view ref="el">
   <div class="tv-show-container q-pt-md">
     <div class="row justify-center">
     <div class="col-12 col-sm-10 tv-show-inner">
@@ -120,169 +120,192 @@
 }
 </style>
 
-<script>
+<script setup>
 import {
-  defineComponent,
-  getCurrentInstance,
   inject,
   onBeforeMount,
   ref,
+  watch,
 } from 'vue';
 import { useStore } from 'vuex';
+import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 import Api from '../lib/api.js';
 import Episode from './Episode.vue';
 
-export default defineComponent({
-  name: 'TvShow',
-
-  props: {
-    collection: String,
-    name: String,
-  },
-
-  components: {
-    Episode,
-  },
-
-  setup() {
-    onBeforeMount(() => {
-      const instance = getCurrentInstance();
-      instance.ctx.on_mounted();
-    });
-    const api = new Api();
-    const store = useStore();
-    const emitter = inject('emitter');
-    return {
-      fanart: ref(null),
-      poster: ref(null),
-      nameValues: ref(null),
-      title: ref(null),
-      plot: ref(null),
-      bgimage: ref(null),
-      show: ref(null),
-      seasons: ref([]),
-      currentSeason: ref(null),
-      playVideo: ref(null),
-      api,
-      store,
-      emitter,
-    };
-  },
-
-  methods: {
-    on_mounted() {
-      this.api.getShow(this.collection, this.name).then((item) => {
-        this.show = item;
-        console.log('show:', item);
-
-        if (!this.show.fanart && this.show.poster) {
-          this.show.fanart = this.show.poster;
-        }
-        if (!this.show.poster && this.show.fanart) {
-          this.show.poster = this.show.fanart;
-        }
-        if (!this.show.fanart) this.show.fanart = '#';
-        if (!this.show.poster) this.show.poster = '#';
-        this.bgimage = this.show.fanart;
-        console.log('bgimage:', this.bgimage);
-
-        this.title = this.show.nfo.title;
-        this.plot = this.show.nfo.plot;
-
-        const nv = [];
-        if (this.show.nfo.genre) {
-          nv.push({ name: 'Genre:', value: this.show.nfo.genre.join(', ') });
-        }
-        if (this.show.year) {
-          nv.push({ name: 'Year:', value: this.show.year });
-        }
-        if (this.show.nfo.studio) {
-          nv.push({ name: 'Studio:', value: this.show.nfo.studio });
-        }
-        if (this.show.nfo.rating) {
-          nv.push({ name: 'Rating:', value: this.show.nfo.rating });
-        }
-        if (this.show.nfo.mpaa) {
-          nv.push({ name: 'MPAA:', value: this.show.nfo.mpaa });
-        }
-        this.nameValues = nv;
-
-        this.seasons = [];
-        for (let i = 0; i < this.show.seasons.length; i += 1) {
-          const { seasonno } = this.show.seasons[i];
-          const { episodes } = this.show.seasons[i];
-          if (seasonno === 0) {
-            this.seasons.push({
-              name: 'Extras',
-              idx: i,
-              episodes,
-              prio: 99999,
-            });
-          } else {
-            this.seasons.push({
-              name: `Season ${seasonno}`,
-              idx: i,
-              episodes,
-              prio: seasonno,
-            });
-          }
-        }
-        this.seasons.sort((a, b) => a.prio - b.prio);
-        this.currentSeason = this.seasons[0];
-      });
-    },
-
-    bgImage() {
-      if (!this.bgimage) {
-        return {};
-      }
-      const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
-      const height = Math.trunc(250 * ratio);
-      const img = `${this.bgimage}?q=90&h=${height}`;
-      const style = {
-        backgroundImage:
-          `linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${img})`,
-      };
-      return style;
-    },
-
-    onResize(ev) {
-      console.log(ev);
-      if (this.show && this.show.poster && this.show.fanart) {
-        if (ev.height > ev.width) {
-          this.bgimage = this.show.poster;
-        } else {
-          this.bgimage = this.show.fanart;
-        }
-      }
-    },
-
-    playEpisode(episode) {
-      const seasonIdx = this.currentSeason.idx;
-      const season = this.show.seasons[seasonIdx];
-      const { show } = this;
-      this.emitter.emit('playVideo', {
-        type: 'episode',
-        show,
-        season,
-        episode,
-      });
-    },
-
-    scrollIntoView(ev, epIndex) {
-      if (epIndex === 0) {
-        this.scrollToTop();
-        return;
-      }
-      ev.currentTarget.scrollIntoView({
-        block: 'nearest',
-        behavior: 'smooth',
-      });
-    },
-
-    scrollToTop() {
-      this.$el.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
-    },
-  },
+const props = defineProps({
+  collection: String,
+  name: String,
+  details: String,
 });
+
+const emitter = inject('emitter');
+const api = new Api();
+const store = useStore();
+const route = useRoute();
+const router = useRouter();
+
+let show;
+let fanart;
+let poster;
+let nameValues;
+let title;
+let plot;
+let bgimage;
+const seasons = [];
+
+const el = ref(null);
+const currentSeason = ref(null);
+const playVideo = ref(null);
+
+async function getShow() {
+
+  const item = await api.getShow(props.collection, props.name);
+  console.log('show:', item);
+  show = { ...item };
+
+  if (!show.fanart && show.poster) {
+    show.fanart = show.poster;
+  }
+  if (!show.poster && show.fanart) {
+    show.poster = show.fanart;
+  }
+  if (!show.fanart) show.fanart = '#';
+  if (!show.poster) show.poster = '#';
+  bgimage = show.fanart;
+  console.log('bgimage:', bgimage);
+
+  title = show.nfo.title;
+  plot = show.nfo.plot;
+
+  const nv = [];
+  if (show.nfo.genre) {
+    nv.push({ name: 'Genre:', value: show.nfo.genre.join(', ') });
+  }
+  if (show.year) {
+    nv.push({ name: 'Year:', value: show.year });
+  }
+  if (show.nfo.studio) {
+    nv.push({ name: 'Studio:', value: show.nfo.studio });
+  }
+  if (show.nfo.rating) {
+    nv.push({ name: 'Rating:', value: show.nfo.rating });
+  }
+  if (show.nfo.mpaa) {
+    nv.push({ name: 'MPAA:', value: show.nfo.mpaa });
+  }
+  nameValues = nv;
+
+  for (let i = 0; i < show.seasons.length; i += 1) {
+    const { seasonno } = show.seasons[i];
+    const { episodes } = show.seasons[i];
+    if (seasonno === 0) {
+      seasons.push({
+        name: 'Extras',
+        seasonno,
+        idx: i,
+        episodes,
+        prio: 99999,
+      });
+    } else {
+      seasons.push({
+        name: `Season ${seasonno}`,
+        seasonno,
+        idx: i,
+        episodes,
+        prio: seasonno,
+      });
+    }
+  }
+  seasons.sort((a, b) => a.prio - b.prio);
+  currentSeason.value = seasons[0];
+}
+
+onBeforeMount(async () => {
+  // It may be better to do this in the onBeforeRouteLeave hook.
+  // Better to put up a spinner and/or report an error _before_
+  // we navigate to the page.
+  try {
+    await getShow();
+  } catch(e) {
+    // XXX FIXME.
+    console.log('Tvshow::onBeforeMount: error: ', e);
+    throw(e);
+  }
+
+  // FIXME differentiate between:
+  // - season not present in details (redirect to first season)
+  // - season not found in seasons (404)
+  const [ season, episode ] = route.params.details || [];
+  const thisSeason = seasons.find((s) => s.seasonno === Number(season));
+  if (!thisSeason) {
+    router.replace({ name: 'tvshow', params: { details: [ currentSeason.value.seasonno ] }});
+    return;
+  }
+  currentSeason.value = thisSeason;
+
+  // Watch for changes on currentSeason and update the URL.
+  watch(currentSeason, s => {
+    router.replace({ name: 'tvshow', params: { details: [ currentSeason.value.seasonno ] }});
+  });
+});
+
+onBeforeRouteUpdate((to, from) => {
+  // console.log('TvShow: onBeforeRouteUpdate', to, from);
+});
+
+function bgImage() {
+  if (bgimage) {
+    return {};
+  }
+  const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
+  const height = Math.trunc(250 * ratio);
+  const img = `${bgimage}?q=90&h=${height}`;
+  const style = {
+    backgroundImage:
+      `linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${img})`,
+  };
+  return style;
+}
+
+function onResize(ev) {
+  // console.log(ev);
+  if (show && show.poster && show.fanart) {
+    if (ev.height > ev.width) {
+      bgimage = show.poster;
+    } else {
+      bgimage = show.fanart;
+    }
+  }
+}
+
+function playEpisode(episode) {
+  const seasonIdx = currentSeason.value.idx;
+  const season = show.seasons[seasonIdx];
+  const showDetails = {
+    poster,
+    title,
+    name,
+  };
+  emitter.emit('playVideo', {
+    type: 'episode',
+    show: showDetails,
+    season,
+    episode,
+  });
+}
+
+function scrollToTop() {
+  el.value.$el.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
+}
+
+function scrollIntoView(ev, epIndex) {
+  if (epIndex === 0) {
+    scrollToTop();
+    return;
+  }
+  ev.currentTarget.scrollIntoView({
+    block: 'nearest',
+    behavior: 'smooth',
+  });
+}
 </script>
