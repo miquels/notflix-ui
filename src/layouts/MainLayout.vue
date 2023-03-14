@@ -161,13 +161,10 @@ export default {
   },
   methods: {
     castActive() {
-      console.log('mainLayout: castActive:', this.store.state.castActive);
       return this.store.state.castActive;
     },
 
     showHeader() {
-      console.log('route is', this.$route);
-      console.log('is tv', this.$q.platform.is.tv);
       if (!this.$q.platform.is.tv)
         return {};
       switch (this.$route.path) {

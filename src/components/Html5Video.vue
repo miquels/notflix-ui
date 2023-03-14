@@ -2,7 +2,6 @@
   <lrud>
   <div
     class="html5video-container"
-    tabindex="0"
     :class="{ 'cursor-none': !showControls && this.playState === 'playing' }"
     @touchend="mouseEvent(m.CLICK_CONTAINER, $event)"
     @click="mouseEvent(m.CLICK_CONTAINER, $event)"
@@ -11,10 +10,9 @@
     @keydown="onKeyDown"
     @keyup.f="onFullscreen()"
     @keyup.space="onPlay()"
-    @xxfocusout="onFocusOut"
     ref="el"
-    v-autofocus="'.html5video-autofocus'"
   >
+    <div class="html5video-focus" tabindex="0" v-autofocus>&nbsp;</div>
     <video
       class="html5video-video"
       ref="video"
@@ -22,12 +20,6 @@
       x-webkit-airplay="allow"
       crossorigin="anonymous"
     ></video>
-    <div
-      class="html5video-overlay column fit no-outline html5video-autofocus"
-      tabindex="-1"
-    >
-      &nbsp
-    </div>
     <div class="html5video-overlay column fit" v-if="overlay()">
       <div class="row justify-center items-center fit absolute">
         <div v-if="bigPlayButton" class="col-auto">
@@ -98,12 +90,17 @@
   background: none;
   @include stroke();
 }
+.html5video-focus {
+  width: 2em;
+  height: 1em;
+  outline: none;
+}
 .html5video-controls {
   position: absolute;
   bottom: 0px;
   left: 0px;
   width: 100%;
-  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.0) 100%);
+  background: linear-gradient(0deg, rgba(0,0,0,0.7), rgba(0,0,0,0.3) 85%, rgba(0,0,0,0) 100%);
   color: white;
 }
 .html5video-overlay {
@@ -752,37 +749,19 @@ export default defineComponent({
       // console.log('seek from', this.video.currentTime, 'to', newTime);
     },
 
-    // Make sure we keep focus.
-    onFocusOut(ev) {
-      // Kind of a hack.
-      setTimeout(() => {
-        let elem = document.activeElement;
-        if (!elem || !this || !this.el) {
-          return;
-        }
-        while (elem.parentElement) {
-          if (elem === this.el) {
-            return;
-          }
-          elem = elem.parentElement;
-        }
-        this.el.focus();
-      }, 0);
-    },
-
     onKeyDown(ev) {
-      console.log('key event', ev);
       switch (ev.key) {
         case 'ArrowLeft':
         case 'ArrowRight':
         case 'ArrowUp':
         case 'ArrowDown':
         case 'Enter':
-          console.log('arrow');
-          this.onControlsActive(ControlsEvent.ACTIVE);
+          if (this.displayState === DisplayState.HIDDEN)
+            this.onControlsActive(ControlsEvent.ACTIVE);
           break;
         case 'Escape':
           ev.stopPropagation();
+          ev.preventDefault();
           this.$router.go(-1);
           break;
       }

@@ -7,11 +7,10 @@
        @mousemove.capture="onMouseMove($event)"
        @touchstart.passive.capture="onTouchStart($event)"
        @touchend.capture="onTouchEnd($event)"
-       @xkeydown.capture="onControlsFocusIn()"
        @focusin="onControlsFocusIn()"
     >
       <div class="row q-mx-md videocontrols-slider-div">
-        <lrud no-nav-inside filter-keys="D" tabindex="0" :center-x=0>
+        <lrud no-nav-inside tabindex="0" :center-x=0>
         <q-slider
            :modelValue="currentTime"
            @update:modelValue="(val) => { seekTo = val; }"
@@ -258,7 +257,7 @@ export default defineComponent({
     let audioTrack = ref(props.audioTrack);
 
     onMounted(() => {
-      console.log('sliderEl', sliderEl.value);
+      // console.log('sliderEl', sliderEl.value);
       setTimeout(() => sliderEl.value.$el.focus(), 0);
     });
 
@@ -374,7 +373,7 @@ export default defineComponent({
       // FIXME: if we don't emit this, the menu might stay open.
       // But if we do, the controls hide while we might still
       // be active in the control area. Teleporting sucks.
-      this.$emit('controlsActive', ControlsEvent.IDLE);
+      //this.$emit('controlsActive', ControlsEvent.IDLE);
       this.isMenuOpen = false;
     },
 
