@@ -11,7 +11,7 @@
       @keydown.enter="search_enter()"
       placeholder="Search titles"
       dark
-      clearable
+      :clearable="!virtualKeyboard"
       hide-bottom-space
       dense
       debounce="500"
@@ -106,8 +106,11 @@ export default {
       sortByOptions = ['Updated', ...sortByOptions];
     }
 
+    const virtualKeyboard = 'virtualKeyboard' in navigator;
+
     return {
       sortByOptions,
+      virtualKeyboard,
     };
   },
 
