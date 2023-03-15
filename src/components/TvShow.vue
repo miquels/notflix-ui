@@ -4,8 +4,7 @@
     <div class="row justify-center">
     <div class="col-12 col-sm-10 tv-show-inner">
     <div class="tv-show-header">
-      <q-resize-observer @resize="onResize"/>
-      <div class="tv-show-header-img" :style="bgImage()"/>
+      <Backdrop :poster="poster" :fanart="fanart"/>
       <div class="row text-h3 q-mb-md">
         <div class="col stroke">{{ title }}</div>
       </div>
@@ -85,23 +84,6 @@
 .tv-show-header {
   position: relative;
 }
-.tv-show-header-img {
-  position: absolute;
-  // Chrome has a bug where a linear gradient over a background image
-  // sometimes leaves an artifact of about 1 pixel. This seems to happen
-  // when the size is not (near) an integer number of pixels. The below
-  // is somewhat of a workaround, at least for 1280x720 (TV).
-  // See:
-  // https://stackoverflow.com/questions/64436505/linear-gradient-not-covering-whole-image-leaves-1px-border
-  //
-  left: calc(40% + 0.2px);
-  right: 0;
-  top: 0;
-  bottom: 0;
-  z-index: -1;
-  background-color: #000000;
-  background-size: cover;
-}
 .tvshow-plot {
   overflow: hidden;
   display: -webkit-box;
@@ -130,6 +112,7 @@ import {
 import { useStore } from 'vuex';
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 import Api from '../lib/api.js';
+import Backdrop from './Backdrop.vue';
 import Episode from './Episode.vue';
 
 const props = defineProps({
@@ -150,17 +133,16 @@ let poster;
 let nameValues;
 let title;
 let plot;
-let bgimage;
 const seasons = [];
 
 const el = ref(null);
 const currentSeason = ref(null);
-const playVideo = ref(null);
 
 async function getShow() {
 
+  console.log('getShow: start api.getShow');
   const item = await api.getShow(props.collection, props.name);
-  console.log('show:', item);
+  console.log('getShow: show:', item);
   show = { ...item };
 
   if (!show.fanart && show.poster) {
@@ -171,8 +153,8 @@ async function getShow() {
   }
   if (!show.fanart) show.fanart = '#';
   if (!show.poster) show.poster = '#';
-  bgimage = show.fanart;
-  console.log('bgimage:', bgimage);
+  fanart = show.fanart;
+  poster = show.poster;
 
   title = show.nfo.title;
   plot = show.nfo.plot;
@@ -218,6 +200,7 @@ async function getShow() {
   }
   seasons.sort((a, b) => a.prio - b.prio);
   currentSeason.value = seasons[0];
+  console.log('getShow: done');
 }
 
 onBeforeMount(async () => {
@@ -238,6 +221,7 @@ onBeforeMount(async () => {
   const [ season, episode ] = route.params.details || [];
   const thisSeason = seasons.find((s) => s.seasonno === Number(season));
   if (!thisSeason) {
+    console.log('TvShow: no season, redirecting to seasonno', currentSeason.value.seasonno);
     router.replace({ name: 'tvshow', params: { details: [ currentSeason.value.seasonno ] }});
     return;
   }
@@ -248,35 +232,6 @@ onBeforeMount(async () => {
     router.replace({ name: 'tvshow', params: { details: [ currentSeason.value.seasonno ] }});
   });
 });
-
-onBeforeRouteUpdate((to, from) => {
-  // console.log('TvShow: onBeforeRouteUpdate', to, from);
-});
-
-function bgImage() {
-  if (bgimage) {
-    return {};
-  }
-  const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
-  const height = Math.trunc(250 * ratio);
-  const img = `${bgimage}?q=90&h=${height}`;
-  const style = {
-    backgroundImage:
-      `linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${img})`,
-  };
-  return style;
-}
-
-function onResize(ev) {
-  // console.log(ev);
-  if (show && show.poster && show.fanart) {
-    if (ev.height > ev.width) {
-      bgimage = show.poster;
-    } else {
-      bgimage = show.fanart;
-    }
-  }
-}
 
 function playEpisode(episode) {
   const seasonIdx = currentSeason.value.idx;

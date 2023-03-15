@@ -1,13 +1,24 @@
 const routes = [
   {
     path: '/',
+    exact: true,
+    strict: true,
+    redirect: '/home/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', exact: true, redirect: '/home/' },
-      { path: 'home/', component: () => import('pages/Home.vue') },
       {
-        path: 'tv-shows/',
+        path: 'home',
+        component: () => import('pages/Home.vue')
+      },
+      {
+        path: 'tv-shows',
         children: [
+          {
+            path: ':collection/:name/:season/:episode/play',
+            component: () => import('pages/LocalPlayer.vue'),
+            name: 'tvshow-play',
+            exact: true,
+          },
           {
             path: ':collection/:name/:details*',
             component: () => import('pages/TvShow.vue'),
@@ -20,7 +31,7 @@ const routes = [
         ],
       },
       {
-        path: 'movies/',
+        path: 'movies',
         children: [
           {
             path: ':collection/:name',
