@@ -370,10 +370,9 @@ export default defineComponent({
     },
 
     menuClose() {
-      // FIXME: if we don't emit this, the menu might stay open.
-      // But if we do, the controls hide while we might still
-      // be active in the control area. Teleporting sucks.
-      //this.$emit('controlsActive', ControlsEvent.IDLE);
+      if (this.isTouch) {
+        this.$emit('controlsActive', ControlsEvent.IDLE);
+      }
       this.isMenuOpen = false;
     },
 

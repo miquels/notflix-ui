@@ -1,5 +1,7 @@
 <template>
-  <div class="backdrop-div" :style="style"/>
+  <div class="backdrop-div" :style="style">
+    <img :src="testImage" style="display:none" @error="error = true" async>
+  </div>
 </template>
 
 <style>
@@ -25,6 +27,7 @@ import {
   toRefs,
   watchEffect,
 } from 'vue';
+import breakpoint from '../lib/breakpoint.js';
 
 export default defineComponent({
   name: 'Backdrop',
@@ -37,16 +40,37 @@ export default defineComponent({
   setup(props) {
     const { poster, fanart } = toRefs(props);
 
-    const style = ref(null);
+    const pixel = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
     const height = Math.trunc(250 * ratio);
+    const style = ref(null);
+    const error = ref(null);
+    const testImage = ref(pixel);
 
-    function updateImage(portrait) {
-      let aPoster = poster.value ? poster.value : fanart.value;
-      let aFanart = fanart.value ? fanart.value : poster.value;
-      if (!aPoster && !aFanart) {
-        aPoster = '/img/film-background.jpg';
-        aFanart = '/img/film-background.jpg';
+    function updateImage() {
+
+      if (!poster.value && !fanart.value) {
+        // Not set (yet)
+        style.value = {};
+        error.value = false;
+        return;
+      }
+
+      // Image set to '#' means 'no image available, find alternative'
+      const dfl_image = '/img/film-background.jpg';
+      const check = v => (v.value && v.value !== '#') ? v.value : null;
+      let aPoster = check(poster) || check (fanart) || dfl_image;
+      let aFanart = check(fanart) || check (poster) || dfl_image;
+
+      const bp = breakpoint();
+      let srcImage = bp !== 'xs' && bp !== 'sm' ? aFanart : aPoster;
+
+      // If we got an error loading the image, replace.
+      if (error.value) {
+        srcImage = dfl_image;
+        testImage.value = pixel;
+      } else {
+        testImage.value = srcImage;
       }
 
       // Chrome has a bug where a linear gradient over a background image
@@ -56,41 +80,47 @@ export default defineComponent({
       //
       // See:
       // https://stackoverflow.com/questions/64436505/linear-gradient-not-covering-whole-image-leaves-1px-border
-
+      //
       let image, gradient, left;
-      if (portrait) {
-        image = `${aPoster}?q=90&h=${height}`;
-        gradient = 'rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7) 100%';
-        left = '0';
-      } else {
-        image = `${aFanart}?q=90&h=${height}`;
+      if (bp !== 'xs') {
+        image = `${srcImage}?q=90&h=${height}`;
         gradient = 'rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%';
         left = 'calc(30% + 0.4px)';
+      } else {
+        image = `${srcImage}?q=90&h=${height}`;
+        gradient = 'rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7) 100%';
+        left = '0';
       }
       style.value = {
         backgroundImage: `linear-gradient(to right, ${gradient}), url(${image})`,
         left: left,
       };
     }
+    watchEffect(() => updateImage());
 
-    function onOrientation(ev) {
-      updateImage(ev.matches);
+    let bp = breakpoint();
+    function onResize() {
+      setTimeout(() => {
+        const newbp = breakpoint();
+        if (newbp != bp) {
+          updateImage();
+          bp = newbp;
+        }
+      }, 0);
     }
-    const matchMedia = window.matchMedia("(orientation: portrait)");
-    watchEffect(() => {
-      updateImage(matchMedia.matches);
-    });
 
     onBeforeMount(() => {
-      matchMedia.addEventListener("change", onOrientation);
+      window.addEventListener('resize', onResize);
     });
 
     onUnmounted(() => {
-      matchMedia.removeEventListener("change", onOrientation);
+      window.removeEventListener('resize', onResize);
     });
 
     return {
+      error,
       style,
+      testImage,
     };
   }
 })

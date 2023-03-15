@@ -27,4 +27,6 @@ $warning   : #F2C037;
 $dark-page : #000000;
 
 // Set breakpoint at 960, for TVs.
-$breakpoint-sm: 959px !default
+$breakpoint-sm-max: 959.99px !default;
+$breakpoint-sm: 959.99px !default;
+$breakpoint-md-min: 960px !default;
