@@ -11,7 +11,6 @@ import { useQuasar } from 'quasar';
 // is not yet available.
 export function fix_quasar_platform() {
   const quasar = useQuasar();
-  console.log('quasar before: ', quasar.platform);
   if (quasar.platform.userAgent.match(/AOSP TV|Chromecast|Android TV/) ||
       (quasar.platform.is.android && !quasar.platform.has.touch)) {
     console.log('Android TV detected, patching quasar.platform');

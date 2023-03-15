@@ -105,7 +105,6 @@ import { hasSettings } from 'pages/Settings.vue';
 import CastButton from 'components/CastButton.vue';
 import Play from 'components/Play.vue';
 import { isMobile, addPrettyScrollBars } from '../lib/util.js';
-import { fix_quasar_platform, fix_quasar_css } from '../lib/android-tv.js';
 
 export default {
   components: {
@@ -127,11 +126,6 @@ export default {
       if (!mobile && !quasar.platform.is.safari) {
         addPrettyScrollBars();
       }
-    });
-
-    fix_quasar_platform();
-    onMounted(() => {
-      fix_quasar_css()
     });
 
     const keepAlive = [
