@@ -1,7 +1,7 @@
 <template>
   <div class="movie-container q-pt-md">
     <div class="movie-header">
-      <div class="movie-header-img" :style="bgImage()"/>
+      <Backdrop :poster="poster" :fanart="fanart"/>
       <div class="row text-h4 q-mb-md">
         <div class="col stroke">{{ title }}</div>
       </div>
@@ -48,7 +48,7 @@
   */
   font-family: sans-serif;
   font-weight: 500;
-  font-size: 1.2em;
+  font-size: 1.1em;
   max-width: 1000px;
   margin: 0 auto;
 }
@@ -100,11 +100,13 @@ import {
   getCurrentInstance,
   inject,
   onBeforeMount,
+  onMounted,
   ref,
 } from 'vue';
 import { useStore } from 'vuex';
 import Api from '../lib/api.js';
 import { hhmm } from '../lib/util.js';
+import Backdrop from 'components/Backdrop.vue';
 
 export default defineComponent({
   name: 'Movie',
@@ -114,96 +116,78 @@ export default defineComponent({
     name: String,
   },
 
-  setup() {
-    onBeforeMount(() => {
-      const instance = getCurrentInstance();
-      instance.ctx.on_mounted();
-    });
+  components: {
+    Backdrop,
+  },
+
+  setup(props) {
 
     const emitter = inject('emitter');
     const store = useStore();
-
     const api = new Api();
+
+    const fanart = ref(null);
+    const poster = ref(null);
+    const nameValues = ref(null);
+    const title = ref(null);
+    const plot = ref(null);
+
+    let movie;
+
+    onBeforeMount(async () => {
+      try {
+        await api.getMovie(props.collection, props.name);
+      } catch(e) {
+        console.log('api.getMovie', props.collection, props.name, ': ', e);
+      }
+      console.log('onBeforeMount done');
+    });
+
+    onMounted(async () => {
+      const item = await api.getMovie(props.collection, props.name);
+      // console.log(item);
+
+      movie = item;
+
+      fanart.value = item.fanart;
+      poster.value = item.poster;
+      title.value = item.nfo.title;
+      plot.value = item.nfo.plot;
+
+      console.log(item);
+      const nv = [];
+      if (item.nfo.genre) {
+        nv.push({ name: 'Genre:', value: item.nfo.genre.join(', ') });
+      }
+      if (item.year) {
+        nv.push({ name: 'Year:', value: item.year });
+      }
+      if (item.nfo.runtime && item.nfo.runtime !== '0') {
+        nv.push({ name: 'Runtime:', value: hhmm(item.nfo.runtime) });
+      }
+      if (item.nfo.rating) {
+        nv.push({ name: 'Rating:', value: item.nfo.rating });
+      }
+      if (item.nfo.studio) {
+        nv.push({ name: 'Studio:', value: item.nfo.studio });
+      }
+      // console.log(nv);
+      nameValues.value = nv;
+      console.log('onMounted done');
+    });
+
+    function playMovie() {
+      emitter.emit('playVideo', { type: 'movie', movie: movie });
+    }
+
     return {
-      fanart: ref(null),
-      poster: ref(null),
-      nameValues: ref(null),
-      title: ref(null),
-      plot: ref(null),
-      bgimage: ref(null),
-      movie: ref(null),
-      currentVideo: ref(null),
-      api,
-      emitter,
-      store,
+      fanart,
+      nameValues,
+      playMovie,
+      poster,
+      plot,
+      title,
     };
-  },
-
-  methods: {
-    on_mounted() {
-      this.api.getMovie(this.collection, this.name).then((item) => {
-        // console.log(item);
-        this.movie = item;
-        if (!this.movie.fanart && this.movie.poster) {
-          this.movie.fanart = this.movie.poster;
-        }
-        if (!this.movie.poster && this.movie.fanart) {
-          this.movie.poster = this.movie.fanart;
-        }
-        this.bgimage = this.movie.fanart ? this.movie.fanart : '/img/static.jpg';
-        if (!this.movie.fanart) this.movie.fanart = '#';
-        if (!this.movie.poster) this.movie.poster = '#';
-        // console.log('setting bgimage to', this.bgimage);
-        this.title = this.movie.nfo.title;
-        this.plot = this.movie.nfo.plot;
-        // console.log(this.movie);
-        const nv = [];
-        if (this.movie.nfo.genre) {
-          nv.push({ name: 'Genre:', value: this.movie.nfo.genre.join(', ') });
-        }
-        if (this.movie.year) {
-          nv.push({ name: 'Year:', value: this.movie.year });
-        }
-        if (this.movie.nfo.runtime && this.movie.nfo.runtime !== '0') {
-          nv.push({ name: 'Runtime:', value: hhmm(this.movie.nfo.runtime) });
-        }
-        if (this.movie.nfo.rating) {
-          nv.push({ name: 'Rating:', value: this.movie.nfo.rating });
-        }
-        if (this.movie.nfo.studio) {
-          nv.push({ name: 'Studio:', value: this.movie.nfo.studio });
-        }
-        // console.log(nv);
-        this.nameValues = nv;
-      });
-    },
-
-    bgImage() {
-      if (!this.bgimage) {
-        return {};
-      }
-      const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
-      const height = Math.trunc(250 * ratio);
-      const img = `${this.bgimage}?q=90&h=${height}`;
-      const style = {
-        backgroundImage:
-          `linear-gradient(to right, rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%), url(${img})`,
-      };
-      return style;
-    },
-
-    onResize(ev) {
-      console.log(ev);
-      if (this.movie && (1.8 * ev.height > ev.width)) {
-        this.bgimage = this.movie.poster;
-      } else {
-        this.bgimage = this.movie.fanart;
-      }
-    },
-
-    playMovie() {
-      this.emitter.emit('playVideo', { type: 'movie', movie: this.movie });
-    },
   },
 });
 </script>
