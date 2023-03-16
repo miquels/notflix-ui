@@ -79,6 +79,11 @@ function updateMovie(theMovie) {
   return movie;
 }
 
+// Vue composition-api style.
+export function useApi() {
+  return new API();
+}
+
 export default class API {
   constructor() {
     // Make this a singleton.

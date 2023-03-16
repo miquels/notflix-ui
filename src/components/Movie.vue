@@ -105,7 +105,7 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
-import Api from '../lib/api.js';
+import { useApi } from '../lib/api.js';
 import { hhmm } from '../lib/util.js';
 import Backdrop from 'components/Backdrop.vue';
 
@@ -126,7 +126,7 @@ export default defineComponent({
     const emitter = inject('emitter');
     const store = useStore();
     const router = useRouter();
-    const api = new Api();
+    const api = useApi();
 
     const fanart = ref(null);
     const poster = ref(null);

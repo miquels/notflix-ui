@@ -16,7 +16,7 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import Thumbs from 'components/Thumbs.vue';
-import API from '../lib/api.js';
+import { useApi } from '../lib/api.js';
 
 export default defineComponent({
   name: 'PageMovies',
@@ -26,9 +26,9 @@ export default defineComponent({
 
   setup() {
     const store = useStore();
+    const api = useApi();
     const items = ref([]);
     const genres = ref([]);
-    const api = new API();
 
     // FIXME: collection id is hardcoded here.
     const collection = '1';

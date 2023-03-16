@@ -112,7 +112,7 @@ import {
 import { useStore } from 'vuex';
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
-import Api from '../lib/api.js';
+import { useApi } from '../lib/api.js';
 import Backdrop from './Backdrop.vue';
 import Episode from './Episode.vue';
 import { PlayerInfoFactory } from '../lib/playerinfo.js';
@@ -124,7 +124,7 @@ const props = defineProps({
 });
 
 const emitter = inject('emitter');
-const api = new Api();
+const api = useApi();
 const store = useStore();
 const quasar = useQuasar();
 const route = useRoute();

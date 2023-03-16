@@ -1,4 +1,4 @@
-import API from './api.js';
+import { useApi } from './api.js';
 
 //
 // Both components/Movie and components/TvShow can build this class
@@ -59,7 +59,7 @@ export class PlayerInfoFactory {
   //
   // Might seem expensive, but we have all the info that we need already in cache.
   async fromRoute(route) {
-    const api = new API;
+    const api = useApi();
 
     // Movie?
     if (!route.params.episode) {
