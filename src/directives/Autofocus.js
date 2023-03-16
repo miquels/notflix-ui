@@ -13,13 +13,14 @@ var savedAutofocus;
 var savedSelector;
 
 function doFocus(el, selector, why) {
-  if (!selector && el === document.activeElement) {
-    console.log('v-autofocus: ', why, ': already is active element', document.activeElement);
+  const active = document.activeElement;
+  if (!selector && el === active) {
+    console.log('v-autofocus: ', why, ': already is active element', { active });
     return;
   }
 
-  if (selector && el !== document.activeElement && el.contains(document.activeElement)) {
-    console.log('v-autofocus: ', why, ': already contains active element', document.activeElement);
+  if (selector && el !== active && el.contains(active)) {
+    console.log('v-autofocus: ', why, ': already contains active element', { active });
     return;
   }
 
@@ -29,10 +30,10 @@ function doFocus(el, selector, why) {
   } else {
     elem = el.querySelector(':scope ' + selector);
     if (!elem)
-      console.log('v-autofocus: ', why, `: not found: [${selector}]`, el);
+      console.log('v-autofocus: ', why, `: not found: [${selector}]`, { el });
   }
   if (elem) {
-    console.log('v-autofocus: ', why, ': focussing ', elem);
+    console.log('v-autofocus: ', why, ': focussing ', { elem });
     elem.focus();
     savedAutofocus = elem;
     savedSelector = selector;
@@ -99,15 +100,14 @@ export function AutofocusInit() {
     // First try to get back to the last autofocus.
     if (savedAutofocus) try {
       if (savedAutofocus.isConnected) {
-        console.log('body-focus: try', savedAutofocus);
         if (doFocus(savedAutofocus, savedSelector, 'body-focus')) {
-          console.log('body-focus: recovered');
+          console.log('body-focus: set focus back to savedAutoFocus');
           return;
         }
-        console.log('body-focus: failed to recover savedAutofocus');
+        console.log('body-focus: failed to set focus back to savedAutofocus');
       }
     } catch(e) {
-      console.log('body-focus: tried last known autofocus: ', e);
+      console.log('body-focus: failed to set focus back to savedAutofocus:', e);
     }
 
     // Nope, find the first autofocus and use that.
@@ -131,13 +131,13 @@ export function AutofocusInit() {
         continue;
       }
       // should be good enough to recover.
-      console.log('body-focus: recovering, re-focussing on', el);
+      console.log('body-focus: recovering, re-focussing on autofocus element:', { el });
       setTimeout(() => {
         el.focus();
       }, 0);
       return;
     }
-    console.log('body-focus: failed to recover');
+    console.log('body-focus: lost focus, failed to recover');
   }
 
   // No 'focus' or 'focusin' event gets fired when the focus is lost
@@ -153,7 +153,7 @@ export function AutofocusInit() {
         onBodyFocus();
         refocussing = false;
       }
-    }, 20);
+    }, 100);
   });
 
   // Prevent default action on body for navigation keys.
