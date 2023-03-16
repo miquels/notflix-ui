@@ -30,13 +30,16 @@ export default defineComponent({
     const genres = ref([]);
     const api = new API();
 
-    api.getItems('Movies').then((theItems) => {
+    // FIXME: collection id is hardcoded here.
+    const collection = '1';
+
+    api.getItems(collection).then((theItems) => {
       // Sort by last added.
       const sortItems = [...theItems];
       sortItems.sort((a, b) => b.lastvideo - a.lastvideo);
       items.value = sortItems;
     });
-    api.getGenreNames('Movies').then((theGenres) => {
+    api.getGenreNames(collection).then((theGenres) => {
       genres.value = theGenres;
       if (store.state.currentView.type === 'movies') {
         store.commit('currentView', { genres: theGenres });
@@ -49,6 +52,7 @@ export default defineComponent({
     });
 
     return {
+      collection,
       items,
       genres,
       store,
@@ -57,7 +61,7 @@ export default defineComponent({
 
   methods: {
     movie_clicked(movieName) {
-      this.$router.push(`/movies/Movies/${movieName}`);
+      this.$router.push(`/movies/${this.collection}/${movieName}`);
     },
   },
 });

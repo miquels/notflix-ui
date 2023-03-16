@@ -138,7 +138,6 @@ export default class API {
 
             // Make obj.path absolute.
             if (theObj.baseurl && theObj.path) {
-              theObj.relPath = theObj.path;
               theObj.path = joinpath(this.url, theObj.baseurl, theObj.path);
               delete theObj.baseurl;
             }

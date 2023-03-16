@@ -10,7 +10,7 @@
       :key="item.key"
       class="poster-row-thumb relative"
       :style="{ padding: `${padding}px` }"
-      @click="$emit('select-item', item.relPath)"
+      @click="$emit('select-item', item.id)"
       tabindex="0"
     >
       <Image

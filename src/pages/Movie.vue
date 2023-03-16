@@ -25,9 +25,7 @@ export default defineComponent({
     const route = useRoute();
     console.log('params:', route.params);
     return {
-      // collection: route.params.collection,
-      // XXX FIMXE
-      collection: 'Movies',
+      collection: route.params.collection,
       name: route.params.name,
     };
   },

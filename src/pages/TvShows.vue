@@ -32,7 +32,9 @@ export default defineComponent({
     const items = ref([]);
     const genres = ref([]);
     const api = new API();
-    const collection = 'TV Shows';
+
+    // FIXME: collection id is hardcoded here.
+    const collection = '2';
 
     api.getItems(encodeURIComponent(collection)).then((theItems) => {
       // console.log('setting items', theItems);
@@ -62,7 +64,7 @@ export default defineComponent({
   methods: {
     show_clicked(showName) {
       // console.log('clicked on', showName);
-      this.$router.push(`/tv-shows/TV Shows/${showName}`);
+      this.$router.push(`/tv-shows/2/${showName}`);
     },
   },
 });

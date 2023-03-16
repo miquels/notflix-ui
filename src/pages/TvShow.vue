@@ -21,9 +21,7 @@ export default defineComponent({
     const route = useRoute();
     console.log('params:', route.params);
     return {
-      // collection: route.params.collection,
-      // XXX FIMXE
-      collection: 'TV%20Shows',
+      collection: route.params.collection,
       name: route.params.name,
       season: route.params.season,
       episode: route.params.episode,
