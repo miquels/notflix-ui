@@ -34,10 +34,7 @@ export default defineComponent({
     const collection = '1';
 
     api.getItems(collection).then((theItems) => {
-      // Sort by last added.
-      const sortItems = [...theItems];
-      sortItems.sort((a, b) => b.lastvideo - a.lastvideo);
-      items.value = sortItems;
+      items.value = [...theItems];
     });
     api.getGenreNames(collection).then((theGenres) => {
       genres.value = theGenres;

@@ -38,7 +38,7 @@ export default defineComponent({
 
     api.getItems(encodeURIComponent(collection)).then((theItems) => {
       // console.log('setting items', theItems);
-      items.value = theItems;
+      items.value = [ ...theItems ];
     });
 
     api.getGenreNames(encodeURIComponent(collection)).then((theGenres) => {

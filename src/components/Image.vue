@@ -84,14 +84,17 @@ export default defineComponent({
         onError.value = `this.src='${props.errorSrc}'`;
       }
 
-      const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
-      if (props.width) {
-        const w = ratio * clamp(props.width, WIDTHS);
-        imgSrc.value += `&w=${w}`;
-      }
-      if (props.height) {
-        const h = ratio * clamp(props.height, HEIGHTS);
-        imgSrc.value += `&h=${h}`;
+      if (props.src) {
+        const ratio = window.devicePixelRatio * window.outerWidth / window.innerWidth;
+        const round = m => Math.round(m * 100) / 100;
+        if (props.width) {
+          const w = round(ratio * clamp(props.width, WIDTHS));
+          imgSrc.value += `&w=${w}`;
+        }
+        if (props.height) {
+          const h = round(ratio * clamp(props.height, HEIGHTS));
+          imgSrc.value += `&h=${h}`;
+        }
       }
     });
 

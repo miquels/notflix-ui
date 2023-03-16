@@ -155,10 +155,12 @@ export default {
           const theItem = items[base + r];
           const item = {
             key: theItem.id,
-            url: `${theItem.path}/${theItem.poster}`,
             name: theItem.name,
             id: theItem.id,
           };
+          if (theItem.poster) {
+            item.url = `${theItem.path}/${theItem.poster}`;
+          }
           row.push(item);
         }
         rows.push({
