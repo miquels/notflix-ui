@@ -104,6 +104,7 @@ import {
   ref,
 } from 'vue';
 import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 import Api from '../lib/api.js';
 import { hhmm } from '../lib/util.js';
 import Backdrop from 'components/Backdrop.vue';
@@ -124,6 +125,7 @@ export default defineComponent({
 
     const emitter = inject('emitter');
     const store = useStore();
+    const router = useRouter();
     const api = new Api();
 
     const fanart = ref(null);
@@ -177,7 +179,23 @@ export default defineComponent({
     });
 
     function playMovie() {
-      emitter.emit('playVideo', { type: 'movie', movie: movie });
+      // Chromecast?
+      if (store.state.castState === 'connected') {
+        const factory = new PlayerInfoFactory(quasar, store);
+        const info = factory.episode(show, currentSeason, episode);
+        store.commit('currentVideo', info);
+        emitter.emit('playCast');
+      }
+
+      // Nope, local player.
+      const curRoute = router.currentRoute.value;
+      router.push({
+        name: 'movie-play',
+        params: {
+          collection: curRoute.params.collection,
+          name: curRoute.params.name,
+        },
+      });
     }
 
     return {

@@ -131,8 +131,10 @@ export default class API {
             //
             // Give each object an id, and a timestamp.
             theObj.timestamp = Date.now();
-            theObj.id = this.idCounter;
-            this.idCounter += 1;
+            if (!theObj.id) {
+              theObj.id = this.idCounter;
+              this.idCounter += 1;
+            }
 
             // Make obj.path absolute.
             if (theObj.baseurl && theObj.path) {

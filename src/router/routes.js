@@ -15,7 +15,7 @@ const routes = [
         children: [
           {
             path: ':collection/:name/:season/:episode/play',
-            component: () => import('pages/LocalPlayer.vue'),
+            component: () => import('pages/Player.vue'),
             name: 'tvshow-play',
             exact: true,
           },
@@ -34,6 +34,12 @@ const routes = [
         path: 'movies',
         children: [
           {
+            path: ':collection/:name/play',
+            component: () => import('pages/Player.vue'),
+            name: 'movie-play',
+            exact: true,
+          },
+          {
             path: ':collection/:name',
             component: () => import('pages/Movie.vue'),
           },
@@ -43,8 +49,6 @@ const routes = [
           },
         ],
       },
-      { path: 'local-player/', component: () => import('pages/LocalPlayer.vue') },
-      { path: 'ios-player/', component: () => import('pages/IosPlayer.vue') },
       { path: 'settings/', component: () => import('pages/Settings.vue') },
     ],
   },

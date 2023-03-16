@@ -160,6 +160,7 @@ import {
   onBeforeMount,
   onMounted,
   ref,
+  toRefs,
   watch,
 } from 'vue';
 import { useQuasar } from 'quasar';
@@ -196,13 +197,20 @@ export default defineComponent({
   components: {
     VideoControls,
   },
+  props: {
+    'player-info': Object,
+  },
 
-  setup() {
+  setup(props) {
     const router = useRouter();
     const store = useStore();
     const quasar = useQuasar();
+
     let wasFullScreen = false;
     const video = ref(0);
+    const { playerInfo } = toRefs(props);
+    const currentVideo = playerInfo;
+    console.log('Html5Video: currentVideo:', currentVideo);
 
     onBeforeMount(() => {
       const instance = getCurrentInstance();
@@ -214,10 +222,10 @@ export default defineComponent({
     onMounted(() => {
       // Might happen after a reload.
       const instance = getCurrentInstance();
-      if (instance.ctx.currentVideo === null) {
-        router.go(-1);
-        return;
-      }
+      // if (instance.ctx.currentVideo === null) {
+      //   router.go(-1);
+      //   return;
+      // }
       instance.ctx.mounted();
       wasFullScreen = quasar.fullscreen.isActive;
     });
@@ -283,6 +291,7 @@ export default defineComponent({
       volume: ref(1),
       muted: ref(false),
       currentTime: ref(0),
+      currentVideo,
       duration: ref(null),
       textTracks: ref([]),
       textTrack: ref(null),
@@ -298,7 +307,6 @@ export default defineComponent({
       info: ref(null),
       nativeHls,
       bigPlayButton: ref(false),
-      currentVideo: ref(store.state.currentVideo),
       ignoreMouse: false,
       wantAutoPlay: true,
       isSafari,
@@ -368,7 +376,7 @@ export default defineComponent({
       // Airplay support. For now, local to this component, not global as Chromecast.
       if (window.WebKitPlaybackTargetAvailabilityEvent) {
         this.video.addEventListener('webkitplaybacktargetavailabilitychanged', (ev) => {
-          console.log('airplay', ev.availability);
+          console.log('Html5Video: airplay availaility: ', ev.availability);
           if (this.airplayAvailable < 2) {
             const airPlaying = this.video.webkitCurrentPlaybackTargetIsWireless;
             const isAvailable = ev.availability === 'available';
@@ -437,7 +445,7 @@ export default defineComponent({
         () => { this.info = info; },
         () => {
           // autoplay was prevented.
-          // console.log('autoplay prevented');
+          // console.log('Html5Video: autoplay prevented');
           this.setState('paused');
           this.bigPlayButton = true;
           this.info = info;
@@ -476,7 +484,7 @@ export default defineComponent({
       }
 
       this.currentTime = this.video.currentTime || 0;
-      // console.log('duration now', this.duration, this.video.duration);
+      // console.log('Html5Video: duration now', this.duration, this.video.duration);
       if (!this.duration) {
         this.duration = this.video.duration;
       }
@@ -576,7 +584,7 @@ export default defineComponent({
     },
 
     initHls(url) {
-      // console.log('creating new hls', this.video);
+      // console.log('Html5Video: creating new hls', this.video);
       const hlsConfig = {
         backBufferLength: 60,
         maxMaxBufferLength: 120,
@@ -592,18 +600,18 @@ export default defineComponent({
       });
       this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { this.hls.loadSource(url); });
       this.hls.on(Hls.Events.ERROR, (event, data) => {
-        console.log('HLS ERROR', data);
+        console.log('Html5Video: HLS ERROR', data);
 
         // From the hls.js API docs.
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
               // try to recover network error
-              console.log('fatal network error encountered, try to recover');
+              console.log('Html5Video: fatal network error encountered, try to recover');
               this.hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              console.log('fatal media error encountered, try to recover');
+              console.log('Html5Video: fatal media error encountered, try to recover');
               this.hls.recoverMediaError();
               break;
             default:
@@ -631,25 +639,25 @@ export default defineComponent({
 
       if (url.endsWith('.m3u8') && !this.nativeHls) {
         this.initHls(url);
-        // console.log('creating new Hls', this.video);
+        // console.log('Html5Video: creating new Hls', this.video);
         this.hls.attachMedia(this.video);
       } else {
-        // console.log('plain video load', url);
+        // console.log('Html5Video: plain video load', url);
         this.video.src = url;
       }
     },
 
     // Event: play / pause / reload was clicked.
     onPlay() {
-      console.log('play() state is', this.playState);
+      console.log('Html5Video: play() state is', this.playState);
       if (this.playState === 'ended') {
         this.video.currentTime = 0;
       }
       if (this.playState === 'playing') {
-        console.log('calling pause');
+        console.log('Html5Video: calling pause');
         this.video.pause();
       } else {
-        console.log('calling play');
+        console.log('Html5Video: calling play');
         this.video.play();
       }
       this.bigPlayButton = false;
@@ -665,17 +673,17 @@ export default defineComponent({
         this.setState('paused');
       }
       if (fast && this.video.fastSeek && !this.hls) {
-        // console.log('onSeek: fastSeek to', newTime);
+        // console.log('Html5Video: onSeek: fastSeek to', newTime);
         this.video.fastSeek(newTime);
       } else {
-        // console.log('onSeek: updating currentTime to', newTime);
+        // console.log('Html5Video: onSeek: updating currentTime to', newTime);
         this.video.currentTime = newTime;
       }
       this.currentTime = newTime;
     },
 
     onTexttrack(val) {
-      // console.log('texttrack', val);
+      // console.log('Html5Video: texttrack', val);
       for (let i = 0; i < this.video.textTracks.length; i += 1) {
         this.video.textTracks[i].mode = 'disabled';
       }
@@ -735,7 +743,7 @@ export default defineComponent({
     },
 
     relSeek(offset) {
-      // console.log('relseek', offset);
+      // console.log('Html5Video: relseek', offset);
       if (!this.duration) {
         return;
       }
@@ -747,7 +755,7 @@ export default defineComponent({
         newTime = this.duration;
       }
       this.onSeek(newTime, true);
-      // console.log('seek from', this.video.currentTime, 'to', newTime);
+      // console.log('Html5Video: seek from', this.video.currentTime, 'to', newTime);
     },
 
     onKeyDown(ev) {
@@ -774,7 +782,7 @@ export default defineComponent({
         clearTimeout(this.displayTimer);
         this.displayTimer = null;
       }
-      // console.log('setDisplayState', state, timeout);
+      // console.log('Html5Video: setDisplayState', state, timeout);
 
       if (state === DisplayState.HIDDEN) {
         if (this.displayState !== DisplayState.HIDDEN) {
@@ -828,7 +836,7 @@ export default defineComponent({
       if (this.fromControls(nativeEv)) {
         return;
       }
-      // console.log('mouseEvent', ev, nativeEv);
+      // console.log('Html5Video: mouseEvent', ev, nativeEv);
       if (!document.hasFocus() && ev !== MouseEvent.LEAVE_CONTAINER) {
         return;
       }
@@ -836,9 +844,9 @@ export default defineComponent({
     },
 
     handleEvent(ev) {
-      // console.log('handleEvent', ev);
+      // console.log('Html5Video: handleEvent', ev);
       this.handleEvent2(ev);
-      // console.log('  --> displayState:', this.displayState);
+      // console.log('Html5Video:   --> displayState:', this.displayState);
     },
 
     handleEvent2(ev) {
@@ -856,7 +864,7 @@ export default defineComponent({
       }
 
       if (ev === ControlsEvent.IDLE || ev === ControlsEvent.OFF) {
-        // console.log('ControlsEvent.IDLE', canHide);
+        // console.log('Html5Video: ControlsEvent.IDLE', canHide);
         if (canHide) {
           const tmout = ev === ControlsEvent.IDLE ? 3000 : 500;
           this.setDisplayState(DisplayState.HIDDEN, tmout);

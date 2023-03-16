@@ -111,9 +111,11 @@ import {
 } from 'vue';
 import { useStore } from 'vuex';
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
 import Api from '../lib/api.js';
 import Backdrop from './Backdrop.vue';
 import Episode from './Episode.vue';
+import { PlayerInfoFactory } from '../lib/playerinfo.js';
 
 const props = defineProps({
   collection: String,
@@ -124,6 +126,7 @@ const props = defineProps({
 const emitter = inject('emitter');
 const api = new Api();
 const store = useStore();
+const quasar = useQuasar();
 const route = useRoute();
 const router = useRouter();
 
@@ -140,22 +143,11 @@ const currentSeason = ref(null);
 
 async function getShow() {
 
-  console.log('getShow: start api.getShow');
   const item = await api.getShow(props.collection, props.name);
-  console.log('getShow: show:', item);
   show = { ...item };
 
-  if (!show.fanart && show.poster) {
-    show.fanart = show.poster;
-  }
-  if (!show.poster && show.fanart) {
-    show.poster = show.fanart;
-  }
-  if (!show.fanart) show.fanart = '#';
-  if (!show.poster) show.poster = '#';
   fanart = show.fanart;
   poster = show.poster;
-
   title = show.nfo.title;
   plot = show.nfo.plot;
 
@@ -200,7 +192,14 @@ async function getShow() {
   }
   seasons.sort((a, b) => a.prio - b.prio);
   currentSeason.value = seasons[0];
-  console.log('getShow: done');
+}
+
+// onBeforeRouteUpdate((from, to) => {
+//   console.log('TvShow: onBeforeRouteUpdate', from, to);
+// });
+
+function makeSE(prefix, val) {
+  return prefix + val.toString().padStart(2, '0');
 }
 
 onBeforeMount(async () => {
@@ -218,34 +217,45 @@ onBeforeMount(async () => {
   // FIXME differentiate between:
   // - season not present in details (redirect to first season)
   // - season not found in seasons (404)
-  const [ season, episode ] = route.params.details || [];
-  const thisSeason = seasons.find((s) => s.seasonno === Number(season));
+  const [ se, ep ] = route.params.details || [];
+  const season = Number((se || '').replace(/^s?0*/, ''));
+  const episode = Number((ep || '').replace(/^e?0*/, ''));
+
+  const thisSeason = seasons.find((s) => s.seasonno === season);
   if (!thisSeason) {
-    console.log('TvShow: no season, redirecting to seasonno', currentSeason.value.seasonno);
-    router.replace({ name: 'tvshow', params: { details: [ currentSeason.value.seasonno ] }});
+    const toSeason = makeSE('s', currentSeason.value.seasonno);
+    console.log('TvShow: no season, redirecting to', toSeason);
+    router.replace({ name: 'tvshow', params: { details: [ toSeason ] }});
     return;
   }
   currentSeason.value = thisSeason;
 
   // Watch for changes on currentSeason and update the URL.
   watch(currentSeason, s => {
-    router.replace({ name: 'tvshow', params: { details: [ currentSeason.value.seasonno ] }});
+    router.replace({ name: 'tvshow', params: { details: [ makeSE('s', s.seasonno) ] }});
   });
 });
 
 function playEpisode(episode) {
-  const seasonIdx = currentSeason.value.idx;
-  const season = show.seasons[seasonIdx];
-  const showDetails = {
-    poster,
-    title,
-    name,
-  };
-  emitter.emit('playVideo', {
-    type: 'episode',
-    show: showDetails,
-    season,
-    episode,
+
+  // Chromecast?
+  if (store.state.castState === 'connected') {
+    const factory = new PlayerInfoFactory(quasar, store);
+    const info = factory.episode(show, currentSeason, episode);
+    store.commit('currentVideo', info);
+    emitter.emit('playCast');
+  }
+
+  // Nope, local player.
+  const curRoute = router.currentRoute.value;
+  router.push({
+    name: 'tvshow-play',
+    params: {
+      collection: curRoute.params.collection,
+      name: curRoute.params.name,
+      season: makeSE('s', currentSeason.value.seasonno),
+      episode: makeSE('e', episode.episodeno),
+    },
   });
 }
 

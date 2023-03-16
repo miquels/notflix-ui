@@ -110,7 +110,7 @@ export const Chromecast = defineComponent({
   methods: {
     // Initialize.
     onMounted() {
-      console.log('chromecast onMounted');
+      console.log('Chromecast: onMounted');
 
       if (!window.chrome || !chrome.cast || !chrome.cast.isAvailable) {
         window.__onGCastApiAvailable = (isAvailable) => {
@@ -139,24 +139,24 @@ export const Chromecast = defineComponent({
       const apiConfig = new chrome.cast.ApiConfig(
         sessionRequest,
         (session) => {
-          console.log('New session:', session);
+          console.log('Chromecast: new session:', session);
           if (session.media.length !== 0) {
-            console.log('Found multiple sessions: ', session.media.length);
+            console.log('Chromecast: Found multiple sessions: ', session.media.length);
           }
         },
         (ev) => {
           if (ev === 'available') {
-            console.log('Chromecast was found on the network.');
+            console.log('Chromecast: was found on the network.');
           } else {
-            console.log('There are no Chromecasts available.');
+            console.log('Chromecast: There are no Chromecasts available.');
           }
         },
         chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
       );
       chrome.cast.initialize(
         apiConfig,
-        () => { console.log('initialization succeeded'); },
-        () => { console.log('initialization failed'); },
+        () => { console.log('Chromecast: initialization succeeded'); },
+        () => { console.log('Chromecast: initialization failed'); },
       );
     },
 
@@ -190,7 +190,7 @@ export const Chromecast = defineComponent({
         }
       });
       const castState = instance.getCastState();
-      console.log('casState now', castState);
+      console.log('Chromecast: casState now', castState);
 
       const handleEvent = (eventType, func) => {
         const t = window.cast.framework.RemotePlayerEventType[eventType];
@@ -220,32 +220,31 @@ export const Chromecast = defineComponent({
 
       handleEvent('CURRENT_TIME_CHANGED', () => {
         this.currentTime = this._player.currentTime;
-        // console.log('current time changed');
+        // console.log('Chromecast: current time changed');
         this.active(true);
       });
 
       handleEvent('IS_PAUSED_CHANGED', () => {
-        console.log('is_paused changed');
+        console.log('Chromecast: is_paused changed');
         this.updateState();
         this.active(true);
       });
 
       handleEvent('IS_MUTED_CHANGED', () => {
-        console.log('is_muted changed');
+        console.log('Chromecast: is_muted changed');
         this.muted = this._player.isMuted;
         this.active(true);
       });
 
       handleEvent('VOLUME_LEVEL_CHANGED', () => {
-        console.log('volume_level changed', this._player.volumeLevel);
+        console.log('Chromecast: volume_level changed', this._player.volumeLevel);
         this.volume = this._player.volumeLevel;
         // Don't trigger active(true) here, the OS might have done this on connect.
       });
 
-      this.emitter.on('playCast', () => {
-        console.log('playCast');
-        console.log('playCast request', this.store.state.currentVideo);
-        this.load(this.store.state.currentVideo);
+      this.emitter.on('playCast', (video) => {
+        console.log('Chromecast: playCast request', video);
+        this.load(video);
       });
     },
 
@@ -264,7 +263,7 @@ export const Chromecast = defineComponent({
           this.setCastState('connected');
           break;
         default:
-          console.log('setCastStateNative: unknown state', state);
+          console.log('Chromecast: setCastStateNative: unknown state', state);
           break;
       }
     },
@@ -292,11 +291,11 @@ export const Chromecast = defineComponent({
       console.log('Chromecast: mediaInfoChanged: getSessionObj: ', session.getSessionObj());
       const media = session.getMediaSession();
       if (!media) {
-        console.log('Chromecast.mediaInfoChanged: no media');
+        console.log('Chromecast: mediaInfoChanged: no media');
         this.resetState();
         return;
       }
-      console.log('Chromecast.mediaInfoChanged:', media);
+      console.log('Chromecast: mediaInfoChanged:', media);
       const mediaInfo = media.media;
       // this.currentSrc = mediaInfo.contentId;
       // this.currentTitle = mediaInfo.metadata.title;
@@ -309,13 +308,13 @@ export const Chromecast = defineComponent({
       this.audioTracks = this.getTracks(media, 'AUDIO');
       this.audioTrack = this.getActiveTrack(media, 'AUDIO');
 
-      console.log('calling updateState');
+      console.log('Chromecast: calling updateState');
       this.updateState(media);
     },
 
     active(flag) {
       if (this.store.state.castActive !== flag) {
-        console.log('setting castActive', this.store.state.castActive, ' -> ', flag);
+        console.log('Chromecast: setting castActive', this.store.state.castActive, ' -> ', flag);
         this.store.commit('castActive', flag);
       }
     },
@@ -380,7 +379,7 @@ export const Chromecast = defineComponent({
     load(item) {
       // Make URL absolute.
       const src = new URL(item.src, window.location.origin).href;
-      console.log('chromecast.load', src);
+      console.log('Chromecast: chromecast.load', src);
 
       const mediaInfo = new chrome.cast.media.MediaInfo(src, 'video/mp4');
       mediaInfo.streamType = chrome.cast.media.StreamType.BUFFERED;
@@ -446,13 +445,13 @@ export const Chromecast = defineComponent({
       request.currentTime = item.startAt || 0;
       request.autoplay = this.playState !== 'paused';
 
-      console.log('chromecast: getting session');
+      console.log('Chromecast: chromecast: getting session');
       const session = this.getSession();
       if (!session) {
-        console.log('chromecast: no session');
+        console.log('Chromecast: chromecast: no session');
         return;
       }
-      console.log(`chromecast: loadMedia. name is ${this.name}, deviceName is ${this.deviceName}`);
+      console.log(`Chromecast: chromecast: loadMedia. name is ${this.name}, deviceName is ${this.deviceName}`);
       this.store.commit('castActive', true);
 
       session.loadMedia(request).then(

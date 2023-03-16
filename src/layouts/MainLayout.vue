@@ -69,7 +69,6 @@
       class="bg-grey-10 text-white cursor-pointer">
     >
       <Chromecast v-if="canCast()"/>
-      <Play />
     </q-footer>
 
   </q-layout>
@@ -103,14 +102,12 @@ import { useStore } from 'vuex';
 import { Chromecast, canCast } from 'components/Chromecast.vue';
 import { hasSettings } from 'pages/Settings.vue';
 import CastButton from 'components/CastButton.vue';
-import Play from 'components/Play.vue';
 import { isMobile, addPrettyScrollBars } from '../lib/util.js';
 
 export default {
   components: {
     Chromecast,
     CastButton,
-    Play,
   },
   setup() {
     const store = useStore();
