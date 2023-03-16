@@ -146,8 +146,8 @@ async function getShow() {
   const item = await api.getShow(props.collection, props.name);
   show = { ...item };
 
-  fanart = show.fanart;
-  poster = show.poster;
+  fanart = show.fanart || '#';
+  poster = show.poster || '#';
   title = show.nfo.title;
   plot = show.nfo.plot;
 

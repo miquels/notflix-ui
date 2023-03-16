@@ -151,8 +151,8 @@ export default defineComponent({
 
       movie = item;
 
-      fanart.value = item.fanart;
-      poster.value = item.poster;
+      fanart.value = item.fanart || '#';
+      poster.value = item.poster || '#';
       title.value = item.nfo.title;
       plot.value = item.nfo.plot;
 
