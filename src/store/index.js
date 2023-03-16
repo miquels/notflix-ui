@@ -33,6 +33,7 @@ export default store(() => {
 
       // What shows / movies are marked as 'favorite'.
       favorites: {},
+      favoritesVersion: 1,
 
       // external config loaded from 'config.json' (if present).
       externalConfig: {
@@ -58,6 +59,9 @@ export default store(() => {
       isFavorite: (state) => (value) => {
         const key = `${value.collection}.${value.name}`;
         return typeof state.favorites[key] === 'object';
+      },
+      favoritesVersion: (state) => () => {
+        return state.favoritesVersion;
       },
     },
 
@@ -109,6 +113,7 @@ export default store(() => {
         const key = `${value.collection}.${value.name}`;
         console.log('addFavorite', key);
         state.favorites[key] = {};
+        state.favoritesVersion += 1;
       },
 
       // Remove an item as favorite.
@@ -116,6 +121,7 @@ export default store(() => {
         const key = `${value.collection}.${value.name}`;
         console.log('removeFavorite', key);
         delete state.favorites[key];
+        state.favoritesVersion += 1;
       },
     },
 

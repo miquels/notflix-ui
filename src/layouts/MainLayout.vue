@@ -58,7 +58,7 @@
     <q-page-container>
       <router-view v-slot="{ Component }">
         <keep-alive :include="keepAlive">
-          <component :is="Component" :key="$route.fullPath"/>
+          <component :is="Component" :key="$route.path"/>
         </keep-alive>
       </router-view>
     </q-page-container>
@@ -135,8 +135,8 @@ export default {
       // 'PageMovie',
       // 'TvShow',
       // 'Movie',
-      'Thumbs',
-      'VirtualScroll',
+      // 'Thumbs',
+      // 'VirtualScroll',
     ];
 
     const headerHasFocus = ref(true);

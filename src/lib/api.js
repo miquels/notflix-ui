@@ -181,8 +181,7 @@ export default class API {
   }
 
   getItem(collName, item) {
-    const escItem = encodeURIComponent(item);
-    return this.getObject(joinpath('/api/collection', collName, 'item', escItem));
+    return this.getObject(joinpath('/api/collection', collName, 'item', item));
   }
 
   getGenres(collName) {

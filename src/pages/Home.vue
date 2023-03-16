@@ -23,6 +23,7 @@
 <script>
 import {
   defineComponent,
+  getCurrentInstance,
   onActivated,
   ref,
 } from 'vue';
@@ -41,25 +42,36 @@ export default defineComponent({
     const api = useApi();
     const items = ref([]);
     const genres = ref([]);
-    const collection = 'TV Shows';
     const haveFavorites = ref(null);
 
-    api.getItems(encodeURIComponent(collection)).then((theItems) => {
-      // console.log('setting items', theItems);
-      // eslint-disable-next-line
-      items.value = theItems.filter((item) => store.getters.isFavorite({ collection, name: item.name }));
-      haveFavorites.value = items.value.length > 0;
-    });
+    // FIXME: hardcoded collection.
+    const collection = '2';
 
-    api.getGenreNames(encodeURIComponent(collection)).then((theGenres) => {
+    function getItems() {
+      api.getItems(collection).then((theItems) => {
+        // console.log('setting items', theItems);
+        // eslint-disable-next-line
+        items.value = theItems.filter((item) => store.getters.isFavorite({ collection, name: item.name }));
+        haveFavorites.value = items.value.length > 0;
+      });
+    }
+    getItems();
+
+    api.getGenreNames(collection).then((theGenres) => {
       genres.value = theGenres;
       if (store.state.currentView.type === 'series') {
         store.commit('currentView', { genres: theGenres });
       }
     });
 
+    let favoritesVersion = store.getters.favoritesVersion();
     onActivated(() => {
       store.commit('currentView', { type: 'series', genres: genres.value });
+      if (store.getters.favoritesVersion() != favoritesVersion) {
+        getItems();
+        const instance = getCurrentInstance();
+        instance.ctx.$forceUpdate();
+      }
     });
 
     return {

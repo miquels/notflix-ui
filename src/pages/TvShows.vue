@@ -36,20 +36,27 @@ export default defineComponent({
     // FIXME: collection id is hardcoded here.
     const collection = '2';
 
-    api.getItems(encodeURIComponent(collection)).then((theItems) => {
+    api.getItems(collection).then((theItems) => {
       // console.log('setting items', theItems);
       items.value = [ ...theItems ];
     });
 
-    api.getGenreNames(encodeURIComponent(collection)).then((theGenres) => {
+    api.getGenreNames(collection).then((theGenres) => {
       genres.value = theGenres;
       if (store.state.currentView.type === 'series') {
         store.commit('currentView', { genres: theGenres });
       }
     });
 
+    let favoritesVersion = store.getters.favoritesVersion();
     onActivated(() => {
       store.commit('currentView', { type: 'series', genres: genres.value });
+      if (store.getters.favoritesVersion() != favoritesVersion) {
+        getItems();
+        const instance = getCurrentInstance();
+        instance.ctx.$forceUpdate();
+        favoritesVersion = store.getters.favoritesVersion();
+      }
     });
 
     return {
