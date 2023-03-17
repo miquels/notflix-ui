@@ -4,7 +4,11 @@ import VuexPersistence from 'vuex-persist';
 
 const vuexLocal = new VuexPersistence({
   storage: window.localStorage,
-  reducer: (state) => ({ config: state.config, favorites: state.favorites }),
+  reducer: (state) => ({
+    config: state.config,
+    favorites: state.favorites,
+    tvshow: state.tvshow,
+  }),
 });
 
 export default store(() => {
@@ -34,6 +38,16 @@ export default store(() => {
       // What shows / movies are marked as 'favorite'.
       favorites: {},
       favoritesVersion: 1,
+
+      // Per tv-show info.
+      // Each object contains tvshow state:
+      //  {
+      //    season: 2,      // season
+      //    episode: 3,     // episode
+      //    scrollTop: 500, // initial scrolltop, may need scrollIntoView
+      //    seen: 95,       // How much of this episode we've seen
+      //  }
+      tvshow: {},
 
       // external config loaded from 'config.json' (if present).
       externalConfig: {

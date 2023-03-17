@@ -14,6 +14,7 @@
 <script>
 import {
   defineComponent,
+  getCurrentInstance,
   onActivated,
   ref,
 } from 'vue';
@@ -36,10 +37,13 @@ export default defineComponent({
     // FIXME: collection id is hardcoded here.
     const collection = '2';
 
-    api.getItems(collection).then((theItems) => {
-      // console.log('setting items', theItems);
-      items.value = [ ...theItems ];
-    });
+    function getItems() {
+      api.getItems(collection).then((theItems) => {
+        // console.log('setting items', theItems);
+        items.value = [ ...theItems ];
+      });
+    }
+    getItems();
 
     api.getGenreNames(collection).then((theGenres) => {
       genres.value = theGenres;

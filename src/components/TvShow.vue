@@ -24,6 +24,7 @@
               v-model="currentSeason"
               style="width=100%"
               options-selected-class="q-select-active-option"
+              data-autofocus="2"
               v-autofocus="'input'"
           />
           </lrud>
@@ -50,6 +51,7 @@
     <div v-if="seasons && currentSeason" class="tv-show-episodes">
       <template v-for="(episode, index) in currentSeason.episodes" :key="episode.name">
         <Episode 
+          data-autofocus="3"
           v-autofocus="{ v_if: seasons.length === 1 && index === 0, selector: '.q-icon' }"
           :episode="episode"
           @play="playEpisode(episode)"
@@ -113,6 +115,7 @@ import { useStore } from 'vuex';
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useApi } from '../lib/api.js';
+import { decodeSE, encodeSE } from '../lib/util.js';
 import Backdrop from './Backdrop.vue';
 import Episode from './Episode.vue';
 import { PlayerInfoFactory } from '../lib/playerinfo.js';
@@ -120,7 +123,6 @@ import { PlayerInfoFactory } from '../lib/playerinfo.js';
 const props = defineProps({
   collection: String,
   name: String,
-  details: String,
 });
 
 const emitter = inject('emitter');
@@ -140,6 +142,7 @@ const seasons = [];
 
 const el = ref(null);
 const currentSeason = ref(null);
+const currentEpisode = ref(null);
 
 async function getShow() {
 
@@ -198,12 +201,8 @@ async function getShow() {
 //   console.log('TvShow: onBeforeRouteUpdate', from, to);
 // });
 
-function makeSE(prefix, val) {
-  return prefix + val.toString().padStart(2, '0');
-}
-
 onBeforeMount(async () => {
-  // It may be better to do this in the onBeforeRouteLeave hook.
+  // It may be better to do this in the onBeforeRouteLeave hook, or maybe in setup().
   // Better to put up a spinner and/or report an error _before_
   // we navigate to the page.
   try {
@@ -214,25 +213,29 @@ onBeforeMount(async () => {
     throw(e);
   }
 
-  // FIXME differentiate between:
-  // - season not present in details (redirect to first season)
-  // - season not found in seasons (404)
-  const [ se, ep ] = route.params.details || [];
-  const season = Number((se || '').replace(/^s?0*/, ''));
-  const episode = Number((ep || '').replace(/^e?0*/, ''));
+  // If this fails it's because someone entered a wrong URL manually.
+  const se = decodeSE(route.params.seasonEpisode);
+  if (!se) {
+    router.replace({ name: '404'});
+    return;
+  }
+  const { season, episode } = se;
 
   const thisSeason = seasons.find((s) => s.seasonno === season);
   if (!thisSeason) {
-    const toSeason = makeSE('s', currentSeason.value.seasonno);
+    const toSeason = encodeSE(currentSeason.value.seasonno);
     console.log('TvShow: no season, redirecting to', toSeason);
-    router.replace({ name: 'tvshow', params: { details: [ toSeason ] }});
+    router.replace({ name: 'tvshow', params: { seasonEpisode: toSeason }});
     return;
   }
   currentSeason.value = thisSeason;
 
-  // Watch for changes on currentSeason and update the URL.
-  watch(currentSeason, s => {
-    router.replace({ name: 'tvshow', params: { details: [ makeSE('s', s.seasonno) ] }});
+  // Watch for changes on currentSeason/currentEpisode and update the URL.
+  watch([currentSeason, currentEpisode], ([s, e]) => {
+    router.replace({
+      name: 'tvshow',
+      params: { seasonEpisode: encodeSE(s.seasonno, e ? e.episodeno : null) }
+    });
   });
 });
 
@@ -253,8 +256,7 @@ function playEpisode(episode) {
     params: {
       collection: curRoute.params.collection,
       name: curRoute.params.name,
-      season: makeSE('s', currentSeason.value.seasonno),
-      episode: makeSE('e', episode.episodeno),
+      seasonEpisode: encodeSE(currentSeason.value.seasonno, episode.episodeno),
     },
   });
 }

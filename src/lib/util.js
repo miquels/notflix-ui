@@ -2,9 +2,16 @@
  *  util  Utility functions.
  *
  *  util.joinpath()
- *  util.FullScreen()
- *  util.isFullScreen()
- *  util.cleanURL()
+ *  util.isMobile()
+ *  util.isWebkit()
+ *  util.debounce
+ *  util.hhmmss(seconds)
+ *  util.hhmm(minutes)
+ *  util.sxe
+ *  util.scrollbarWidth
+ *  util.addPrettyScrollBars
+ *  util.decodeSE
+ *  util.encodeSE
  */
 
 export function joinpath(...args) {
@@ -43,17 +50,48 @@ export function isWebkit() {
   return navigator.userAgent.match(/webkit/i) !== null;
 }
 
-// To prevent redirects, remove double slashes,
-// and make sure the url ends in / for dirs.
-export function cleanURL(url, isDir) {
-  const s = /^([a-z]+:\/\/|\/\/|)(.*)/.exec(url);
-  if (s) {
-    url = s[1] + s[2].replace(/\/+/g, '/');
+// https://davidwalsh.name/javascript-debounce-function
+export function debounce(func, wait, immediate) {
+  let timeout;
+  return (...args) => {
+    const later = () => {
+      timeout = null;
+      if (!immediate) func(args);
+    };
+    const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+    if (callNow) func(args);
+  };
+}
+
+export function hhmmss(seconds) {
+  const d = new Date(seconds * 1000).toISOString();
+  if (seconds >= 3600) {
+    return d.substr(11, 8);
   }
-  if (isDir && !url.match(/\/$/)) {
-    url += '/';
+  return d.substr(14, 5);
+}
+
+function numberWidth(num, w) {
+  return num.toString().padstart(w)
+}
+
+export function hhmm(minutes) {
+  const mins = parseInt(minutes, 10);
+  if (isNaN(mins)) {
+    return minutes;
   }
-  return url;
+  if (mins < 60) {
+    return `${mins}m`;
+  }
+  const m = mins % 60;
+  const h = Math.floor(mins / 60);
+  return `${h}h${numberWidth(m, 2)}m`;
+}
+
+export function sxe(season, episode) {
+  return `${numberWidth(season, 2)}x${numberWidth(episode, 2)}`;
 }
 
 // inspired by
@@ -81,59 +119,7 @@ export function scrollbarWidth(className) {
   return width;
 }
 
-// https://davidwalsh.name/javascript-debounce-function
-export function debounce(func, wait, immediate) {
-  let timeout;
-  return (...args) => {
-    const later = () => {
-      timeout = null;
-      if (!immediate) func(args);
-    };
-    const callNow = immediate && !timeout;
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-    if (callNow) func(args);
-  };
-}
-
-export function hhmmss(seconds) {
-  const d = new Date(seconds * 1000).toISOString();
-  if (seconds >= 3600) {
-    return d.substr(11, 8);
-  }
-  return d.substr(14, 5);
-}
-
-function numberWidth(num, w) {
-  let s = `${num}`;
-  while (s.length < w) {
-    s = `0${s}`;
-  }
-  return s;
-}
-
-export function hhmm(minutes) {
-  if (Number.isNaN(Number(minutes))) {
-    return minutes;
-  }
-  minutes = parseInt(minutes, 10);
-  if (minutes < 60) {
-    return `${minutes}m`;
-  }
-  const m = minutes % 60;
-  const h = Math.floor(minutes / 60);
-  return `${h}h${numberWidth(m, 2)}m`;
-}
-
-export function s0xe0x(season, episode) {
-  return `S${numberWidth(season, 2)}E${numberWidth(episode, 2)}`;
-}
-
-export function sxe(season, episode) {
-  return `${numberWidth(season, 2)}x${numberWidth(episode, 2)}`;
-}
-
-export function addStyleSheetRule(selectorObj, rulesObj) {
+function addStyleSheetRule(selectorObj, rulesObj) {
   let rules = '';
   for (const [key, value] of Object.entries(rulesObj)) {
     rules += `${key}: ${value};`;
@@ -166,3 +152,20 @@ export function addPrettyScrollBars() {
     'scrollbar-color': '#999 #333',
   });
 }
+
+// Decodes: '', 's01', 's01e02'. On no match returns null.
+export function decodeSE(seasonEpisode) {
+  const re = /^(?:(?:s0*([0-9]+)(?:e0*([0-9]+))?)|)$/;
+  const s = (seasonEpisode || '').match(re);
+  return s ? {
+    season: s[1] != '' ? parseInt(s[1]) : null,
+    episode: s[2] != '' ? parseInt(s[2]) : null,
+  } : null;
+}
+
+export function encodeSE(season, episode) {
+  let s = 's' + season.toString().padStart(2, '0');
+  s += (episode || episode === 0) ? 'e' + episode.toString().padStart(2, '0') : '';
+  return s;
+}
+

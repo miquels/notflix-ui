@@ -1,4 +1,6 @@
 import { useApi } from './api.js';
+import { decodeSE } from './util.js';
+import { useRouter } from 'vue-router';
 
 //
 // Both components/Movie and components/TvShow can build this class
@@ -59,23 +61,37 @@ export class PlayerInfoFactory {
   //
   // Might seem expensive, but we have all the info that we need already in cache.
   async fromRoute(route) {
+    const router = useRouter();
     const api = useApi();
 
     // Movie?
-    if (!route.params.episode) {
+    if (!route.params.seasonEpisode) {
       const item = await api.getMovie(route.params.collection, route.params.name);
       return this.movie(item);
     }
 
+    // TvShow.
     const item = await api.getShow(route.params.collection, route.params.name);
-    console.log('item: ', item);
-    console.log('params: ', route.params);
+    console.log('playerinfo: item: ', item);
+    console.log('playerinfo: params: ', route.params);
+    if (!item) {
+      router.replace({ name: '404' });
+      return;
+    }
+
+    const se = decodeSE(route.params.seasonEpisode);
+    if (!se) {
+      router.replace({ name: '404' });
+      return;
+    }
 
     // Find the episode.
-    const se = Number(route.params.season.replace(/^s?0*/, ''));
-    const ep = Number(route.params.episode.replace(/^e?0*/, ''));
-    const season = item.seasons.find((s) => s.seasonno === se);
-    const episode = season.episodes.find((e) => e.episodeno === ep);
+    const season = item.seasons.find((s) => s.seasonno === se.season);
+    const episode = season.episodes.find((e) => e.episodeno === se.episode);
+    if (!season || !episode) {
+      router.replace({ name: '404' });
+      return;
+    }
 
     return this.episode(item, season, episode);
   }

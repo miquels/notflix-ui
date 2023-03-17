@@ -14,13 +14,20 @@ var savedSelector;
 
 function doFocus(el, selector, why) {
   const active = document.activeElement;
+  if (active !== document.body && !(el.contains(active) && selector))
+    return;
+
   if (!selector && el === active) {
     console.log('v-autofocus: ', why, ': already is active element', { active });
+    savedAutofocus = el;
+    savedSelector = selector;
     return;
   }
 
   if (selector && el !== active && el.contains(active)) {
     console.log('v-autofocus: ', why, ': already contains active element', { active });
+    savedAutofocus = el;
+    savedSelector = selector;
     return;
   }
 
@@ -74,8 +81,10 @@ function mounted(el, binding, hook) {
   }
   el.addEventListener('focus', onFocus);
 
-  // Make this element autofocus.
-  el.setAttribute('autofocus', true);
+  // Mark this element as autofocus.
+  if (!el.dataset.autofocus) {
+    el.dataset.autofocus = "1"
+  }
 }
 
 function unmounted(el) {
@@ -111,7 +120,7 @@ export function AutofocusInit() {
     }
 
     // Nope, find the first autofocus and use that.
-    let elems = document.querySelectorAll('[autofocus]');
+    let elems = document.querySelectorAll('[data-autofocus]');
     for (let i = 0; i < elems.length; i++) {
       const el = elems[i];
       // Must be visible.

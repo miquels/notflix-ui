@@ -97,7 +97,6 @@ movie-play:focus {
 <script>
 import {
   defineComponent,
-  getCurrentInstance,
   inject,
   onBeforeMount,
   onMounted,
