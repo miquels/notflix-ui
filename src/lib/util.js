@@ -74,7 +74,7 @@ export function hhmmss(seconds) {
 }
 
 function numberWidth(num, w) {
-  return num.toString().padstart(w)
+  return num.toString().padStart(w)
 }
 
 export function hhmm(minutes) {

@@ -168,7 +168,7 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import VideoControls from 'components/VideoControls.vue';
 import { ControlsEvent } from 'components/VideoControls.vue';
-import Hls from 'hls.js';
+import shaka from 'shaka-player';
 
 const MouseEvent = {
   CLICK_CONTAINER: 'click_container',
@@ -235,20 +235,8 @@ export default defineComponent({
       if (video.value) {
         video.value.pause();
       }
-      if (instance.ctx.hls) {
-        /*
-        console.log('HLS: destroying source buffers');
-        let ms = instance.ctx.hls.bufferController.mediaSource;
-        for (let i = 0; i < ms.sourceBuffers.length; i += 1) {
-          let buf = ms.sourceBuffers[i];
-          if (buf.updating) {
-            buf.abort();
-          }
-          buf.remove(0, ms.duration);
-        }
-        */
-        instance.ctx.hls.destroy();
-        instance.ctx.hls = null;
+      if (instance.ctx.shaka) {
+        instance.ctx.shaka.unload();
       } else if (video.value) {
         if (video.value.srcObject) {
           video.value.srcObject = null;
@@ -356,11 +344,11 @@ export default defineComponent({
         this.volume = this.video.volume;
         this.muted = this.video.muted;
       });
-      if (this.video.audioTracks && !this.hls) {
+      if (this.video.audioTracks && !this.shaka) {
         this.video.audioTracks.addEventListener('addtrack', () => this.onAudiotracks_updated());
         this.video.audioTracks.addEventListener('removetrack', () => this.onAudiotracks_updated());
       }
-      if (this.video.textTracks && !this.hls) {
+      if (this.video.textTracks && !this.shaka) {
         this.video.textTracks.addEventListener('addtrack', () => this.onTexttracks_updated());
         this.video.textTracks.addEventListener('removetrack', () => this.onTexttracks_updated());
         this.video.textTracks.addEventListener('change', () => this.onTexttrack_changed());
@@ -460,26 +448,8 @@ export default defineComponent({
       return this.bigPlayButton || (this.info && this.playState === 'paused');
     },
 
-    /*
-    // This needs more thought.
-    forced_subs() {
-      if (this.audioTrack !== null && this.textTrack === null) {
-        let audioTracks = this.hls ? this.hls.audioTracks : this.audioTracks;
-        const lang = audioTracks[this.audioTrack].language;
-        for (let i = 0; i < this.video.textTracks.length; i += 1) {
-          const t = this.video.textTracks[i];
-          if (t.language === lang && t.kind === 'forced') {
-            this.onTexttrack(i);
-            break;
-          }
-        }
-      }
-    },
-    */
-
     onLoadedmetadata() {
-      // If Hls is active, both loaded_metadata and hls_loaded_metadata must be true.
-      if (!this.loaded_metadata || (this.hls && !this.hls_loaded_metadata)) {
+      if (!this.loaded_metadata) {
         return;
       }
 
@@ -488,33 +458,43 @@ export default defineComponent({
       if (!this.duration) {
         this.duration = this.video.duration;
       }
-      if (this.hls) {
-        if (this.hls.audioTracks) {
-          for (let i = 0; i < this.hls.audioTracks.length; i += 1) {
-            const t = this.hls.audioTracks[i];
+      if (this.shaka) {
+        // Initialize audio tracks.
+        const audioLanguages = this.shaka.getAudioLanguages();
+        if (audioLanguages && audioLanguages.length > 1) {
+          for (let i = 0; i < audioLanguages.length; i += 1) {
             this.audioTracks.push({
               id: i,
-              label: t.name,
+              label: audioLanguages[i],
             });
           }
         }
+        // Initialize text tracks.
+        console.log('Html5Video: initializing texttracks: ', this.shaka.getTextTracks());
         this.onTexttracks_updated();
       }
+    },
+
+    getTextTracks() {
+      if (this.shaka) {
+        return this.shaka.getTextTracks();
+      }
+      return this.video ? this.video.textTracks : null;
     },
 
     onTexttracks_updated() {
       this.textTracks = [];
       this.textTrack = null;
-      if (!this.video || !this.video.textTracks) {
-        return;
-      }
 
-      for (let i = 0; i < this.video.textTracks.length; i += 1) {
-        const t = this.video.textTracks[i];
+      const textTracks = this.getTextTracks();
+      for (let i = 0; i < textTracks.length; i += 1) {
+        const t = textTracks[i];
+        console.log('XXX considering texttrack ', t);
         if (!t.label && !t.language) {
           continue;
         }
-        if (t.kind === 'subtitles' || t.kind === 'captions' || t.kind === 'forced') {
+        if (t.kind === 'subtitles' || t.kind === 'subtitle' ||
+            t.kind === 'captions' || t.kind === 'forced') {
           this.textTracks.push({
             id: i,
             label: t.label,
@@ -525,14 +505,15 @@ export default defineComponent({
     },
 
     onTexttrack_changed() {
-      if (!this.video || !this.video.textTracks) {
+      const textTracks = this.getTextTracks();
+      if (!textTracks) {
         this.textTracks = [];
         this.textTrack = null;
-        return;
+        retrn;
       }
       let activeTrack = null;
-      for (let i = 0; i < this.video.textTracks.length; i += 1) {
-        const t = this.video.textTracks[i];
+      for (let i = 0; i < textTracks.length; i += 1) {
+        const t = textTracks[i];
         if (t.kind === 'subtitles' || t.kind === 'captions' || t.kind === 'forced') {
           if (!t.label && !t.language) {
             continue;
@@ -549,14 +530,14 @@ export default defineComponent({
 
       // Apple devices will often automatically choose captions
       // instead of subtitles. Try to fix that.
-      if (activeTrack !== null && this.video.textTracks[activeTrack].kind === 'captions') {
-        const at = this.video.textTracks[activeTrack];
-        for (let i = 0; i < this.video.textTracks.length; i += 1) {
-          const t = this.video.textTracks[i];
+      if (activeTrack !== null && textTracks[activeTrack].kind === 'captions') {
+        const at = textTracks[activeTrack];
+        for (let i = 0; i < textTracks.length; i += 1) {
+          const t = textTracks[i];
           if (t.language === at.language && t.kind === 'subtitles') {
-            this.video.textTracks[activeTrack].mode = 'disabled';
+            textTracks[activeTrack].mode = 'disabled';
             activeTrack = i;
-            this.video.textTracks[activeTrack].mode = 'showing';
+            textTracks[activeTrack].mode = 'showing';
             break;
           }
         }
@@ -583,53 +564,26 @@ export default defineComponent({
       }
     },
 
-    initHls(url) {
-      // console.log('Html5Video: creating new hls', this.video);
-      const hlsConfig = {
-        backBufferLength: 60,
-        maxMaxBufferLength: 120,
-        maxBufferSize: 64 * 1024 * 1024,
-        debug: false,
-        // broken in HLS.js 1.1, should be fixed in 1.2
-        // progressive: true,
-      };
-      this.hls = new Hls(hlsConfig);
-      this.hls.on(Hls.Events.MANIFEST_LOADED, () => {
-        this.hls_loaded_metadata = true;
-        this.onLoadedmetadata();
-      });
-      this.hls.on(Hls.Events.MEDIA_ATTACHED, () => { this.hls.loadSource(url); });
-      this.hls.on(Hls.Events.ERROR, (event, data) => {
-        console.log('Html5Video: HLS ERROR', data);
-
-        // From the hls.js API docs.
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              // try to recover network error
-              console.log('Html5Video: fatal network error encountered, try to recover');
-              this.hls.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              console.log('Html5Video: fatal media error encountered, try to recover');
-              this.hls.recoverMediaError();
-              break;
-            default:
-              // cannot recover
-              hls.destroy();
-              break;
-          }
-          return;
-        }
-      });
+    initShaka() {
+      // if (this.shaka) {
+      //   this.shaka.unload();
+      // }
+      if (!this.shaka) {
+        console.log('Html5Video: initializing shaka...');
+        this.shaka = new shaka.Player(this.$refs.video);
+        window.player = this.shaka;
+        this.shaka.configure({
+          preferredAudioChannelCount: 6,
+          abr: {
+            enabled: false,
+          },
+        });
+        console.log('Html5Video: done!');
+      }
     },
 
     load(item) {
       console.log('Html5Video: load method called', item);
-      if (this.hls) {
-        this.hls.destroy();
-        this.hls = null;
-      }
       if (this.video.src) {
         this.video.removeAttribute('src');
       }
@@ -638,9 +592,9 @@ export default defineComponent({
       const url = new URL(item.src, window.location.origin).href;
 
       if (url.endsWith('.m3u8') && !this.nativeHls) {
-        this.initHls(url);
-        // console.log('Html5Video: creating new Hls', this.video);
-        this.hls.attachMedia(this.video);
+        this.initShaka();
+        console.log('Html5Video: shaka.load', url);
+        this.shaka.load(url);
       } else {
         // console.log('Html5Video: plain video load', url);
         this.video.src = url;
@@ -672,7 +626,7 @@ export default defineComponent({
       if (this.playState === 'ended') {
         this.setState('paused');
       }
-      if (fast && this.video.fastSeek && !this.hls) {
+      if (fast && this.video.fastSeek && !this.shaka) {
         // console.log('Html5Video: onSeek: fastSeek to', newTime);
         this.video.fastSeek(newTime);
       } else {
@@ -683,12 +637,17 @@ export default defineComponent({
     },
 
     onTexttrack(val) {
-      // console.log('Html5Video: texttrack', val);
-      for (let i = 0; i < this.video.textTracks.length; i += 1) {
-        this.video.textTracks[i].mode = 'disabled';
-      }
-      if (val !== null) {
-        this.video.textTracks[val].mode = 'showing';
+      console.log('Html5Video: onTexttrack', val);
+      const textTracks = this.getTextTracks();
+      if (this.shaka) {
+        if (val !== null && val >= 0) {
+          this.shaka.selectTextTrack(textTracks[val]);
+        }
+        this.shaka.setTextTrackVisibility(val !== null && val >= 0);
+      } else {
+        for (let i = 0; i < textTracks.length; i += 1) {
+          textTracks[i].mode = (i === val) ? 'showing' : 'disabled';
+        }
       }
       this.currentTextTrack = val;
     },
@@ -696,17 +655,13 @@ export default defineComponent({
     onAudiotrack(val) {
       this.audioTrack = val;
 
-      if (this.hls) {
-        this.hls.audioTrack = val;
-        return;
-      }
-
-      if (this.video.audioTracks) {
-        for (let i = 0; i < this.video.audioTracks.length; i += 1) {
-          this.video.audioTracks[i].enabled = false;
-        }
-        if (val !== null) {
-          this.video.audioTracks[val].enabled = true;
+      if (this.shaka) {
+        this.shaka.selectAudioLanguage(this.audioTracks[val].label);
+      } else {
+        if (this.video.audioTracks) {
+          for (let i = 0; i < this.video.audioTracks.length; i += 1) {
+            this.video.audioTracks[i].enabled = (i === val);
+          }
         }
       }
     },
