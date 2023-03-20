@@ -27,6 +27,7 @@ import {
   toRefs,
   watchEffect,
 } from 'vue';
+import { useQuasar } from 'quasar';
 import breakpoint from '../lib/breakpoint.js';
 
 export default defineComponent({
@@ -46,6 +47,7 @@ export default defineComponent({
     const style = ref(null);
     const error = ref(null);
     const testImage = ref(pixel);
+    const quasar = useQuasar();
 
     function updateImage() {
 
@@ -75,17 +77,21 @@ export default defineComponent({
 
       // Chrome has a bug where a linear gradient over a background image
       // sometimes leaves an artifact of about 1 pixel. This seems to happen
-      // when the size is not (near) an integer number of pixels. The below
-      // calc(30% + 0.4px) is somewhat of a workaround, at least for 1280x720 (TV).
+      // when the size is not (near) an integer number of pixels.
       //
       // See:
       // https://stackoverflow.com/questions/64436505/linear-gradient-not-covering-whole-image-leaves-1px-border
       //
+      // The correct workaround for that would be to use the css 'round()'
+      // function, but that is still experimental. There is a way though..
+      //
+      // https://stackoverflow.com/questions/37754542/css-calc-round-down-with-two-decimal-cases
       let image, gradient, left;
       if (bp !== 'xs') {
         image = `${srcImage}?q=90&h=${height}`;
         gradient = 'rgba(0, 0, 0, 1), rgba(0,0,0, 0.7) 20%, rgba(0, 0, 0, 0) 50%';
-        left = 'calc(30% + 0.4px)';
+        const shf = quasar.platform.is.chrome ? '4.9406564584124654e-324' : '1';
+        left = `calc(30% * ${shf} / ${shf})`;
       } else {
         image = `${srcImage}?q=90&h=${height}`;
         gradient = 'rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7) 100%';
