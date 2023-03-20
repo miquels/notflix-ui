@@ -1,5 +1,5 @@
 <template>
-  <lrud no-scroll-into-view ref="el">
+  <lrud no-scroll-into-view ref="el" @xfocusout="doFocus()">
   <div class="tv-show-container q-pt-md">
     <div class="row justify-center">
     <div class="col-12 col-sm-10 tv-show-inner">
@@ -11,7 +11,7 @@
       <div class="row text-h6">
         <div class="col" v-if="seasons && currentSeason">
           <q-item @focusin="scrollToTop" class="col-xs-8 col-sm-auto relative q-pa-none">
-          <div v-if="seasons.length === 1">
+          <div v-if="seasons.length === 1" class="no-outline" tabindex="0" v-autofocus>
             {{ currentSeason.name }}
           </div>
           <lrud no-scroll-into-view v-if="seasons.length > 1" no-nav-inside steal-keys-outside>
@@ -26,6 +26,7 @@
               options-selected-class="q-select-active-option"
               data-autofocus="2"
               v-autofocus="'input'"
+              ref="seasonsEl"
           />
           </lrud>
           </q-item>
@@ -51,8 +52,8 @@
     <div v-if="seasons && currentSeason" class="tv-show-episodes">
       <template v-for="(episode, index) in currentSeason.episodes" :key="episode.name">
         <Episode 
-          data-autofocus="3"
-          v-autofocus="{ v_if: seasons.length === 1 && index === 0, selector: '.q-icon' }"
+          tabindex="-1"
+          ref="episodesEl"
           :episode="episode"
           @play="playEpisode(episode)"
           @focusin="scrollIntoView($event, index)"
@@ -108,8 +109,11 @@
 import {
   inject,
   onBeforeMount,
+  onBeforeUnmount,
+  onMounted,
   ref,
   watch,
+  watchEffect,
 } from 'vue';
 import { useStore } from 'vuex';
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
@@ -132,6 +136,8 @@ const quasar = useQuasar();
 const route = useRoute();
 const router = useRouter();
 
+// console.log('TvShow: script setup, route is', route.path, route.fullPath);
+
 let show;
 let fanart;
 let poster;
@@ -141,8 +147,13 @@ let plot;
 const seasons = [];
 
 const el = ref(null);
+const episodesEl = ref(null);
+const seasonsEl = ref(null);
 const currentSeason = ref(null);
 const currentEpisode = ref(null);
+const readyFlag = ref(0);
+let currentCollection = null;
+let currentName = null;
 
 async function getShow() {
 
@@ -194,14 +205,11 @@ async function getShow() {
     }
   }
   seasons.sort((a, b) => a.prio - b.prio);
-  currentSeason.value = seasons[0];
 }
 
-// onBeforeRouteUpdate((from, to) => {
-//   console.log('TvShow: onBeforeRouteUpdate', from, to);
-// });
-
 onBeforeMount(async () => {
+  // Start loading the details for this TvShow.
+  //
   // It may be better to do this in the onBeforeRouteLeave hook, or maybe in setup().
   // Better to put up a spinner and/or report an error _before_
   // we navigate to the page.
@@ -212,31 +220,160 @@ onBeforeMount(async () => {
     console.log('Tvshow::onBeforeMount: error: ', e);
     throw(e);
   }
+  readyFlag.value = 1;
+});
+
+onBeforeUnmount(() => {
+  saveCurrentSeasonEpisode(true);
+});
+
+//
+// Save the current season and episode to the store.
+// Also debounce it, so that we don't hammer the store.
+//
+let saveCurrentSeasonEpisodePending;
+function saveCurrentSeasonEpisode(onExit) {
+
+  // The actual function that commits the mutation.
+  const doSave = () => {
+    saveCurrentSeasonEpisodePending = null;
+    const tvshow = store.getters.tvshow(currentName);
+    const s = currentSeason.value.seasonno;
+    const e = currentEpisode.value ? currentEpisode.value.episodeno : null;
+    if (s !== tvshow.focusSeason || e !== tvshow.focusEpisode) {
+      tvshow.focusSeason = s;
+      tvshow.focusEpisode = e;
+      store.commit('updateTvShow', { id: currentName, tvshow });
+    }
+  };
+
+  // When exiting, clear timers and commit immediately.
+  if (onExit) {
+    if (saveCurrentSeasonEpisodePending) {
+      clearTimeout(saveCurrentSeasonEpisodePending);
+    }
+    doSave();
+    return;
+  }
+
+  // If there's no pending timer, save now, and start a timer.
+  if (!saveCurrentSeasonEpisodePending) {
+    doSave();
+  }
+  saveCurrentSeasonEpisodePending = setTimeout(doSave, 3000);
+}
+
+function initCurrentSeasonEpisode() {
+  currentName = route.params.name;
+  currentCollection = route.params.collection;
 
   // If this fails it's because someone entered a wrong URL manually.
   const se = decodeSE(route.params.seasonEpisode);
   if (!se) {
+    console.log('TvShow: failed to decodeSE', route.params.seasonEpisode);
     router.replace({ name: '404'});
-    return;
+    return false;
   }
-  const { season, episode } = se;
+  let { season, episode } = se;
 
-  const thisSeason = seasons.find((s) => s.seasonno === season);
-  if (!thisSeason) {
-    const toSeason = encodeSE(currentSeason.value.seasonno);
-    console.log('TvShow: no season, redirecting to', toSeason);
-    router.replace({ name: 'tvshow', params: { seasonEpisode: toSeason }});
-    return;
+  // If we don't have season/episode in the path, check the store
+  // and restore the season/episode we last focussed on.
+  if (season === null) {
+    const tvshow = store.getters.tvshow(currentName);
+    if (tvshow.focusSeason != null) {
+      season = tvshow.focusSeason;
+    }
+    if (tvshow.focusEpisode != null) {
+      episode = tvshow.focusEpisode;
+    }
   }
-  currentSeason.value = thisSeason;
+
+  // Resolve season.
+  if (season !== null) {
+    const thisSeason = seasons.find((s) => s.seasonno === season);
+    if (!thisSeason) {
+      console.log('TvShow: cannot find seasonno', season, 'from', route.params.seasonEpisode);
+      router.replace({ name: '404'});
+      return false;
+    }
+    currentSeason.value = thisSeason;
+  }
+
+  // Resolve episode.
+  if (episode !== null) {
+    const thisEpisode = currentSeason.value.episodes.find((e) => e.episodeno === episode);
+    if (thisEpisode === null) {
+      console.log('TvShow: cannot find episodeno', episode);
+      router.replace({ name: '404'});
+      return false;
+    }
+    currentEpisode.value = thisEpisode;
+  }
+
+  if (!currentSeason.value) {
+    currentSeason.value = seasons[0];
+  }
+  const e = currentEpisode.value;
+  router.replace({
+    name: 'tvshow',
+    params: {
+      name: currentName,
+      collection: currentCollection,
+      seasonEpisode: encodeSE(currentSeason.value.seasonno, e ? e.episodeno : null),
+    },
+  });
 
   // Watch for changes on currentSeason/currentEpisode and update the URL.
+  console.log('XXX startr watch');
   watch([currentSeason, currentEpisode], ([s, e]) => {
+    console.log('XXX watched changed');
+    if (route.name !== 'tvshow') {
+      return;
+    }
+    saveCurrentSeasonEpisode();
     router.replace({
       name: 'tvshow',
-      params: { seasonEpisode: encodeSE(s.seasonno, e ? e.episodeno : null) }
+      params: {
+        name: currentName,
+        collection: currentCollection,
+        seasonEpisode: encodeSE(s.seasonno, e ? e.episodeno : null),
+      },
     });
   });
+
+  return true;
+}
+
+function doFocus() {
+  if (seasonsEl.value && !currentEpisode.value) {
+    seasonsEl.value.focus();
+    return;
+  }
+
+  if (!currentEpisode.value) {
+    currentEpisode.value = currentSeason.value.episodes[0];
+  }
+
+  let e = currentEpisode.value.episodeno;
+  const elem = el.value.$el.querySelector(`:scope [data-episode="${e}"] [tabindex]`);
+  if (elem) {
+    elem.focus();
+  }
+}
+
+onMounted(() => {
+  console.log('TvShow: onMounted', route.path, route.name);
+  watch(readyFlag, () => {
+    console.log('readyflag set!');
+    if (initCurrentSeasonEpisode()) {
+      setTimeout(() => doFocus(), 0);
+    }
+  });
+  if (readyFlag.value) {
+    if (initCurrentSeasonEpisode()) {
+      doFocus();
+    }
+  }
 });
 
 function playEpisode(episode) {
@@ -245,8 +382,7 @@ function playEpisode(episode) {
   if (store.state.castState === 'connected') {
     const factory = new PlayerInfoFactory(quasar, store);
     const info = factory.episode(show, currentSeason, episode);
-    store.commit('currentVideo', info);
-    emitter.emit('playCast');
+    emitter.emit('playCast', info);
   }
 
   // Nope, local player.
@@ -256,7 +392,7 @@ function playEpisode(episode) {
     params: {
       collection: curRoute.params.collection,
       name: curRoute.params.name,
-      seasonEpisode: encodeSE(currentSeason.value.seasonno, episode.episodeno),
+      seasonEpisode: encodeSE(episode.seasonno, episode.episodeno),
     },
   });
 }
@@ -266,13 +402,17 @@ function scrollToTop() {
 }
 
 function scrollIntoView(ev, epIndex) {
-  if (epIndex === 0) {
+  const target = ev.currentTarget;
+  console.log('TvShow: XXX: scrollIntoView', target, currentSeason.value.episodes[epIndex]);
+  /*if (epIndex === 0) {
     scrollToTop();
-    return;
+  } else */ {
+    setTimeout(() => target.scrollIntoView({
+      block: 'nearest',
+      behavior: 'smooth',
+    }), 0);
   }
-  ev.currentTarget.scrollIntoView({
-    block: 'nearest',
-    behavior: 'smooth',
-  });
+  console.log('updating currentEpisode.value to', epIndex);
+  currentEpisode.value = currentSeason.value.episodes[epIndex];
 }
 </script>

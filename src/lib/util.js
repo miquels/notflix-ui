@@ -158,8 +158,8 @@ export function decodeSE(seasonEpisode) {
   const re = /^(?:(?:s0*([0-9]+)(?:e0*([0-9]+))?)|)$/;
   const s = (seasonEpisode || '').match(re);
   return s ? {
-    season: s[1] != '' ? parseInt(s[1]) : null,
-    episode: s[2] != '' ? parseInt(s[2]) : null,
+    season: s[1] || s[1] === '0' ? parseInt(s[1]) : null,
+    episode: s[2] || s[2] === '0' ? parseInt(s[2]) : null,
   } : null;
 }
 

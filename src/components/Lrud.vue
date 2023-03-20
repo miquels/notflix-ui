@@ -239,15 +239,29 @@ export default {
             return;
           }
 
-          // Bubble through the elements until we Find the focusable element.
+          // If this is a "tabindex=-1" target, which means a clickable target
+          // which was clicked, bubble down to find an actual focusable element.
           let target = ev.target;
-          while (!target.matches(':is([tabindex="0"], button, input, a[href])')) {
-            target = target.parentElement;
-            if (!target) {
-              console.log('lrud: target not found from', ev.target);
-              return;
+          let improbableTarget;
+          if (target.matches('[tabindex="-1"]')) {
+            improbableTarget = target;
+            target = target.querySelector(':scope :is([tabindex="0"], button, input, a[href])')
+          }
+
+          // If we didn't find that, try bubbling up.
+          if (!target) {
+            let target = ev.target;
+            while (target && !target.matches(':is([tabindex="0"], button, input, a[href])')) {
+              target = target.parentElement;
             }
           }
+
+          // Did we fail?
+          if (!target && !improbableTarget) {
+            console.log('lrud: target not found from', ev.target);
+            return;
+          }
+          target ||= improbableTarget;
 
           // Find all focusable child elements in this scope.
           const elems = Array.from(

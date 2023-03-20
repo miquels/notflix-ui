@@ -3,78 +3,107 @@ import { decodeSE } from '../lib/util.js';
 const routes = [
   {
     path: '/',
-    exact: true,
-    strict: true,
-    redirect: '/home/',
+    redirect: '/home',
+  },
+  {
+    path: '/home',
     component: () => import('layouts/MainLayout.vue'),
     children: [
       {
-        path: 'home',
+        name: 'home',
+        path: '',
         component: () => import('pages/Home.vue')
       },
-      {
-        path: 'tv-shows',
-        beforeEnter: (to) => {
-          // If seasonEpisode param is present check it.
-          if (to.params &&
-              to.params.seasonEpisode &&
-              !decodeSE(to.params.seasonEpisode)) {
-            return {
-              name: '404',
-              replace: true,
-            }
-          }
-        },
-        children: [
-          {
-            path: ':collection/:name/:seasonEpisode/play',
-            component: () => import('pages/Player.vue'),
-            name: 'tvshow-play',
-            exact: true,
-          },
-          {
-            path: ':collection/:name/:seasonEpisode?',
-            component: () => import('pages/TvShow.vue'),
-            name: 'tvshow',
-          },
-          {
-            path: '',
-            component: () => import('pages/TvShows.vue'),
-          }
-        ],
-      },
-      {
-        path: 'movies',
-        children: [
-          {
-            path: ':collection/:name/play',
-            component: () => import('pages/Player.vue'),
-            name: 'movie-play',
-            exact: true,
-          },
-          {
-            path: ':collection/:name',
-            component: () => import('pages/Movie.vue'),
-          },
-          {
-            path: '',
-            component: () => import('pages/Movies.vue'),
-          },
-        ],
-      },
-      { path: 'settings/', component: () => import('pages/Settings.vue') },
     ],
   },
   {
-    // Explicit not found for redirect / replace.
-    name: '404',
-    path: '/404',
-    component: () => import('pages/Error404.vue'),
+    path: '/tv-shows',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        name: 'tvshow-play',
+        path: ':collection/:name/:seasonEpisode/play',
+        component: () => import('pages/Player.vue'),
+      },
+      {
+        name: 'tvshow',
+        path: '/tv-shows/:collection/:name/:seasonEpisode?',
+        component: () => import('pages/TvShow.vue'),
+      },
+      {
+        name: 'tvshows',
+        path: '',
+        component: () => import('pages/TvShows.vue'),
+        name: 'tvshows',
+      }
+    ],
   },
   {
-    // Catchall not found.
+    path: '/movies/:collection/:name/play',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        name: 'movie-play',
+        path: '',
+        component: () => import('pages/Player.vue'),
+        exact: true,
+      },
+    ],
+  },
+  {
+    path: '/movies/:collection/:name',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        name: 'movie',
+        path: '',
+        component: () => import('pages/Movie.vue'),
+      },
+    ],
+  },
+  {
+    path: '/movies',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        name: 'movies',
+        path: '',
+        component: () => import('pages/Movies.vue'),
+      },
+    ],
+  },
+  {
+    path: '/settings',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        name: 'settings',
+        path: '',
+        component: () => import('pages/Settings.vue'),
+      },
+    ],
+  },
+  {
+    path: '/404',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        name: '404',
+        path: '',
+        component: () => import('pages/Error404.vue'),
+      },
+    ],
+  },
+  {
     path: '/:catchAll(.*)*',
-    component: () => import('pages/Error404.vue'),
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        name: '404-catchall',
+        path: '',
+        component: () => import('pages/Error404.vue'),
+      },
+    ],
   },
 ];
 

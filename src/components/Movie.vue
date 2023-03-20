@@ -182,8 +182,7 @@ export default defineComponent({
       if (store.state.castState === 'connected') {
         const factory = new PlayerInfoFactory(quasar, store);
         const info = factory.episode(show, currentSeason, episode);
-        store.commit('currentVideo', info);
-        emitter.emit('playCast');
+        emitter.emit('playCast', info);
       }
 
       // Nope, local player.

@@ -58,7 +58,10 @@
     <q-page-container>
       <router-view v-slot="{ Component }">
         <keep-alive :include="keepAlive">
-          <component :is="Component" :key="$route.path"/>
+          <component
+            :is="Component"
+            :key="$route.name + ($route.params ? $route.params.name : '')"
+          />
         </keep-alive>
       </router-view>
     </q-page-container>
@@ -99,6 +102,7 @@
 import { ref, inject, onMounted, onBeforeMount } from 'vue';
 import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
+import { useRoute } from 'vue-router';
 import { Chromecast, canCast } from 'components/Chromecast.vue';
 import { hasSettings } from 'pages/Settings.vue';
 import CastButton from 'components/CastButton.vue';
@@ -113,6 +117,7 @@ export default {
     const store = useStore();
     const mobile = isMobile();
     const quasar = useQuasar();
+    const route = useRoute();
     const emitter = inject('emitter');
 
     // XXX DEBUG
@@ -126,11 +131,11 @@ export default {
     });
 
     const keepAlive = [
-      'PageTvShows',
-      'PageMovies',
-      'PageHome',
-      'TvShows',
-      'Movies',
+      //'PageTvShows',
+      //'PageMovies',
+      //'PageHome',
+      //'TvShows',
+      //'Movies',
       // 'PageTvShow',
       // 'PageMovie',
       // 'TvShow',
@@ -140,6 +145,8 @@ export default {
     ];
 
     const headerHasFocus = ref(true);
+    console.log('XXX set routerViewKey to', route.path);
+    const routerViewKey = ref(route.path);
 
     return {
       canCast,
@@ -148,8 +155,15 @@ export default {
       store,
       headerHasFocus,
       hasSettings,
+      routerViewKey,
     };
   },
+
+  beforeRouteUpdate(to, from) {
+    console.log('XXX set routerViewKey to', to.path);
+    this.routerViewKey = to.path;
+  },
+
   methods: {
     castActive() {
       return this.store.state.castActive;
@@ -182,6 +196,7 @@ export default {
     // the current route, emit a 'scrollToTop' event.
     routeTab(ev, to) {
       console.log('to', to, 'path', this.$route.path);
+      this.newRoute = this.$route.name;
       if (to === this.$route.path || to === this.$route.path + '/') {
         this.emitter.emit('scrollToTop');
         ev.stopPropagation();

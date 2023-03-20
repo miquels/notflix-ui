@@ -77,6 +77,11 @@ export default store(() => {
       favoritesVersion: (state) => () => {
         return state.favoritesVersion;
       },
+      tvshow: (state) => (id) => {
+        // Return a non-reactive version of the object.
+        // When committing, we commit the entrire object.
+        return structuredClone(state.tvshow[id] || {});
+      },
     },
 
     mutations: {
@@ -137,8 +142,12 @@ export default store(() => {
         delete state.favorites[key];
         state.favoritesVersion += 1;
       },
-    },
 
+      // Update a TV show.
+      updateTvShow(state, value) {
+        state.tvshow[value.id] = value.tvshow;
+      },
+    },
     // enable strict mode (adds overhead!)
     // for dev mode and --debug builds only
     strict: process.env.DEBUGGING,

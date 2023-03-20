@@ -9,6 +9,10 @@
         Oops. Nothing here...
       </div>
 
+      <div class="text-small" style="opacity:.4">
+        {{ $route.params.catchAll }}
+      </div>
+
       <q-btn
         class="q-mt-xl"
         color="white"
