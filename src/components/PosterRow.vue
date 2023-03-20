@@ -11,6 +11,7 @@
       class="poster-row-thumb relative"
       :style="{ padding: `${padding}px` }"
       @click="$emit('select-item', item.id)"
+      :data-item-id="item.id"
       tabindex="0"
     >
       <Image

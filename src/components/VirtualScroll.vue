@@ -128,6 +128,10 @@
     if (ev.key === 'Escape' && scrollerEl.value.scrollTop !== 0) {
       scrollerEl.value.scrollTop = 0;
       ev.stopPropagation();
+      let firstItem = scrollerEl.value.querySelector(':scope [data-item-id]');
+      if (firstItem) {
+        setTimeout(() => firstItem.focus(), 0);
+      }
     }
   }
 

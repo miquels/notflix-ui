@@ -30,7 +30,7 @@
               :imgHeight="imgHeight"
               :fontSize="fontSize"
               :hideImages="scrolling"
-              @selectItem="$emit('select-item', $event)"
+              @selectItem="selectItem($event)"
             />
           </div>
         </q-item>
@@ -97,6 +97,7 @@ export default {
       thumbsPerRow: 1,
       imgWidth: 133,
       imgHeight: 200,
+      selectedItem: null,
       fontSize: 14,
       thumbPadding: 6,
       search: '',
@@ -118,6 +119,13 @@ export default {
     // console.log('activated');
     this.search = '';
     this.isActive = true;
+    if (this.selectedItem) {
+      const elem = this.$refs.el.querySelector(`:scope [data-item-id="${this.selectedItem}"`);
+      if (elem) {
+        elem.focus();
+      }
+      this.selectedItem = null;
+    }
   },
 
   deactivated() {
@@ -140,6 +148,11 @@ export default {
   },
 
   methods: {
+    selectItem(item) {
+      this.selectedItem = item;
+      this.$emit('select-item', item);
+    },
+
     getRows(items, sortById) {
       const { thumbsPerRow } = this;
       const nrItems = items.length;

@@ -131,11 +131,11 @@ export default {
     });
 
     const keepAlive = [
-      //'PageTvShows',
-      //'PageMovies',
-      //'PageHome',
-      //'TvShows',
-      //'Movies',
+      'PageTvShows',
+      'PageMovies',
+      'PageHome',
+      'TvShows',
+      'Movies',
       // 'PageTvShow',
       // 'PageMovie',
       // 'TvShow',
