@@ -11,26 +11,29 @@
       <div class="row text-h6">
         <div class="col" v-if="seasons && currentSeason">
           <q-item @focusin="scrollToTop" class="col-xs-8 col-sm-auto relative q-pa-none">
-          <div v-if="seasons.length === 1" class="no-outline" tabindex="0" v-autofocus>
-            {{ currentSeason.name }}
-          </div>
-          <lrud no-scroll-into-view v-if="seasons.length > 1" no-nav-inside steal-keys-outside>
-          <q-select
-              filled
-              dense
-              options-dense
-              :options="seasons"
-              option-label="name"
-              v-model="currentSeason"
-              style="width=100%"
-              options-selected-class="q-select-active-option"
-              data-autofocus="2"
-              v-autofocus="'input'"
-              ref="seasonsEl"
-          />
-          </lrud>
+            <div v-if="seasons.length === 1" class="no-outline" tabindex="0" v-autofocus>
+              {{ currentSeason.name }}
+            </div>
+
+            <lrud no-scroll-into-view v-if="seasons.length > 1" no-nav-inside steal-keys-outside>
+              <q-select
+                  filled
+                  dense
+                  options-dense
+                  :options="seasons"
+                  option-label="name"
+                  v-model="currentSeason"
+                  style="width=100%"
+                  options-selected-class="q-select-active-option"
+                  data-autofocus="2"
+                  v-autofocus="'input'"
+                  ref="seasonsEl"
+              />
+            </lrud>
           </q-item>
         </div>
+        <div class="col"> YO XXX CLICKABLE </div>
+        <div class="col"></div>
       </div>
       <div class="row q-my-md">
         <div class="col tvshow-plot">{{ plot }}
