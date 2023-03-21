@@ -7,6 +7,7 @@
     @focusin="onRowFocusIn"
     ref="scrollerEl"
   >
+  <slot name="resize-observer"><q-resize-observer @resize="onResize" /></slot>
   <slot name="header"></slot>
   <div :style="{ height: `${topFillerHeight}px` }" ref="topEl"/>
     <template v-for="item in visibleItems" :key="item.key">
@@ -35,6 +36,7 @@
     toRefs,
     watch,
   } from 'vue';
+import { debounce } from 'quasar';
 
   const props = defineProps({
     items: Array,
@@ -59,6 +61,14 @@
   let savedScrollTop = 0;
   let scrollPps = 0;
 
+  let savedScrollerHeight;
+  const onResize = debounce(() => {
+    if (scrollerEl.value && scrollerEl.value.clientHeight !== savedScrollerHeight) {
+      updateVisibleItems();
+      savedScrollerHeight = scrollerEl.value.clientHeight;
+    }
+  }, 100);
+
   onMounted(() => {
     const updateItems = () => {
       theItems.value = items.value;
@@ -71,6 +81,7 @@
     };
     watch(items, updateItems);
     updateItems();
+    savedScrollerHeight = scrollerEl.value.clientHeight;
   });
 
   onActivated(() => {
@@ -243,5 +254,4 @@
     bottomFillerHeight.value = totalHeight.value - newTopFillerHeight - visibleHeight;
     visibleItems.value = newVisibleItems;
   }
-
 </script>

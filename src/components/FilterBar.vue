@@ -2,13 +2,9 @@
 <lrud>
 <div class="row justify-start">
   <q-item shrink class="col-xs-12 col-sm-5 col-md-3 q-pa-none relative">
-    <lrud-focus-enter>
     <q-input
       :modelValue="search"
-      autocapitalize="off"
-      autocomplete="off"
       @update:modelValue="$emit('update:search', $event)"
-      @keydown.enter="search_enter()"
       placeholder="Search titles"
       dark
       :clearable="!virtualKeyboard"
@@ -20,12 +16,14 @@
       color="white"
       style="width: 100%"
       ref="input"
+      @click="onClick"
+      @focusout="onFocusOut"
+      @keydown="onKeyDown"
     >
       <template v-slot:append>
           <q-icon name="search" />
       </template>
     </q-input>
-    </lrud-focus-enter>
   </q-item>
   <q-item class="col-sm col-xs-auto q-pa-none" />
   <q-item class="col-xs-4 col-sm-auto q-pa-none relative">
@@ -86,6 +84,9 @@ body.mobile:not(.native-mobile) .q-select__dialog {
 </style>
 
 <script>
+import { onMounted, ref } from 'vue';
+import { useQuasar } from 'quasar';
+
 export default {
   props: {
     type: String,
@@ -95,7 +96,7 @@ export default {
     genreFilter: Array,
   },
 
-  setup(props) {
+  setup(props, context) {
     let sortByOptions = [
       'Added',
       'Rating',
@@ -107,8 +108,58 @@ export default {
     }
 
     const virtualKeyboard = 'virtualKeyboard' in navigator;
+    const input = ref(null);
+    const isTv = quasar.platform.is.tv;
+    let inputElem = null;
+    let readOnly = false;
+
+    onMounted(() => {
+      inputElem = input.value.$el.querySelector(':scope INPUT');
+      inputElem.setAttribute('autocapitalize', 'off');
+      inputElem.setAttribute('autocomplete', 'off');
+      if (isTv) {
+        inputElem.setAttribute('readonly', 'true');
+        readOnly = true;
+      }
+    });
+
+    function onClick() {
+      console.log('click!');
+      if (isTv) {
+        if (readOnly) {
+          inputElem.removeAttribute('readonly');
+          inputElem.focus();
+        } else {
+          // Need this, otherwise there is a race condition where
+          // the new value is not $emit'ted.
+          setTimeout(() => {
+            inputElem.setAttribute('readonly', 'true');
+          }, 0);
+        }
+        readOnly = !readOnly;
+      }
+    }
+
+    function onFocusOut() {
+      if (isTv) {
+        inputElem.setAttribute('readonly', 'true');
+        readOnly = true;
+      }
+    }
+
+    function onKeyDown(ev) {
+      if (!readOnly) {
+        if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') {
+          ev.stopPropagation();
+        }
+      }
+    }
 
     return {
+      input,
+      onClick,
+      onFocusOut,
+      onKeyDown,
       sortByOptions,
       virtualKeyboard,
     };
@@ -118,11 +169,6 @@ export default {
     genreDisplayValue() {
       const val = this.genreFilter && this.genreFilter.length ? this.genreFilter.join(' ') : 'All';
       return `<span class="filterbar-genre-display">${val}</span>`;
-    },
-
-    search_enter() {
-      console.log('enter');
-      // this.$refs.input.blur();
     },
   },
 };
