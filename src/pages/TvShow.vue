@@ -1,6 +1,6 @@
 <template>
   <q-page class="flex-center">
-    <TvShow :collection="collection" :name="name"/>
+    <TvShow :collection="collection" :id="id"/>
   </q-page>
 </template>
 
@@ -22,10 +22,7 @@ export default defineComponent({
     console.log('params:', route.params);
     return {
       collection: route.params.collection,
-      name: route.params.name,
-      season: route.params.season,
-      episode: route.params.episode,
-      play: route.params.play,
+      id: route.params.id,
     };
   },
 });

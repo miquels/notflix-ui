@@ -147,11 +147,6 @@ import Backdrop from './Backdrop.vue';
 import Episode from './Episode.vue';
 import { PlayerInfoFactory } from '../lib/playerinfo.js';
 
-const props = defineProps({
-  collection: String,
-  name: String,
-});
-
 const emitter = inject('emitter');
 const api = useApi();
 const store = useStore();
@@ -172,7 +167,7 @@ const seasons = [];
 const el = ref(null);
 const episodesEl = ref(null);
 const seasonsEl = ref(null);
-const currentName = route.params.name;
+const currentShowId = route.params.id;
 const currentCollection = route.params.collection;
 const currentSeason = ref(null);
 const currentEpisode = ref(null);
@@ -181,7 +176,7 @@ const readyFlag = ref(0);
 
 async function getShow() {
 
-  const item = await api.getShow(props.collection, props.name);
+  const item = await api.getShow(currentCollection, currentShowId);
   show = { ...item, collection: currentCollection };
 
   fanart = show.fanart || '#';
@@ -261,7 +256,7 @@ function saveCurrentSeasonEpisode(onExit) {
   // The actual function that commits the mutation.
   const doSave = () => {
     saveCurrentSeasonEpisodePending = null;
-    const tvshow = store.getters.tvshow(currentName);
+    const tvshow = store.getters.tvshow(currentShowId);
 
     // currentSeason.value _should_ always be set, but sometimes
     // isn't while developing with HMR ..
@@ -271,7 +266,7 @@ function saveCurrentSeasonEpisode(onExit) {
       if (s !== tvshow.focusSeason || e !== tvshow.focusEpisode) {
         tvshow.focusSeason = s;
         tvshow.focusEpisode = e;
-        store.commit('updateTvShow', { id: currentName, tvshow });
+        store.commit('updateTvShow', { id: currentShowId, tvshow });
       }
     }
   };
@@ -306,7 +301,7 @@ function initCurrentSeasonEpisode() {
   // If we don't have season/episode in the path, check the store
   // and restore the season/episode we last focussed on.
   if (season === null) {
-    const tvshow = store.getters.tvshow(currentName);
+    const tvshow = store.getters.tvshow(currentShowId);
     if (tvshow.focusSeason != null) {
       season = tvshow.focusSeason;
     }
@@ -344,16 +339,14 @@ function initCurrentSeasonEpisode() {
   router.replace({
     name: 'tvshow',
     params: {
-      name: currentName,
+      id: currentShowId,
       collection: currentCollection,
       seasonEpisode: encodeSE(currentSeason.value.seasonno, e ? e.episodeno : null),
     },
   });
 
   // Watch for changes on currentSeason/currentEpisode and update the URL.
-  console.log('XXX startr watch');
   watch([currentSeason, currentEpisode], ([s, e]) => {
-    console.log('XXX watched changed');
     if (route.name !== 'tvshow') {
       return;
     }
@@ -361,7 +354,7 @@ function initCurrentSeasonEpisode() {
     router.replace({
       name: 'tvshow',
       params: {
-        name: currentName,
+        id: currentShowId,
         collection: currentCollection,
         seasonEpisode: encodeSE(s.seasonno, e ? e.episodeno : null),
       },
@@ -389,9 +382,8 @@ function doFocus() {
 }
 
 onMounted(() => {
-  console.log('TvShow: onMounted', route.path, route.name);
+  console.log('TvShow: onMounted', route.path, route.id);
   watch(readyFlag, () => {
-    console.log('readyflag set!');
     if (initCurrentSeasonEpisode()) {
       setTimeout(() => doFocus(), 0);
     }
@@ -418,7 +410,7 @@ function playEpisode(episode) {
     name: 'tvshow-play',
     params: {
       collection: curRoute.params.collection,
-      name: curRoute.params.name,
+      id: curRoute.params.id,
       seasonEpisode: encodeSE(episode.seasonno, episode.episodeno),
     },
   });

@@ -69,12 +69,12 @@ export class PlayerInfoFactory {
 
     // Movie?
     if (!route.params.seasonEpisode) {
-      const item = await api.getMovie(route.params.collection, route.params.name);
+      const item = await api.getMovie(route.params.collection, route.params.id);
       return this.movie(item);
     }
 
     // TvShow.
-    const item = await api.getShow(route.params.collection, route.params.name);
+    const item = await api.getShow(route.params.collection, route.params.id);
     console.log('playerinfo: item: ', item);
     console.log('playerinfo: params: ', route.params);
     if (!item) {

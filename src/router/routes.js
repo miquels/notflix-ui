@@ -22,12 +22,12 @@ const routes = [
     children: [
       {
         name: 'tvshow-play',
-        path: ':collection/:name/:seasonEpisode/play',
+        path: ':collection/:id/:seasonEpisode/play',
         component: () => import('pages/Player.vue'),
       },
       {
         name: 'tvshow',
-        path: '/tv-shows/:collection/:name/:seasonEpisode?',
+        path: '/tv-shows/:collection/:id/:seasonEpisode?',
         component: () => import('pages/TvShow.vue'),
       },
       {
@@ -39,7 +39,7 @@ const routes = [
     ],
   },
   {
-    path: '/movies/:collection/:name/play',
+    path: '/movies/:collection/:id/play',
     component: () => import('layouts/MainLayout.vue'),
     children: [
       {
@@ -51,7 +51,7 @@ const routes = [
     ],
   },
   {
-    path: '/movies/:collection/:name',
+    path: '/movies/:collection/:id',
     component: () => import('layouts/MainLayout.vue'),
     children: [
       {

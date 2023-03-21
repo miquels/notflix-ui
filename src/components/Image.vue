@@ -9,12 +9,12 @@
       decoding="async"
     >
     <q-icon
-      v-if="favorite === true || favorite === false"
+      v-if="favorite === true || (favorite === false && !isTv)"
       :name="favorite ? 'favorite' : 'favorite_border'"
       size="16px"
       class="image-favorite q-pa-sm"
       :color="favorite ? 'blue' : 'white'"
-      @click.stop="$emit('favorite', { id, name})"
+      @click.stop="toggleFavorite()"
     />
   </div>
 </template>
@@ -25,6 +25,7 @@ import {
   ref,
   watchEffect,
 } from 'vue';
+import { useQuasar } from 'quasar';
 
 const WIDTHS = [100, 133, 200, 500];
 const HEIGHTS = [150, 200, 270, 500];
@@ -53,10 +54,12 @@ export default defineComponent({
   },
 
   setup(props) {
+    const quasar = useQuasar();
     const imgStyle = ref({});
     const style = ref({});
     const onError = ref("this.style.display='none'");
     const imgSrc = ref('');
+    const isTv = quasar.platform.is.tv;
 
     watchEffect(() => {
       style.value = {};
@@ -99,17 +102,26 @@ export default defineComponent({
       }
     });
 
+    function toggleFavorite() {
+      if (!isTv) {
+        $emit('favorite', { id, name});
+      }
+    }
+
     return {
       imgSrc,
+      imgStyle,
+      isTv,
       onError,
       style,
-      imgStyle,
+      toggleFavorite,
     };
   },
 });
 </script>
 
 <style lang="scss">
+@import '~src/css/mixins.scss';
 .image-container {
   position: relative;
 }
@@ -144,6 +156,7 @@ export default defineComponent({
   right: 0px;
   bottom: 0px;
   z-index: 1;
+  @include stroke();
 }
 .image-favorite:hover {
   cursor: crosshair;

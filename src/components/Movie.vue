@@ -113,7 +113,7 @@ export default defineComponent({
 
   props: {
     collection: String,
-    name: String,
+    id: String,
   },
 
   components: {
@@ -137,15 +137,15 @@ export default defineComponent({
 
     onBeforeMount(async () => {
       try {
-        await api.getMovie(props.collection, props.name);
+        await api.getMovie(props.collection, props.id);
       } catch(e) {
-        console.log('api.getMovie', props.collection, props.name, ': ', e);
+        console.log('api.getMovie', props.collection, props.id, ': ', e);
       }
       console.log('onBeforeMount done');
     });
 
     onMounted(async () => {
-      const item = await api.getMovie(props.collection, props.name);
+      const item = await api.getMovie(props.collection, props.id);
       // console.log(item);
 
       movie = item;
@@ -186,12 +186,11 @@ export default defineComponent({
       }
 
       // Nope, local player.
-      const curRoute = router.currentRoute.value;
       router.push({
         name: 'movie-play',
         params: {
-          collection: curRoute.params.collection,
-          name: curRoute.params.name,
+          collection: props.collection,
+          id: props.id,
         },
       });
     }

@@ -60,7 +60,7 @@
         <keep-alive :include="keepAlive">
           <component
             :is="Component"
-            :key="$route.name + ($route.params ? $route.params.name : '')"
+            :key="$route.name + ($route.params ? $route.params.id : '')"
           />
         </keep-alive>
       </router-view>
@@ -174,6 +174,7 @@ export default {
         return {};
       switch (this.$route.path) {
         case '/':
+        case '/home/':
         case '/movies/':
         case '/tv-shows/':
         case '/settings/':
@@ -195,8 +196,7 @@ export default {
     // If the user clicks on 'TV Shows' or 'Movies' and that is already
     // the current route, emit a 'scrollToTop' event.
     routeTab(ev, to) {
-      console.log('to', to, 'path', this.$route.path);
-      this.newRoute = this.$route.name;
+      // console.log('to', to, 'path', this.$route.path);
       if (to === this.$route.path || to === this.$route.path + '/') {
         this.emitter.emit('scrollToTop');
         ev.stopPropagation();

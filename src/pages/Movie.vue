@@ -2,7 +2,7 @@
   <q-page class="flex-center">
     <div class="row justify-center">
       <div class="col-12 col-sm-10">
-        <Movie :collection="collection" :name="name"/>
+        <Movie :collection="collection" :id="id"/>
       </div>
     </div>
   </q-page>
@@ -23,10 +23,10 @@ export default defineComponent({
 
   setup() {
     const route = useRoute();
-    console.log('params:', route.params);
+    // console.log('params:', route.params);
     return {
       collection: route.params.collection,
-      name: route.params.name,
+      id: route.params.id,
     };
   },
 });
