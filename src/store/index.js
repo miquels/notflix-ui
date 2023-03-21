@@ -71,8 +71,18 @@ export default store(() => {
         return state.currentView.genres;
       },
       isFavorite: (state) => (value) => {
-        const key = `${value.collection}.${value.name}`;
-        return typeof state.favorites[key] === 'object';
+        if (value.name) {
+          const key = `TV Shows.${value.name}`;
+          if (typeof state.favorites[key] === 'object') {
+            return true;
+          }
+        }
+        if (value.id) {
+          if (typeof state.favorites[value.id] === 'object') {
+            return true;
+          }
+        }
+        return false;
       },
       favoritesVersion: (state) => () => {
         return state.favoritesVersion;
@@ -129,17 +139,23 @@ export default store(() => {
       // Add an item as favorite.
       // value is { collection: 'coll', item: 'name' }
       addFavorite(state, value) {
-        const key = `${value.collection}.${value.name}`;
-        console.log('addFavorite', key);
-        state.favorites[key] = {};
+        if (value.name) {
+          const oldKey = `TV Shows.${value.name}`;
+          delete state.favorites[oldKey];
+        }
+        console.log('addFavorite', value.id);
+        state.favorites[value.id] = {};
         state.favoritesVersion += 1;
       },
 
       // Remove an item as favorite.
       removeFavorite(state, value) {
-        const key = `${value.collection}.${value.name}`;
-        console.log('removeFavorite', key);
-        delete state.favorites[key];
+        if (value.name) {
+          const oldKey = `TV Shows.${value.name}`;
+          delete state.favorites[oldKey];
+        }
+        console.log('removeFavorite', value.id);
+        delete state.favorites[value.id];
         state.favoritesVersion += 1;
       },
 

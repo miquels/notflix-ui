@@ -1,5 +1,5 @@
 import { useApi } from './api.js';
-import { decodeSE } from './util.js';
+import { decodeSE, encodeSE } from './util.js';
 import { useRouter } from 'vue-router';
 
 //
@@ -32,11 +32,13 @@ export class PlayerInfoFactory {
     let info = {
       type: 'episode',
       src: episode.video,
+      id: show.id,
       title: episode.name,
       poster: season.poster || show.poster,
       thumb: episode.thumb,
       episode: episode.episodeno,
       season: season.seasonno,
+      seasonEpisode: encodeSE(season.seasonno, episode.episodeno),
       seriesTitle: show.title || show.name,
     };
     return this.finalize(info);
@@ -47,6 +49,7 @@ export class PlayerInfoFactory {
     const info = {
       type: 'movie',
       src: movie.video,
+      id: movie.id,
       title: movie.name,
       poster: movie.poster,
     };

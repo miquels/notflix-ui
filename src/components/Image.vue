@@ -14,7 +14,7 @@
       size="16px"
       class="image-favorite q-pa-sm"
       :color="favorite ? 'blue' : 'white'"
-      @click.stop="$emit('favorite', name)"
+      @click.stop="$emit('favorite', { id, name})"
     />
   </div>
 </template>
@@ -42,6 +42,7 @@ export default defineComponent({
     src: String,
     errorSrc: String,
     hidden: Boolean,
+    id: String,
     name: String,
     width: Number,
     height: Number,

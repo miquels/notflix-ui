@@ -16,11 +16,12 @@
     >
       <Image
         :src="item.url"
+        :id="item.id"
         :name="item.name"
         :width="imgWidth"
         :height="imgHeight"
         :hidden="hideImages"
-        :favorite="isFavorite(item.name)"
+        :favorite="isFavorite(item.id, item.name)"
         @favorite="updateFavorite($event)"
       />
       <div
@@ -93,16 +94,15 @@ export default defineComponent({
   },
 
   methods: {
-    isFavorite(name) {
+    isFavorite(id, name) {
       if (!this.collection) {
         return null;
       }
-      const fav = { collection: this.collection, name };
+      const fav = { id, name };
       return this.$store.getters.isFavorite(fav);
     },
 
-    updateFavorite(name) {
-      const fav = { collection: this.collection, name };
+    updateFavorite(fav) {
       if (this.$store.getters.isFavorite(fav)) {
         this.$store.commit('removeFavorite', fav);
       } else {

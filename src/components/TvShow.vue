@@ -8,21 +8,19 @@
       <div class="row text-h3 q-mb-md">
         <div class="col stroke">{{ title }}</div>
       </div>
-      <div class="row text-h6">
+      <div class="row">
         <div class="col" v-if="seasons && currentSeason">
           <q-item @focusin="scrollToTop" class="col-xs-8 col-sm-auto relative q-pa-none">
-            <div v-if="seasons.length === 1" class="no-outline" tabindex="0" v-autofocus>
-              {{ currentSeason.name }}
-            </div>
-
-            <lrud no-scroll-into-view v-if="seasons.length > 1" no-nav-inside steal-keys-outside>
+            <lrud no-scroll-into-view no-nav-inside steal-keys-outside>
               <q-select
                   filled
                   dense
                   options-dense
                   :options="seasons"
+                  :hide-dropdown-icon="seasons.length === 1"
                   option-label="name"
-                  v-model="currentSeason"
+                  :modelValue="currentSeason"
+                  @update:modelValue="s => { currentSeason = s; currentEpisode = null }"
                   style="width=100%"
                   options-selected-class="q-select-active-option"
                   data-autofocus="2"
@@ -32,8 +30,18 @@
             </lrud>
           </q-item>
         </div>
-        <div class="col"> YO XXX CLICKABLE </div>
-        <div class="col"></div>
+        <div class="col self-center">
+          <q-icon
+            v-if="favorite() != null"
+            :name="favorite() ? 'favorite' : 'favorite_border'"
+            size="28px"
+            class="tvshow-favorite q-pa-sm float-right no-outline"
+            :color="favorite() ? 'blue' : 'white'"
+            @click.stop="toggleFavorite()"
+            tabindex="0"
+          />
+        </div>
+        <div class="col-2 col-sm-6"></div>
       </div>
       <div class="row q-my-md">
         <div class="col tvshow-plot">{{ plot }}
@@ -54,6 +62,7 @@
     </div>
     <div v-if="seasons && currentSeason" class="tv-show-episodes">
       <template v-for="(episode, index) in currentSeason.episodes" :key="episode.name">
+        <lrud :center-x="20">
         <Episode 
           tabindex="-1"
           ref="episodesEl"
@@ -61,6 +70,7 @@
           @play="playEpisode(episode)"
           @focusin="scrollIntoView($event, index)"
         />
+        </lrud>
       </template>
     </div>
   </div>
@@ -70,6 +80,7 @@
 </template>
 
 <style lang="scss">
+@import '~src/css/mixins.scss';
 .tv-show-container {
   position: relative;
   /*
@@ -97,6 +108,14 @@
   -webkit-line-clamp: 5;
   white-space: pre-wrap;
 }
+.tvshow-favorite {
+  opacity: 70%;
+  @include stroke();
+}
+.tvshow-favorite:hover, .tvshow-favorite:focus {
+  cursor: crosshair;
+  opacity: 100%;
+}
 .table {
   display: table;
 }
@@ -110,6 +129,7 @@
 
 <script setup>
 import {
+  computed,
   inject,
   onBeforeMount,
   onBeforeUnmount,
@@ -152,16 +172,17 @@ const seasons = [];
 const el = ref(null);
 const episodesEl = ref(null);
 const seasonsEl = ref(null);
+const currentName = route.params.name;
+const currentCollection = route.params.collection;
 const currentSeason = ref(null);
 const currentEpisode = ref(null);
+
 const readyFlag = ref(0);
-let currentCollection = null;
-let currentName = null;
 
 async function getShow() {
 
   const item = await api.getShow(props.collection, props.name);
-  show = { ...item };
+  show = { ...item, collection: currentCollection };
 
   fanart = show.fanart || '#';
   poster = show.poster || '#';
@@ -241,12 +262,17 @@ function saveCurrentSeasonEpisode(onExit) {
   const doSave = () => {
     saveCurrentSeasonEpisodePending = null;
     const tvshow = store.getters.tvshow(currentName);
-    const s = currentSeason.value.seasonno;
-    const e = currentEpisode.value ? currentEpisode.value.episodeno : null;
-    if (s !== tvshow.focusSeason || e !== tvshow.focusEpisode) {
-      tvshow.focusSeason = s;
-      tvshow.focusEpisode = e;
-      store.commit('updateTvShow', { id: currentName, tvshow });
+
+    // currentSeason.value _should_ always be set, but sometimes
+    // isn't while developing with HMR ..
+    if (currentSeason.value) {
+      const s = currentSeason.value.seasonno;
+      const e = currentEpisode.value ? currentEpisode.value.episodeno : null;
+      if (s !== tvshow.focusSeason || e !== tvshow.focusEpisode) {
+        tvshow.focusSeason = s;
+        tvshow.focusEpisode = e;
+        store.commit('updateTvShow', { id: currentName, tvshow });
+      }
     }
   };
 
@@ -262,13 +288,11 @@ function saveCurrentSeasonEpisode(onExit) {
   // If there's no pending timer, save now, and start a timer.
   if (!saveCurrentSeasonEpisodePending) {
     doSave();
+    saveCurrentSeasonEpisodePending = setTimeout(doSave, 2500);
   }
-  saveCurrentSeasonEpisodePending = setTimeout(doSave, 3000);
 }
 
 function initCurrentSeasonEpisode() {
-  currentName = route.params.name;
-  currentCollection = route.params.collection;
 
   // If this fails it's because someone entered a wrong URL manually.
   const se = decodeSE(route.params.seasonEpisode);
@@ -406,16 +430,29 @@ function scrollToTop() {
 
 function scrollIntoView(ev, epIndex) {
   const target = ev.currentTarget;
-  console.log('TvShow: XXX: scrollIntoView', target, currentSeason.value.episodes[epIndex]);
-  /*if (epIndex === 0) {
+  // console.log('TvShow: XXX: scrollIntoView', target, currentSeason.value.episodes[epIndex]);
+  if (epIndex === 0) {
     scrollToTop();
-  } else */ {
+  } else {
     setTimeout(() => target.scrollIntoView({
       block: 'nearest',
       behavior: 'smooth',
     }), 0);
   }
-  console.log('updating currentEpisode.value to', epIndex);
+  // console.log('updating currentEpisode.value to', epIndex);
   currentEpisode.value = currentSeason.value.episodes[epIndex];
+}
+
+function toggleFavorite() {
+  const fav = { id: show.id, name: show.name };
+  if (store.getters.isFavorite(fav)) {
+    store.commit('removeFavorite', fav);
+  } else {
+    store.commit('addFavorite', fav);
+  }
+}
+
+function favorite() {
+  return show ? store.getters.isFavorite(show) : null;
 }
 </script>

@@ -128,10 +128,12 @@
     if (ev.key === 'Escape' && scrollerEl.value.scrollTop !== 0) {
       scrollerEl.value.scrollTop = 0;
       ev.stopPropagation();
-      let firstItem = scrollerEl.value.querySelector(':scope [data-item-id]');
-      if (firstItem) {
-        setTimeout(() => firstItem.focus(), 0);
-      }
+      setTimeout(() => {
+        let firstItem = scrollerEl.value.querySelector(':scope [data-item-id]');
+        if (firstItem) {
+          firstItem.focus();
+        }
+      }, 250);
     }
   }
 
@@ -183,6 +185,7 @@
   }
 
   function updateVisibleItems() {
+    console.log('VirtualScroll: updateVisibleItems scrollTop is', scrollerEl.value.scrollTop);
     // Remove the header, so that top starts at (- header.clientHeight)
     // This means top === 0 as soon as we scroll past the header.
     const top = scrollerEl.value.scrollTop - topEl.value.offsetTop;
@@ -233,6 +236,7 @@
       }
       if (!change) return;
     }
+    console.log('VirtualScroll: redraw');
 
     // Adjust topFiller and bottomFiller div heights.
     topFillerHeight.value = newTopFillerHeight;

@@ -31,10 +31,21 @@ function toNumber(val, dfl) {
 // figure out which one is the closest by in a certain direction.
 class FocussedElem {
   constructor(el) {
-    const rect = label_for(el).getBoundingClientRect();
+    this.el = el;
+
+    // For calculating our starting position, we might need to look
+    // at any parent elements that have center-x or center-y set.
+    let rect = label_for(el).getBoundingClientRect();
+    for (let target = el; target; target = target.parentElement) {
+      if (target.dataset.__centerX != null || target.dataset.__centerY != null) {
+        el = target;
+        rect = target.getBoundingClientRect();
+        break;
+      }
+    }
+
     let width = rect.width;
     let height = rect.height;
-    this.el = el;
     let left = rect.left;
     let top = rect.top;
     if (width < 16) {
@@ -58,6 +69,7 @@ class FocussedElem {
     // we need to measure the distance to.
     let x2 = this.x;
     let y2 = this.y;
+    let bias = 1;
 
     if (dir === 'left' || dir === 'right') {
       if (dir === 'left') {
@@ -74,6 +86,9 @@ class FocussedElem {
       } else if (rect.top > this.y) {
         y2 = rect.top;
       }
+      // Make sure that elemens that are further away in the
+      // Y direction are made more "expensive" to reach.
+      bias += Math.abs(this.y - y2) / 100;
     }
 
     if (dir === 'up' || dir === 'down') {
@@ -91,12 +106,15 @@ class FocussedElem {
       } else if (rect.left > this.x) {
         x2 = rect.left;
       }
+      // Make sure that elemens that are further away in the
+      // X direction are made more "expensive" to reach.
+      bias += Math.abs(this.x - x2) / 100;
     }
 
     // Distance.
     let a = Math.abs(this.x - x2);
     let b = Math.abs(this.y - y2);
-    return Math.sqrt(a ** 2 + b ** 2);
+    return Math.sqrt(a ** 2 + b ** 2) * bias;
   }
 
   // See if 'el' is left / right / up / down relative to 'this'.
@@ -302,6 +320,8 @@ export default {
             ev.stopPropagation();
             ev.target.dispatchEvent(keydown_lrud, { bubbles: true });
           }
+
+          // END OF HANDLER
         };
 
         if (attachToParent) {

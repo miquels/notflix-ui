@@ -51,7 +51,11 @@ export default defineComponent({
       api.getItems(collection).then((theItems) => {
         // console.log('setting items', theItems);
         // eslint-disable-next-line
-        items.value = theItems.filter((item) => store.getters.isFavorite({ collection, name: item.name }));
+        items.value = theItems.filter((item) => store.getters.isFavorite({
+          id: item.id,
+          name: item.name,
+          collection,
+        }));
         haveFavorites.value = items.value.length > 0;
       });
     }
@@ -87,7 +91,7 @@ export default defineComponent({
   methods: {
     show_clicked(showName) {
       // console.log('clicked on', showName);
-      this.$router.push(`/tv-shows/TV Shows/${showName}`);
+      this.$router.push(`/tv-shows/${this.collection}/${showName}`);
     },
   },
 });
