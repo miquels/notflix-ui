@@ -14,6 +14,8 @@
  *  util.encodeSE
  */
 
+import { watch } from 'vue';
+
 export function joinpath(...args) {
   let ret = [];
   // eslint-disable-next-line
@@ -169,3 +171,16 @@ export function encodeSE(season, episode) {
   return s;
 }
 
+export function whenTrue(ref, closure) {
+  if (ref === true || (typeof ref === 'object' && ref.value === true)) {
+    closure();
+    return;
+  }
+  let done = false;
+  watch(ref, (r) => {
+    if (r && !done) {
+      closure();
+      done = true;
+    }
+  });
+}

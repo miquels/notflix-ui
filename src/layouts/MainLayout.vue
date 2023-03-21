@@ -64,6 +64,13 @@
           />
         </keep-alive>
       </router-view>
+      <q-linear-progress
+        color="blue-5"
+        dark
+        indeterminate
+        class="main-progress"
+        v-if="progress"
+      />
     </q-page-container>
 
     <q-footer
@@ -95,6 +102,12 @@
 .opacity-transition {
   transition: opacity .8s ease-out;
 }
+.main-progress {
+  left: 0;
+  bottom: 0;
+  position: fixed;
+  z-index: 100;
+}
 
 </style>
 
@@ -119,6 +132,7 @@ export default {
     const quasar = useQuasar();
     const route = useRoute();
     const emitter = inject('emitter');
+    const progress = ref(false);
 
     // XXX DEBUG
     window.store = store;
@@ -128,6 +142,11 @@ export default {
       if (!mobile && !quasar.platform.is.safari) {
         addPrettyScrollBars();
       }
+    });
+
+    emitter.on('progress', (val) => {
+      console.log('MainLayout: setting progress value to', val);
+      progress.value = val;
     });
 
     const keepAlive = [
@@ -156,6 +175,7 @@ export default {
       headerHasFocus,
       hasSettings,
       routerViewKey,
+      progress,
     };
   },
 

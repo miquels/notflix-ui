@@ -196,7 +196,6 @@ import { debounce } from 'quasar';
   }
 
   function updateVisibleItems() {
-    console.log('VirtualScroll: updateVisibleItems scrollTop is', scrollerEl.value.scrollTop);
     // Remove the header, so that top starts at (- header.clientHeight)
     // This means top === 0 as soon as we scroll past the header.
     const top = scrollerEl.value.scrollTop - topEl.value.offsetTop;
@@ -247,7 +246,6 @@ import { debounce } from 'quasar';
       }
       if (!change) return;
     }
-    console.log('VirtualScroll: redraw');
 
     // Adjust topFiller and bottomFiller div heights.
     topFillerHeight.value = newTopFillerHeight;

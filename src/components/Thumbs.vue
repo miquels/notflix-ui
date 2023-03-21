@@ -46,6 +46,7 @@
 </style>
 
 <script>
+import { scroll } from 'quasar';
 import VirtualScroll from 'components/VirtualScroll.vue';
 import PosterRow from 'components/PosterRow.vue';
 import FilterBar from 'components/FilterBar.vue';
@@ -113,18 +114,24 @@ export default {
         this.$refs.scroller.$el.scrollTop = 0;
       }
     });
+    this.calcSizes();
   },
 
   activated() {
-    // console.log('activated');
+    const width = scroll.getScrollWidth(this.$el);
+    console.log('Thumbs: activated, width is', width);
     this.search = '';
     this.isActive = true;
     if (this.selectedItem) {
-      const elem = this.$refs.el.querySelector(`:scope [data-item-id="${this.selectedItem}"`);
-      if (elem) {
-        elem.focus();
-      }
-      this.selectedItem = null;
+      // We need to wait one tick for the redraw to have happened.
+      setTimeout(() => {
+        const elem = this.$refs.el.querySelector(`:scope [data-item-id="${this.selectedItem}"`);
+        if (elem) {
+          console.log('Thumbs: re-focussing on', this.selectedItem);
+          elem.focus();
+        }
+        this.selectedItem = null;
+      }, 0);
     }
   },
 
@@ -239,6 +246,14 @@ export default {
     },
 
     calcSizes(width) {
+      if (!width) {
+        width = scroll.getScrollWidth(this.$el);
+      }
+      if (width === this.scrollWidth) {
+        return;
+      }
+      this.scrollWidth = width;
+
       const sizing = {
         imgWidth: [100, 133, 200],
         imgHeight: [150, 200, 270],
@@ -251,9 +266,6 @@ export default {
       this.fontSize = sizing.fontSize[psz];
       this.thumbPadding = sizing.thumbPadding[psz];
 
-      if (!width) {
-        width = this.$q.scroll.getScrollWidth(this.$el);
-      }
       if (width < 320) {
         width = 320;
       }

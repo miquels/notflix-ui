@@ -44,8 +44,8 @@
   background: #19192c;
   position: relative;
 }
-.episode-container:focus-within, .episode-container:focus-within:hover {
-  background: #252530;
+.episode-container:focus-within, .episode-container:hover {
+  background: #282835;
 }
 .episode-left {
   background: black;

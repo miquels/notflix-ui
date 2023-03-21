@@ -64,6 +64,13 @@
         />
       </div>
     </q-slide-transition>
+    <q-linear-progress
+      color="blue-5"
+      dark
+      indeterminate
+      class="html5video-progress"
+      v-if="loading"
+    />
   </div>
   </lrud>
 </template>
@@ -124,6 +131,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.html5video-progress {
+  left: 0;
+  bottom: 0;
+  position: fixed;
+  z-index: 100;
 }
 .scaled-text-h2 {
   font-size: clamp(1.5rem, 0.6196rem + 3.9130vw, 3.75rem);
@@ -202,6 +215,7 @@ export default defineComponent({
   },
 
   setup(props) {
+    const loading = ref('true');
     const router = useRouter();
     const store = useStore();
     const quasar = useQuasar();
@@ -293,6 +307,7 @@ export default defineComponent({
       displayState: ref(DisplayState.HIDDEN),
       displayTimer: null,
       info: ref(null),
+      loading,
       nativeHls,
       bigPlayButton: ref(false),
       ignoreMouse: false,
@@ -355,7 +370,10 @@ export default defineComponent({
       }
 
       let autoplay_ev = this.isSafari() ? 'loadedmetadata' : 'canplay';
-      this.video.addEventListener(autoplay_ev, () => { this.autoplay(); });
+      this.video.addEventListener(autoplay_ev, () => {
+        this.loading = false;
+        this.autoplay();
+      });
 
       this.video.addEventListener('abort', () => this.onError());
       this.video.addEventListener('error', () => this.onError());

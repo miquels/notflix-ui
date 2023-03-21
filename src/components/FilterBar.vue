@@ -2,20 +2,21 @@
 <lrud>
 <div class="row justify-start">
   <q-item shrink class="col-xs-12 col-sm-5 col-md-3 q-pa-none relative">
+    <lrud keys="" center-x=5>
     <q-input
-      :modelValue="search"
-      @update:modelValue="$emit('update:search', $event)"
+      type="search"
       placeholder="Search titles"
-      dark
       :clearable="!virtualKeyboard"
       hide-bottom-space
       dense
-      debounce="500"
-      label-color="white"
-      type="search"
+      dark
       color="white"
+      label-color="white"
       style="width: 100%"
       ref="input"
+      debounce="500"
+      :modelValue="search"
+      @update:modelValue="$emit('update:search', $event)"
       @click="onClick"
       @focusout="onFocusOut"
       @keydown="onKeyDown"
@@ -24,6 +25,7 @@
           <q-icon name="search" />
       </template>
     </q-input>
+    </lrud>
   </q-item>
   <q-item class="col-sm col-xs-auto q-pa-none" />
   <q-item class="col-xs-4 col-sm-auto q-pa-none relative">
@@ -38,6 +40,7 @@
     label="Sort by"
     style="width: 100%"
     class="inline"
+    bg-color="blue-grey-10"
     options-selected-class="q-select-active-option"
   />
   </lrud>
@@ -59,6 +62,7 @@
     clearable
     style="width: 100%"
     class="q-pl-md"
+    bg-color="blue-grey-10"
     options-selected-class="q-select-active-option"
   />
   </lrud>

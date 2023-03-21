@@ -6,6 +6,7 @@ export default boot(({ app }) => {
     install: () => {
       const emitter = mitt();
       app.provide('emitter', emitter);
+      window.__emitter = emitter;
     },
   });
 });

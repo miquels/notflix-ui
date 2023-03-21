@@ -22,6 +22,7 @@
                   :modelValue="currentSeason"
                   @update:modelValue="s => { currentSeason = s; currentEpisode = null }"
                   style="width=100%"
+                  bg-color="blue-grey-10"
                   options-selected-class="q-select-active-option"
                   data-autofocus="2"
                   v-autofocus="'input'"
@@ -31,12 +32,14 @@
           </q-item>
         </div>
         <div class="col self-center">
-          <q-icon
+          <q-btn
             v-if="favorite() != null"
-            :name="favorite() ? 'favorite' : 'favorite_border'"
-            size="28px"
+            :icon="favorite() ? 'favorite' : 'favorite_border'"
+            round
+            icon-size="28px"
             class="tvshow-favorite q-pa-sm float-right no-outline"
-            :color="favorite() ? 'blue' : 'white'"
+            color="blue-grey-10"
+            :text-color="favorite() ? 'blue' : 'white'"
             @click.stop="toggleFavorite()"
             tabindex="0"
           />
@@ -83,11 +86,8 @@
 @import '~src/css/mixins.scss';
 .tv-show-container {
   position: relative;
-  /*
   font-family: 'Roboto', sans-serif;
-  font-weight: 700;
-  */
-  font-family: sans-serif;
+  // font-weight: 700;
   font-weight: 500;
   font-size: 1.1em;
   margin: 0 auto;
