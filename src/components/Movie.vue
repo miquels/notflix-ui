@@ -1,40 +1,63 @@
 <template>
   <div class="movie-container q-pt-md">
-    <div class="movie-header">
+    <div class="movie-header column q-mx-sm">
       <Backdrop :poster="poster" :fanart="fanart"/>
-      <div class="row text-h4 q-mb-md">
-        <div class="col stroke">{{ title }}</div>
-      </div>
-      <div class="row q-my-md">
-        <div class="col movie-plot">{{ plot }}
-         </div>
-        <div class="col-2 col-sm-6"></div>
-      </div>
-      <div class="row">
+
         <div class="col">
-          <template v-for="(item, index) in nameValues" :key="index">
-          <div class="table-row">
-            <div class="table-cell q-pr-md">{{ item.name }}</div>
-            <div class="table-cell">{{ item.value }}</div>
+          <div class="row text-h4 q-mb-md">
+            <div class="col stroke">{{ title }}</div>
           </div>
-          </template>
+       </div>
+
+        <div class="col">
+          <div class="row q-my-md">
+            <div class="col-12 col-sm-6 movie-plot">{{ plot }}</div>
+            <div class="col-12 col-sm-6"/>
+          </div>
         </div>
-        <div class="col-2 col-sm-6"></div>
-      </div>
-    </div>
-    <div class="row q-my-md">
-      <div class="col">
-        <q-btn
-          size="lg"
-          color="blue"
-          text-color="grey-5"
-          icon="play_arrow"
-          label="Play"
-          class="movie-play"
-          @click="playMovie"
-          v-autofocus
-        />
-      </div>
+
+        <div class="col-auto">
+
+          <div class="row">
+            <div class="col-12">
+              <template v-for="(item, index) in nameValues" :key="index">
+              <div class="table-row">
+                <div class="table-cell q-pr-md">{{ item.name }}</div>
+                <div class="table-cell">{{ item.value }}</div>
+              </div>
+              </template>
+            </div>
+          </div>
+
+          <div class="row q-mb-sm q-mt-md">
+            <div class="col-12">
+              <q-btn
+              size="lg"
+              color="blue"
+              text-color="grey-5"
+              icon="play_arrow"
+              :label="progress ? 'Resume' : 'Play'"
+              class="movie-play"
+              @click="playMovie"
+              v-autofocus
+              />
+            </div>
+          </div>
+
+          <div class="row">
+              <div class="col-12">
+                <q-linear-progress
+                v-if="progress != null"
+                :value="progress"
+                rounded
+                instant-feedback
+                color="red-14"
+                class="q-mt-sm image-progress"
+                />
+              </div>
+          </div>
+        </div>
+
     </div>
   </div>
 </template>
@@ -132,6 +155,7 @@ export default defineComponent({
     const nameValues = ref(null);
     const title = ref(null);
     const plot = ref(null);
+    const progress = ref(null);
 
     let movie;
 
@@ -174,6 +198,12 @@ export default defineComponent({
       }
       // console.log(nv);
       nameValues.value = nv;
+
+      const seen = store.getters.seen(movie);
+      if (seen && seen.currentTime) {
+        movie.currentTime = seen.currentTime;
+        progress.value = seen.currentTime / seen.duration;
+      }
       console.log('onMounted done');
     });
 
@@ -181,18 +211,23 @@ export default defineComponent({
       // Chromecast?
       if (store.state.castState === 'connected') {
         const factory = new PlayerInfoFactory(quasar, store);
-        const info = factory.episode(show, currentSeason, episode);
+        const info = factory.movie(movie);
         emitter.emit('playCast', info);
       }
 
       // Nope, local player.
-      router.push({
+      const to = {
         name: 'movie-play',
         params: {
           collection: props.collection,
           id: props.id,
         },
-      });
+      };
+      const seen = store.getters.seen(movie);
+      if (seen && seen.currentTime) {
+        to.query = { t: Math.floor(seen.currentTime) };
+      }
+      router.push(to);
     }
 
     return {
@@ -201,6 +236,7 @@ export default defineComponent({
       playMovie,
       poster,
       plot,
+      progress,
       title,
     };
   },

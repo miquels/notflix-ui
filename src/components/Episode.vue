@@ -24,6 +24,7 @@
         </div>
       </div>
     </div>
+    <!--
     <div v-if="episode.aired || episode.duration" class="col-2 episode-end">
       <div class="row">
         <div class="col-12">
@@ -34,6 +35,7 @@
         </div>
       </div>
     </div>
+    -->
   </div>
 </template>
 

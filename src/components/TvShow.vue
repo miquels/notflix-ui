@@ -206,7 +206,12 @@ async function getShow() {
     const { seasonno } = show.seasons[i];
     const { episodes } = show.seasons[i];
     for (let episode of episodes) {
-      episode.progress = store.getters.seen(show, episode);
+      const seen = store.getters.seen(show, episode);
+      if (seen) {
+        episode.currentTime = Math.floor(seen.currentTime);
+        episode.duration = Math.floor(seen.duration);
+        episode.progress = seen.currentTime / seen.duration;
+      }
     }
     if (seasonno === 0) {
       seasons.push({
@@ -411,14 +416,18 @@ function playEpisode(episode) {
 
   // Nope, local player.
   const curRoute = router.currentRoute.value;
-  router.push({
+  const to = {
     name: 'tvshow-play',
     params: {
       collection: curRoute.params.collection,
       id: curRoute.params.id,
       seasonEpisode: encodeSE(episode.seasonno, episode.episodeno),
     },
-  });
+  };
+  if (episode.currentTime) {
+    to.query = { t: episode.currentTime };
+  }
+  router.push(to);
 }
 
 function scrollToTop() {

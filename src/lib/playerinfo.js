@@ -67,16 +67,26 @@ export class PlayerInfoFactory {
     const router = useRouter();
     const api = useApi();
 
+    // Parse ?t=<seconds> query parameter.
+    let t;
+    if (route.query && route.query.t) {
+      let t2 = parseInt(route.query.t);
+      if (!isNaN(t2)) {
+        t = t2;
+      }
+    }
+
     // Movie?
     if (!route.params.seasonEpisode) {
       const item = await api.getMovie(route.params.collection, route.params.id);
-      return this.movie(item);
+      return { ...this.movie(item), currentTime: t };
     }
 
     // TvShow.
     const item = await api.getShow(route.params.collection, route.params.id);
-    console.log('playerinfo: item: ', item);
-    console.log('playerinfo: params: ', route.params);
+    // console.log('playerinfo: item: ', item);
+    // console.log('playerinfo: params: ', route.params);
+    // console.log('playerinfo: query: ', route.query);
     if (!item) {
       router.replace({ name: '404' });
       return;
@@ -96,6 +106,6 @@ export class PlayerInfoFactory {
       return;
     }
 
-    return this.episode(item, season, episode);
+    return { ...this.episode(item, season, episode), currentTime: t };
   }
 }

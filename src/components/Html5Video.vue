@@ -478,8 +478,12 @@ export default defineComponent({
       if (!this.loaded_metadata) {
         return;
       }
-
-      this.currentTime = this.video.currentTime || 0;
+      if (this.currentVideo.currentTime) {
+        this.video.currentTime = this.currentVideo.currentTime;
+        this.currentTime = this.currentVideo.currentTime;
+      } else {
+        this.currentTime = this.video.currentTime || 0;
+      }
       // console.log('Html5Video: duration now', this.duration, this.video.duration);
       if (!this.duration) {
         this.duration = this.video.duration;

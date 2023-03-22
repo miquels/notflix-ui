@@ -129,12 +129,13 @@ export default store(() => {
           const sxe = encodeSE(episode.seasonno, episode.episodeno);
           seen = ((state.tvshow[item.id] || {}).seen || {})[sxe];
         } else if (state.movie[item.id]) {
-          seen = (state.movie[id] || {}).seen || {};
+          console.log('store: movie', item);
+          seen = (state.movie[item.id] || {}).seen;
         }
-        if (!seen) {
-          return null;
+        if (seen && seen.currentTime && seen.duration) {
+          return seen;
         }
-        return seen.currentTime / seen.duration;
+        return null;
       },
     },
 

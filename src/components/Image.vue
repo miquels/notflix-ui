@@ -21,7 +21,7 @@
       :value="progress"
       rounded
       instant-feedback
-      color="red-13"
+      color="red-14"
       class="q-mt-sm image-progress"
     />
   </div>
