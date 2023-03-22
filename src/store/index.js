@@ -1,6 +1,7 @@
 import { store } from 'quasar/wrappers';
 import { createStore } from 'vuex';
 import VuexPersistence from 'vuex-persist';
+import { encodeSE } from '../lib/util.js';
 
 const vuexLocal = new VuexPersistence({
   storage: window.localStorage,
@@ -8,6 +9,7 @@ const vuexLocal = new VuexPersistence({
     config: state.config,
     favorites: state.favorites,
     tvshow: state.tvshow,
+    movie: state.movie,
   }),
 });
 
@@ -42,12 +44,26 @@ export default store(() => {
       // Per tv-show info.
       // Each object contains tvshow state:
       //  {
-      //    season: 2,      // season
-      //    episode: 3,     // episode
-      //    scrollTop: 500, // initial scrolltop, may need scrollIntoView
-      //    seen: 95,       // How much of this episode we've seen
+      //    focusSeason: 2,   // last focussed season
+      //    focusEpisode: 3,  // last focussed episode
+      //    seen: {
+      //      's02e01': {
+      //        duration: 3600,
+      //        currentTime: 700,
+      //      },
+      //    },
       //  }
       tvshow: {},
+
+      // Per movie info.
+      // Each object contains movie state:
+      //  {
+      //    seen: {
+      //      duration: 3600,
+      //      currentTime: 700,
+      //    },
+      //  }
+      movie: {},
 
       // external config loaded from 'config.json' (if present).
       externalConfig: {
@@ -84,13 +100,41 @@ export default store(() => {
         }
         return false;
       },
+
       favoritesVersion: (state) => () => {
         return state.favoritesVersion;
       },
+
+      seen: (state) => (value) => {
+        // XXX TODO
+        if (value.episode != null) {
+          // episode
+        } else {
+          // movie
+        }
+        return 0;
+      },
+
       tvshow: (state) => (id) => {
-        // Return a non-reactive version of the object.
-        // When committing, we commit the entrire object.
-        return structuredClone(state.tvshow[id] || {});
+        return state.tvshow[id] || {};
+      },
+
+      movie: (state) => (id) => {
+        return state.movie[id] || {};
+      },
+
+      seen: (state) => (item) => {
+        let seen;
+        if (state.tvshow[item.id]) {
+          const sxe = encodeSE(item.season, item.episode);
+          seen = ((state.tvshow[item.id] || {}).seen || {})[sxe];
+        } else if (state.movie[item.id]) {
+          seen = (state.movie[id] || {}).seen || {};
+        }
+        if (!seen) {
+          return 0;
+        }
+        return seen.currentTime / seen.duration;
       },
     },
 
@@ -159,11 +203,37 @@ export default store(() => {
         state.favoritesVersion += 1;
       },
 
-      // Update a TV show.
-      updateTvShow(state, value) {
-        state.tvshow[value.id] = value.tvshow;
+      // Remember TV Show focus.
+      updateTvShowFocus(state, value) {
+        if (!state.tvshow[value.id]) {
+          state.tvshow[value.id] = {};
+        }
+        state.tvshow[value.id].focusSeason = value.focusSeason;
+        state.tvshow[value.id].focusEpisode = value.focusEpisode;
+      },
+
+      // Update movie or episode currentTime.
+      updateVideoCurrentTime(state, value) {
+        let seen;
+        const item = value.item;
+        if (item.episode) {
+          const sxe = encodeSE(item.season, item.episode);
+          state.tvshow ||= {};
+          state.tvshow[item.id] ||= {};
+          state.tvshow[item.id].seen ||= {};
+          state.tvshow[item.id].seen[sxe] ||= {};
+          seen = state.tvshow[item.id].seen[sxe];
+        } else {
+          state.movie ||= {};
+          state.movie[item.id] ||= {};
+          state.movie[item.id].seen ||= {};
+          seen = state.movie[item.id].seen;
+        }
+        seen.duration = value.duration;
+        seen.currentTime = value.currentTime;
       },
     },
+
     // enable strict mode (adds overhead!)
     // for dev mode and --debug builds only
     strict: process.env.DEBUGGING,

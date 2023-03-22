@@ -176,7 +176,7 @@ import {
   toRefs,
   watch,
 } from 'vue';
-import { useQuasar } from 'quasar';
+import { throttle, useQuasar } from 'quasar';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import VideoControls from 'components/VideoControls.vue';
@@ -350,9 +350,17 @@ export default defineComponent({
       this.video.addEventListener('play', () => { this.setState('playing'); });
       this.video.addEventListener('pause', () => { this.setState('paused'); });
       this.video.addEventListener('ended', () => { this.setState('ended'); });
+      const updateStoreVideoCurrentTime = throttle((() => {
+        this.$store.commit('updateVideoCurrentTime', {
+          item: this.currentVideo,
+          currentTime: this.video.currentTime,
+          duration: this.video.duration,
+        });
+      }).bind(this), 5000);
       this.video.addEventListener('timeupdate', () => {
         if (this.video) {
           this.currentTime = this.video.currentTime;
+          updateStoreVideoCurrentTime();
         }
       });
       this.video.addEventListener('volumechange', () => {

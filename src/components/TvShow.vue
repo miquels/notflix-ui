@@ -264,9 +264,11 @@ function saveCurrentSeasonEpisode(onExit) {
       const s = currentSeason.value.seasonno;
       const e = currentEpisode.value ? currentEpisode.value.episodeno : null;
       if (s !== tvshow.focusSeason || e !== tvshow.focusEpisode) {
-        tvshow.focusSeason = s;
-        tvshow.focusEpisode = e;
-        store.commit('updateTvShow', { id: currentShowId, tvshow });
+        store.commit('updateTvShowFocus', {
+          id: currentShowId,
+          focusSeason: s,
+          focusEpisode: e,
+        });
       }
     }
   };
