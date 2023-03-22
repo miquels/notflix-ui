@@ -205,6 +205,9 @@ async function getShow() {
   for (let i = 0; i < show.seasons.length; i += 1) {
     const { seasonno } = show.seasons[i];
     const { episodes } = show.seasons[i];
+    for (let episode of episodes) {
+      episode.progress = store.getters.seen(show, episode);
+    }
     if (seasonno === 0) {
       seasons.push({
         name: 'Extras',

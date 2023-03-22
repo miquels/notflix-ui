@@ -123,16 +123,16 @@ export default store(() => {
         return state.movie[id] || {};
       },
 
-      seen: (state) => (item) => {
+      seen: (state) => (item, episode) => {
         let seen;
-        if (state.tvshow[item.id]) {
-          const sxe = encodeSE(item.season, item.episode);
+        if (episode && state.tvshow[item.id]) {
+          const sxe = encodeSE(episode.seasonno, episode.episodeno);
           seen = ((state.tvshow[item.id] || {}).seen || {})[sxe];
         } else if (state.movie[item.id]) {
           seen = (state.movie[id] || {}).seen || {};
         }
         if (!seen) {
-          return 0;
+          return null;
         }
         return seen.currentTime / seen.duration;
       },

@@ -3,7 +3,7 @@ import { decodeSE } from '../lib/util.js';
 const routes = [
   {
     path: '/',
-    redirect: '/home',
+    redirect: { path: '/home', query: null },
   },
   {
     path: '/home',

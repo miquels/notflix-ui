@@ -1,6 +1,6 @@
 <template>
   <div class="image-container relative" :style="style">
-    <div class="image-background"><span class="image-name">{{ name }}</span></div>
+    <div v-if="name" class="image-background"><span class="image-name">{{ name }}</span></div>
     <img
       v-if="imgSrc && !hidden"
       :src="imgSrc"
@@ -15,6 +15,14 @@
       class="image-favorite q-pa-sm"
       :color="favorite ? 'blue' : 'white'"
       @click.stop="toggleFavorite()"
+    />
+    <q-linear-progress
+      v-if="progress != null"
+      :value="progress"
+      rounded
+      instant-feedback
+      color="red-13"
+      class="q-mt-sm image-progress"
     />
   </div>
 </template>
@@ -47,6 +55,7 @@ export default defineComponent({
     name: String,
     width: Number,
     height: Number,
+    progress: Number,
     favorite: {
       type: Boolean,
       default: null,
@@ -163,5 +172,12 @@ export default defineComponent({
 }
 .image-name {
   width: 100%;
+}
+.image-progress {
+  width: 100%;
+  position: absolute;
+  left: 0px;
+  bottom: -4px;
+  background: $grey-6 !important;
 }
 </style>

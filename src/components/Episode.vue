@@ -1,7 +1,7 @@
 <template>
   <div class="row items-stretch episode-container" :data-episode="episode.episodeno">
     <div class="col-xs-12 col-md-3 episode-left">
-      <Image :src="episode.thumb" errorSrc="/img/static.jpg" />
+      <Image :src="episode.thumb" :progress="episode.progress" errorSrc="/img/static.jpg" />
     </div>
     <div class="col-xs-12 col-md-9 episode-middle q-px-md">
       <div class="row">
