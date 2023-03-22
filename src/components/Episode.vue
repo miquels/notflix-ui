@@ -45,9 +45,16 @@
   margin-bottom: 1em;
   background: #19192c;
   position: relative;
+  border-left: solid 1px #00000000;
+  border-right: solid 1px #00000000;
 }
-.episode-container:focus-within, .episode-container:hover {
+.episode-container:hover {
   background: #282835;
+}
+.episode-container:focus-within {
+  background: #282835;
+  border-left: solid 1px white;
+  border-right: solid 1px white;
 }
 .episode-left {
   background: black;

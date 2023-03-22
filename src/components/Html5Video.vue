@@ -178,7 +178,7 @@ import {
 } from 'vue';
 import { throttle, useQuasar } from 'quasar';
 import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import VideoControls from 'components/VideoControls.vue';
 import { ControlsEvent } from 'components/VideoControls.vue';
 import shaka from 'shaka-player';
@@ -212,10 +212,12 @@ export default defineComponent({
   },
   props: {
     'player-info': Object,
+    'end-video-go-back': Boolean,
   },
 
   setup(props) {
     const loading = ref('true');
+    const route = useRoute();
     const router = useRouter();
     const store = useStore();
     const quasar = useQuasar();
@@ -317,6 +319,8 @@ export default defineComponent({
       controlsEl: ref(null),
       el: ref(null),
       m: MouseEvent,
+      route,
+      router,
     };
   },
 
@@ -349,8 +353,18 @@ export default defineComponent({
       });
       this.video.addEventListener('play', () => { this.setState('playing'); });
       this.video.addEventListener('pause', () => { this.setState('paused'); });
-      this.video.addEventListener('ended', () => { this.setState('ended'); });
+      this.video.addEventListener('ended', () => { 
+        this.setState('ended');
+        if (this.endVideoGoBack) {
+          window.history.back();
+        }
+      });
       const updateStoreVideoCurrentTime = throttle((() => {
+        const newRoute = {
+          path: this.route.path,
+          query: { t: Math.floor(this.video.currentTime) },
+        };
+        this.router.replace(newRoute);
         this.$store.commit('updateVideoCurrentTime', {
           item: this.currentVideo,
           currentTime: this.video.currentTime,
@@ -410,15 +424,6 @@ export default defineComponent({
 
       // Debug.
       window.video = this.video;
-    },
-
-    debounce(func) {
-      if (this.chillin) {
-        return;
-      }
-      this.chillin = true;
-      setTimeout(() => { this.chillin = false; }, 2);
-      func();
     },
 
     setState(state) {

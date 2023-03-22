@@ -1,5 +1,7 @@
 import { decodeSE } from '../lib/util.js';
 
+var fromRoute;
+
 const routes = [
   {
     path: '/',
@@ -29,6 +31,10 @@ const routes = [
         name: 'tvshow',
         path: '/tv-shows/:collection/:id/:seasonEpisode?',
         component: () => import('pages/TvShow.vue'),
+        props: () => ({ fromRoute }),
+        beforeEnter: (to, from) => {
+          fromRoute = from;
+        },
       },
       {
         name: 'tvshows',

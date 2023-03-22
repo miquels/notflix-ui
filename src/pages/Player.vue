@@ -5,7 +5,7 @@ iosNative,
       <IosVideo :player-info="playerInfo"/>
     </div>
     <div v-if="!iosNative && playerInfo" class="local-player-container z-top" :style="fillAvailable">
-      <Html5Video :player-info="playerInfo"/>
+      <Html5Video :player-info="playerInfo" end-video-go-back/>
     </div>
   </teleport>
 </template>

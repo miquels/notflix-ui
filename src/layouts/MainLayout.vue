@@ -180,7 +180,6 @@ export default {
   },
 
   beforeRouteUpdate(to, from) {
-    console.log('XXX set routerViewKey to', to.path);
     this.routerViewKey = to.path;
   },
 

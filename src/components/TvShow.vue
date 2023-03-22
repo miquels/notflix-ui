@@ -172,6 +172,11 @@ const currentCollection = route.params.collection;
 const currentSeason = ref(null);
 const currentEpisode = ref(null);
 
+// Did we come back here after playing an episode?
+// If so, we might pre-select the next episode.
+const { fromRoute } = defineProps({ fromRoute: Object });
+const backFromPlay = fromRoute && fromRoute.path.startsWith(route.path);
+
 const readyFlag = ref(0);
 
 async function getShow() {
@@ -297,6 +302,27 @@ function saveCurrentSeasonEpisode(onExit) {
   }
 }
 
+// Find the next episode.
+function nextEpisode() {
+  let startEpisodeNo = currentEpisode.value.episodeno;
+  for (let season of seasons) {
+    if (season.seasonno < currentSeason.value.seasonno) {
+      continue;
+    }
+    for (let episode of season.episodes) {
+      if (startEpisodeNo != null) {
+        if (episode.episodeno === startEpisodeNo) {
+          startEpisodeNo = null;
+        }
+        continue;
+      }
+      return [ season, episode ];
+    }
+    startEpisodeNo = null;
+  }
+  return null;
+}
+
 function initCurrentSeasonEpisode() {
 
   // If this fails it's because someone entered a wrong URL manually.
@@ -329,6 +355,8 @@ function initCurrentSeasonEpisode() {
       return false;
     }
     currentSeason.value = thisSeason;
+  } else {
+    currentSeason.value = seasons[0];
   }
 
   // Resolve episode.
@@ -342,9 +370,29 @@ function initCurrentSeasonEpisode() {
     currentEpisode.value = thisEpisode;
   }
 
-  if (!currentSeason.value) {
-    currentSeason.value = seasons[0];
+  if (backFromPlay) {
+    const e = currentEpisode.value;
+    if (e.progress) {
+
+      // We consider going to the next episode if we're at the
+      // end of the current one. That means, more than 95% seen OR
+      // less than 3 minutes left.
+      const secsLeft = e.duration - e.currentTime;
+      if (e.progress >= 0.95 || secsLeft < 180) {
+        const next = nextEpisode();
+        if (next) {
+
+          // We have a next episode. Only go to it if we haven't seen it yet.
+          const [ se, ep ] = next;
+          if (!ep.currentTime || ep.currentTime < 60) {
+            currentSeason.value = se;
+            currentEpisode.value = ep;
+          }
+        }
+      }
+    }
   }
+
   const e = currentEpisode.value;
   router.replace({
     name: 'tvshow',
@@ -392,7 +440,7 @@ function doFocus() {
 }
 
 onMounted(() => {
-  console.log('TvShow: onMounted', route.path, route.id);
+  // console.log('TvShow: onMounted', route.path, route.id);
   watch(readyFlag, () => {
     if (initCurrentSeasonEpisode()) {
       setTimeout(() => doFocus(), 0);

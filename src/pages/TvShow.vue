@@ -1,6 +1,6 @@
 <template>
   <q-page class="flex-center">
-    <TvShow :collection="collection" :id="id"/>
+    <TvShow :collection="collection" :id="id" :fromRoute="fromRoute"/>
   </q-page>
 </template>
 
@@ -16,10 +16,11 @@ export default defineComponent({
   components: {
     TvShow,
   },
-
+  props: {
+    fromRoute: Object,
+  },
   setup() {
     const route = useRoute();
-    console.log('params:', route.params);
     return {
       collection: route.params.collection,
       id: route.params.id,

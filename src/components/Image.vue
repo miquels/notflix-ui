@@ -177,7 +177,7 @@ export default defineComponent({
   width: 100%;
   position: absolute;
   left: 0px;
-  bottom: -4px;
+  bottom: 0px;
   background: $grey-6 !important;
 }
 </style>
