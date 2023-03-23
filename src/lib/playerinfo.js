@@ -33,6 +33,7 @@ export class PlayerInfoFactory {
       type: 'episode',
       src: episode.video,
       id: show.id,
+      collection: show.collection,
       title: episode.name,
       poster: season.poster || show.poster,
       thumb: episode.thumb,
@@ -50,6 +51,7 @@ export class PlayerInfoFactory {
       type: 'movie',
       src: movie.video,
       id: movie.id,
+      collection: movie.collection,
       title: movie.name,
       poster: movie.poster,
     };
@@ -84,7 +86,7 @@ export class PlayerInfoFactory {
 
     // TvShow.
     const item = await api.getShow(route.params.collection, route.params.id);
-    // console.log('playerinfo: item: ', item);
+    console.log('playerinfo: item: ', item);
     // console.log('playerinfo: params: ', route.params);
     // console.log('playerinfo: query: ', route.query);
     if (!item) {

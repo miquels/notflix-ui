@@ -62,7 +62,7 @@ export default defineComponent({
     },
   },
 
-  setup(props) {
+  setup(props, context) {
     const quasar = useQuasar();
     const imgStyle = ref({});
     const style = ref({});
@@ -113,7 +113,7 @@ export default defineComponent({
 
     function toggleFavorite() {
       if (!isTv) {
-        $emit('favorite', { id, name});
+        context.emit('favorite', { id: props.id, name: props.name });
       }
     }
 

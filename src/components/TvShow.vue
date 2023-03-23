@@ -33,13 +33,13 @@
         </div>
         <div class="col self-center">
           <q-btn
-            v-if="favorite() != null"
-            :icon="favorite() ? 'favorite' : 'favorite_border'"
+            v-if="isFavorite() != null"
+            :icon="isFavorite() ? 'favorite' : 'favorite_border'"
             round
             icon-size="28px"
             class="tvshow-favorite q-pa-sm float-right no-outline"
             color="blue-grey-10"
-            :text-color="favorite() ? 'blue' : 'white'"
+            :text-color="isFavorite() ? 'blue' : 'white'"
             @click.stop="toggleFavorite()"
             tabindex="0"
           />
@@ -208,16 +208,7 @@ async function getShow() {
   nameValues = nv;
 
   for (let i = 0; i < show.seasons.length; i += 1) {
-    const { seasonno } = show.seasons[i];
-    const { episodes } = show.seasons[i];
-    for (let episode of episodes) {
-      const seen = store.getters.seen(show, episode);
-      if (seen) {
-        episode.currentTime = Math.floor(seen.currentTime);
-        episode.duration = Math.floor(seen.duration);
-        episode.progress = seen.currentTime / seen.duration;
-      }
-    }
+    const { seasonno, episodes } = show.seasons[i];
     if (seasonno === 0) {
       seasons.push({
         name: 'Extras',
@@ -372,13 +363,14 @@ function initCurrentSeasonEpisode() {
 
   if (backFromPlay) {
     const e = currentEpisode.value;
-    if (e.progress) {
+    if (e.seen) {
 
       // We consider going to the next episode if we're at the
       // end of the current one. That means, more than 95% seen OR
       // less than 3 minutes left.
-      const secsLeft = e.duration - e.currentTime;
-      if (e.progress >= 0.95 || secsLeft < 180) {
+      const progress = e.seen.currentTime / e.seen.duration;
+      const secsLeft = e.seen.duration - e.seen.currentTime;
+      if (progress >= 0.95 || secsLeft < 180) {
         const next = nextEpisode();
         if (next) {
 
@@ -472,8 +464,8 @@ function playEpisode(episode) {
       seasonEpisode: encodeSE(episode.seasonno, episode.episodeno),
     },
   };
-  if (episode.currentTime) {
-    to.query = { t: episode.currentTime };
+  if (episode.seen) {
+    to.query = { t: episode.seen.currentTime };
   }
   router.push(to);
 }
@@ -498,15 +490,11 @@ function scrollIntoView(ev, epIndex) {
 }
 
 function toggleFavorite() {
-  const fav = { id: show.id, name: show.name };
-  if (store.getters.isFavorite(fav)) {
-    store.commit('removeFavorite', fav);
-  } else {
-    store.commit('addFavorite', fav);
-  }
+  let isFav = api.isFavorite(show.id);
+  api.setFavorite(show.id, !isFav);
 }
 
-function favorite() {
-  return show ? store.getters.isFavorite(show) : null;
+function isFavorite() {
+  return show && api.isFavorite(show.id);
 }
 </script>

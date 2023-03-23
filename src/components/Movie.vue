@@ -163,9 +163,9 @@ export default defineComponent({
       try {
         await api.getMovie(props.collection, props.id);
       } catch(e) {
-        console.log('api.getMovie', props.collection, props.id, ': ', e);
+        console.log('Movie: api.getMovie', props.collection, props.id, ': ', e);
       }
-      console.log('onBeforeMount done');
+      console.log('Movie: onBeforeMount done');
     });
 
     onMounted(async () => {
@@ -179,7 +179,6 @@ export default defineComponent({
       title.value = item.nfo.title;
       plot.value = item.nfo.plot;
 
-      console.log(item);
       const nv = [];
       if (item.nfo.genre) {
         nv.push({ name: 'Genre:', value: item.nfo.genre.join(', ') });
@@ -199,12 +198,10 @@ export default defineComponent({
       // console.log(nv);
       nameValues.value = nv;
 
-      const seen = store.getters.seen(movie);
-      if (seen && seen.currentTime) {
-        movie.currentTime = seen.currentTime;
-        progress.value = seen.currentTime / seen.duration;
+      if (movie.seen) {
+        progress.value = movie.seen.currentTime / movie.seen.duration;
       }
-      console.log('onMounted done');
+      console.log('Movie: onMounted done');
     });
 
     function playMovie() {
@@ -223,9 +220,8 @@ export default defineComponent({
           id: props.id,
         },
       };
-      const seen = store.getters.seen(movie);
-      if (seen && seen.currentTime) {
-        to.query = { t: Math.floor(seen.currentTime) };
+      if (movie.seen) {
+        to.query = { t: Math.floor(movie.seen.currentTime) };
       }
       router.push(to);
     }

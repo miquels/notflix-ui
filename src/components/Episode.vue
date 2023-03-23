@@ -1,7 +1,7 @@
 <template>
   <div class="row items-stretch episode-container" :data-episode="episode.episodeno">
     <div class="col-xs-12 col-md-3 episode-left">
-      <Image :src="episode.thumb" :progress="episode.progress" errorSrc="/img/static.jpg" />
+      <Image :src="thumb" :progress="progress" errorSrc="/img/static.jpg" />
     </div>
     <div class="col-xs-12 col-md-9 episode-middle q-px-md">
       <div class="row">
@@ -90,8 +90,6 @@
 import Image from 'components/Image.vue';
 
 const { episode } = defineProps({ episode: Object });
-//const { episode } = toRefs(props);
-function thumb() {
-  return episode.thumb || '/img/static.jpg';
-}
+const thumb = episode.thumb;
+const progress = episode.seen ? episode.seen.currentTime / episode.seen.duration : null;
 </script>

@@ -1,14 +1,5 @@
 <template>
   <q-page class="flex flex-center">
-    <div v-if="haveFavorites === false" class="text-h6">
-      You have not selected any favorites yet. Click on the TV-SHOWS tab to get started.
-    </div>
-    <div v-if="haveFavorites === true" class="text-h6">
-      &gt;&gt;
-      This listing of favorites is preliminary and subject to change!
-      Your settings will be lost!
-      &lt;&lt;
-    </div>
     <Thumbs
       :items="items"
       :collection="collection"
@@ -25,6 +16,7 @@ import {
   defineComponent,
   getCurrentInstance,
   onActivated,
+  onDeactivated,
   ref,
 } from 'vue';
 import { useStore } from 'vuex';
@@ -42,7 +34,6 @@ export default defineComponent({
     const api = useApi();
     const items = ref([]);
     const genres = ref([]);
-    const haveFavorites = ref(null);
 
     // FIXME: hardcoded collection.
     const collection = '2';
@@ -51,12 +42,7 @@ export default defineComponent({
       api.getItems(collection).then((theItems) => {
         // console.log('setting items', theItems);
         // eslint-disable-next-line
-        items.value = theItems.filter((item) => store.getters.isFavorite({
-          id: item.id,
-          name: item.name,
-          collection,
-        }));
-        haveFavorites.value = items.value.length > 0;
+        items.value = theItems.filter((item) => api.isFavorite(item.id));
       });
     }
     getItems();
@@ -68,14 +54,18 @@ export default defineComponent({
       }
     });
 
-    let favoritesVersion = store.getters.favoritesVersion();
+    console.log('api.apiLastUpdate is', api.apiLastUpdate);
+    let apiLastUpdate = api.apiLastUpdate();
     onActivated(() => {
       store.commit('currentView', { type: 'series', genres: genres.value });
-      if (store.getters.favoritesVersion() != favoritesVersion) {
+      if (api.apiLastUpdate() != apiLastUpdate) {
         getItems();
         const instance = getCurrentInstance();
         instance.ctx.$forceUpdate();
       }
+    });
+    onDeactivated(() => {
+      apiLastUpdate = api.apiLastUpdate();
     });
 
     return {
@@ -84,7 +74,6 @@ export default defineComponent({
       items,
       genres,
       collection,
-      haveFavorites,
     };
   },
 

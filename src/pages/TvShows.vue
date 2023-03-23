@@ -18,6 +18,7 @@ import {
   inject,
   nextTick,
   onActivated,
+  onDeactivated,
   onMounted,
   ref,
   watch,
@@ -62,15 +63,17 @@ export default defineComponent({
       }
     });
 
-    let favoritesVersion = store.getters.favoritesVersion();
+    let apiLastUpdate = api.apiLastUpdate();
     onActivated(() => {
       store.commit('currentView', { type: 'series', genres: genres.value });
-      if (store.getters.favoritesVersion() != favoritesVersion) {
+      if (api.apiLastUpdate() != apiLastUpdate) {
         getItems();
         const instance = getCurrentInstance();
         instance.ctx.$forceUpdate();
-        favoritesVersion = store.getters.favoritesVersion();
       }
+    });
+    onDeactivated(() => {
+      apiLastUpdate = api.apiLastUpdate();
     });
 
     onMounted(() => {

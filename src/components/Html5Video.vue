@@ -179,6 +179,7 @@ import {
 import { throttle, useQuasar } from 'quasar';
 import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
+import { useApi } from '../lib/api.js';
 import VideoControls from 'components/VideoControls.vue';
 import { ControlsEvent } from 'components/VideoControls.vue';
 import shaka from 'shaka-player';
@@ -221,6 +222,7 @@ export default defineComponent({
     const router = useRouter();
     const store = useStore();
     const quasar = useQuasar();
+    const api = useApi();
 
     let wasFullScreen = false;
     const video = ref(0);
@@ -290,6 +292,7 @@ export default defineComponent({
     const stopButton = ref(quasar.fullscreen.isActive);
 
     return {
+      api,
       video,
       playState: ref('paused'),
       volume: ref(1),
@@ -365,11 +368,9 @@ export default defineComponent({
           query: { t: Math.floor(this.video.currentTime) },
         };
         this.router.replace(newRoute);
-        this.$store.commit('updateVideoCurrentTime', {
-          item: this.currentVideo,
-          currentTime: this.video.currentTime,
-          duration: this.video.duration,
-        });
+        this.api
+          .updateSeen(this.currentVideo, this.video.currentTime, this.video.duration)
+          .catch((e) => console.log('failed to updateSeen: ', e));
       }).bind(this), 5000);
       this.video.addEventListener('timeupdate', () => {
         if (this.video) {

@@ -21,8 +21,8 @@
         :width="imgWidth"
         :height="imgHeight"
         :hidden="hideImages"
-        :favorite="isFavorite(item.id, item.name)"
-        @favorite="updateFavorite($event)"
+        :favorite="isFavorite(item)"
+        @favorite="toggleFavorite($event)"
       />
       <div
         class="poster-row-thumb-title"
@@ -63,6 +63,7 @@ import {
   defineComponent,
   ref,
 } from 'vue';
+import { useApi } from '../lib/api';
 import Image from 'components/Image.vue';
 
 export default defineComponent({
@@ -89,26 +90,20 @@ export default defineComponent({
   },
 
   setup() {
+    const api = useApi();
     const el = ref(null);
-    return { el }
-  },
-
-  methods: {
-    isFavorite(id, name) {
-      if (!this.collection) {
-        return null;
-      }
-      const fav = { id, name };
-      return this.$store.getters.isFavorite(fav);
-    },
-
-    updateFavorite(fav) {
-      if (this.$store.getters.isFavorite(fav)) {
-        this.$store.commit('removeFavorite', fav);
-      } else {
-        this.$store.commit('addFavorite', fav);
-      }
-    },
+    function toggleFavorite(fav) {
+      let isFav = api.isFavorite(fav.id);
+      api.setFavorite(fav.id, !isFav);
+    }
+    function isFavorite(show) {
+      return api.isFavorite(show.id);
+    }
+    return {
+      el,
+      toggleFavorite,
+      isFavorite,
+    }
   },
 });
 </script>
