@@ -506,7 +506,6 @@ export default defineComponent({
           }
         }
         // Initialize text tracks.
-        console.log('Html5Video: initializing texttracks: ', this.shaka.getTextTracks());
         this.onTexttracks_updated();
       }
     },
@@ -525,7 +524,6 @@ export default defineComponent({
       const textTracks = this.getTextTracks();
       for (let i = 0; i < textTracks.length; i += 1) {
         const t = textTracks[i];
-        console.log('XXX considering texttrack ', t);
         if (!t.label && !t.language) {
           continue;
         }
@@ -756,8 +754,9 @@ export default defineComponent({
         case 'ArrowUp':
         case 'ArrowDown':
         case 'Enter':
-          if (this.displayState === DisplayState.HIDDEN)
-            this.onControlsActive(ControlsEvent.ACTIVE);
+          if (this.displayState === DisplayState.HIDDEN) {
+            this.onControlsActive(ControlsEvent.TMPACTIVE);
+          }
           break;
         case 'Escape':
           ev.stopPropagation();
@@ -852,6 +851,10 @@ export default defineComponent({
 
       if (ev === ControlsEvent.ACTIVE) {
         this.setDisplayState(DisplayState.CONTROLSACTIVE);
+      }
+
+      if (ev === ControlsEvent.TMPACTIVE) {
+        this.setDisplayState(DisplayState.TMPSHOW, 4000);
       }
 
       if (ev === ControlsEvent.IDLE || ev === ControlsEvent.OFF) {

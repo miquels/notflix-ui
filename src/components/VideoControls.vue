@@ -7,6 +7,7 @@
        @mousemove.capture="onMouseMove($event)"
        @touchstart.passive.capture="onTouchStart($event)"
        @touchend.capture="onTouchEnd($event)"
+       @keydown.capture="onKeyDown($event)"
        @focusin="onControlsFocusIn()"
     >
       <div class="row q-mx-md videocontrols-slider-div">
@@ -189,6 +190,7 @@
 <script>
 import {
   defineComponent,
+  nextTick,
   onMounted,
   ref,
   toRaw,
@@ -200,6 +202,7 @@ import QListKbdNav from './QListKbdNav.vue';
 export const ControlsEvent = {
   IDLE: 'controls_idle',
   CLOSE: 'controls_idle',
+  TMPACTIVE: 'controls_tmpactive',
   ACTIVE: 'controls_active',
 };
 Object.freeze(ControlsEvent);
@@ -258,7 +261,9 @@ export default defineComponent({
 
     onMounted(() => {
       // console.log('sliderEl', sliderEl.value);
-      setTimeout(() => {
+      // console.log('mounted');
+      nextTick(() => {
+        // console.log('will focus on', sliderEl.value);
         if (sliderEl.value) {
           sliderEl.value.$el.focus();
         }
@@ -416,12 +421,24 @@ export default defineComponent({
       this.isActive = false;
     },
 
+    onKeyDown(ev) {
+      switch (ev.key) {
+        case 'ArrowLeft':
+        case 'ArrowRight':
+        case 'ArrowUp':
+        case 'ArrowDown':
+        case 'Enter':
+          this.$emit('controlsActive', ControlsEvent.TMPACTIVE);
+          this.isActive = true;
+          this.isMenuOpen = false;
+          break;
+      }
+    },
+
     onControlsFocusIn() {
       if (this.isTouch) return;
       // console.log('sliderFocusIn');
-      if (!this.isActive) {
-        this.$emit('controlsActive', ControlsEvent.ACTIVE);
-      }
+      this.$emit('controlsActive', ControlsEvent.TMPACTIVE);
       this.isActive = true;
       this.isMenuOpen = false;
     },
