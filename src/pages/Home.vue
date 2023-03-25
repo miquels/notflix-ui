@@ -1,5 +1,8 @@
 <template>
   <q-page class="flex flex-center">
+    <div v-if="haveFavorites === false" class="text-body1">
+      You have not selected any favorites yet. Click on the TV-SHOWS tab to get started.
+    </div>
     <Thumbs
       :items="items"
       :collection="collection"
@@ -34,6 +37,7 @@ export default defineComponent({
     const api = useApi();
     const items = ref([]);
     const genres = ref([]);
+    const haveFavorites = ref(null);
 
     // FIXME: hardcoded collection.
     const collection = '2';
@@ -43,6 +47,8 @@ export default defineComponent({
         // console.log('setting items', theItems);
         // eslint-disable-next-line
         items.value = theItems.filter((item) => api.isFavorite(item.id));
+        haveFavorites.value = items.value.length > 0;
+        console.log('haveFavorites', haveFavorites.value);
       });
     }
     getItems();
@@ -54,7 +60,6 @@ export default defineComponent({
       }
     });
 
-    console.log('api.apiLastUpdate is', api.apiLastUpdate);
     let apiLastUpdate = api.apiLastUpdate();
     onActivated(() => {
       store.commit('currentView', { type: 'series', genres: genres.value });
@@ -70,10 +75,11 @@ export default defineComponent({
 
     return {
       api: null,
-      store,
-      items,
-      genres,
       collection,
+      genres,
+      haveFavorites,
+      items,
+      store,
     };
   },
 
