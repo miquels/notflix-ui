@@ -258,7 +258,11 @@ export default defineComponent({
 
     onMounted(() => {
       // console.log('sliderEl', sliderEl.value);
-      setTimeout(() => sliderEl.value.$el.focus(), 0);
+      setTimeout(() => {
+        if (sliderEl.value) {
+          sliderEl.value.$el.focus();
+        }
+      }, 0);
     });
 
     return {

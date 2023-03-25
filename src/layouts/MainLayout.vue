@@ -60,7 +60,7 @@
         <keep-alive :include="keepAlive">
           <component
             :is="Component"
-            :key="$route.name + ($route.params ? $route.params.id : '')"
+            :key="$route.name"
           />
         </keep-alive>
       </router-view>
@@ -153,19 +153,9 @@ export default {
       'PageTvShows',
       'PageMovies',
       'PageHome',
-      'TvShows',
-      'Movies',
-      // 'PageTvShow',
-      // 'PageMovie',
-      // 'TvShow',
-      // 'Movie',
-      // 'Thumbs',
-      // 'VirtualScroll',
     ];
 
     const headerHasFocus = ref(true);
-    console.log('XXX set routerViewKey to', route.path);
-    const routerViewKey = ref(route.path);
 
     return {
       canCast,
@@ -174,13 +164,8 @@ export default {
       store,
       headerHasFocus,
       hasSettings,
-      routerViewKey,
       progress,
     };
-  },
-
-  beforeRouteUpdate(to, from) {
-    this.routerViewKey = to.path;
   },
 
   methods: {

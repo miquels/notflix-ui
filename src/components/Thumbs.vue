@@ -119,7 +119,7 @@ export default {
 
   activated() {
     const width = scroll.getScrollWidth(this.$el);
-    console.log('Thumbs: activated, width is', width);
+    const height = scroll.getScrollHeight(this.$el);
     this.search = '';
     this.isActive = true;
     if (this.selectedItem) {
@@ -127,7 +127,7 @@ export default {
       setTimeout(() => {
         const elem = this.$refs.el.querySelector(`:scope [data-item-id="${this.selectedItem}"`);
         if (elem) {
-          console.log('Thumbs: re-focussing on', this.selectedItem);
+          // console.log('Thumbs: re-focussing on', this.selectedItem);
           elem.focus();
         }
         this.selectedItem = null;
@@ -158,6 +158,7 @@ export default {
     selectItem(item) {
       this.selectedItem = item;
       this.$emit('select-item', item);
+      //console.log('Thumbs: DBG: selectedItem is', item);
     },
 
     getRows(items, sortById) {
@@ -250,6 +251,7 @@ export default {
         width = scroll.getScrollWidth(this.$el);
       }
       if (width === this.scrollWidth) {
+        // console.log('Thumbs: calcSizes: no change in width (', width, ')');
         return;
       }
       this.scrollWidth = width;
@@ -282,7 +284,7 @@ export default {
       if (ev.width === 0 || ev.height === 0) {
         return;
       }
-      console.log(' resize', ev);
+      // console.log('Thumbs: resize', ev);
       this.calcSizes(ev.width);
     },
   },

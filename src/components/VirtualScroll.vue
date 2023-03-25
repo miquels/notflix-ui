@@ -28,7 +28,9 @@
 
 <script setup>
   import {
+    nextTick,
     onActivated,
+    onDeactivated,
     onBeforeUpdate,
     onMounted,
     onUpdated,
@@ -60,12 +62,16 @@ import { debounce } from 'quasar';
   let lastScrollTimer = null;
   let savedScrollTop = 0;
   let scrollPps = 0;
+  let isActive = true;
 
   let savedScrollerHeight;
   const onResize = debounce(() => {
+    if (!isActive) {
+      return;
+    }
     if (scrollerEl.value && scrollerEl.value.clientHeight !== savedScrollerHeight) {
       updateVisibleItems();
-      savedScrollerHeight = scrollerEl.value.clientHeight;
+      nextTick(() => savedScrollerHeight = scrollerEl.value.clientHeight);
     }
   }, 100);
 
@@ -78,15 +84,20 @@ import { debounce } from 'quasar';
       }
       totalHeight.value = h;
       updateVisibleItems();
+      nextTick(() => savedScrollerHeight = scrollerEl.value.clientHeight);
     };
     watch(items, updateItems);
     updateItems();
-    savedScrollerHeight = scrollerEl.value.clientHeight;
   });
 
   onActivated(() => {
+    isActive = true;
+    // console.log('VirtualScroll: activated: set scrollTop back to saved', savedScrollTop);
     scrollerEl.value.scrollTop = savedScrollTop;
-    updateVisibleItems();
+  });
+
+  onDeactivated(() => {
+    isActive = false;
   });
 
   // An element in one of the rows got the focus. See if we need
@@ -151,7 +162,7 @@ import { debounce } from 'quasar';
   function onScroll(ev) {
     savedScrollTop = scrollerEl.value.scrollTop;
     updateScrollPps();
-    updateVisibleItems(ev);
+    updateVisibleItems();
   }
 
   function updateScrollPps() {
