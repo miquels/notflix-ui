@@ -74,6 +74,8 @@
             <q-menu
               anchor="top end"
               self="bottom right"
+              auto-close
+              no-route-dismiss
               class="videocontrols-fix-zindex"
               @show="menuOpen()"
               @hide="menuClose()"
@@ -82,7 +84,6 @@
                 <q-item
                   v-for="a in audioTracks"
                   :key="a.id"
-                  v-close-popup
                   clickable
                   :active="audioTrack === a.id"
                   @click="$emit('audiotrack', a.id)"
@@ -106,6 +107,8 @@
             <q-menu
               anchor="top end"
               self="bottom right"
+              no-route-dismiss
+              auto-close
               class="videocontrols-fix-zindex"
               @show="menuOpen()"
               @hide="menuClose()"
@@ -114,7 +117,6 @@
                 <q-item
                   v-for="(s, index) in textTracks"
                   :key="s.id"
-                  v-close-popup
                   clickable
                   :active="textTrack === s.id"
                   @click="$emit('texttrack', s.id)"
@@ -123,7 +125,6 @@
                   {{s.label}}
                 </q-item>
                 <q-item
-                  v-close-popup
                   clickable
                   :active="textTrack === null"
                   @click="$emit('texttrack', null)"
@@ -289,7 +290,7 @@ export default defineComponent({
 
   methods: {
     setTextTrack(track, index) {
-      console.log('setTextTrack id', track, 'index', index);
+      // console.log('setTextTrack id', track, 'index', index);
       this.textTrack = track;
     },
 
@@ -371,15 +372,15 @@ export default defineComponent({
     },
 
     menuOpen() {
-      if (!this.isActive) {
-        this.$emit('controlsActive', ControlsEvent.ACTIVE);
-      }
+      this.$emit('controlsActive', ControlsEvent.ACTIVE);
       this.isActive = true;
       this.isMenuOpen = true;
     },
 
     menuClose() {
-      if (this.isTouch) {
+      if (this.isKeyboard) {
+        this.$emit('controlsActive', ControlsEvent.TMPACTIVE);
+      } else if (this.isTouch) {
         this.$emit('controlsActive', ControlsEvent.IDLE);
       }
       this.isMenuOpen = false;
@@ -427,16 +428,19 @@ export default defineComponent({
         case 'ArrowRight':
         case 'ArrowUp':
         case 'ArrowDown':
+          if (!this.isMenuOpen) {
+            this.$emit('controlsActive', ControlsEvent.TMPACTIVE);
+            this.isActive = true;
+          }
+          // FALLTHRU
         case 'Enter':
-          this.$emit('controlsActive', ControlsEvent.TMPACTIVE);
-          this.isActive = true;
-          this.isMenuOpen = false;
+          this.isKeyboard = true;
           break;
       }
     },
 
     onControlsFocusIn() {
-      if (this.isTouch) return;
+      if (this.isTouch || this.isMenuOpen) return;
       // console.log('sliderFocusIn');
       this.$emit('controlsActive', ControlsEvent.TMPACTIVE);
       this.isActive = true;

@@ -753,7 +753,6 @@ export default defineComponent({
         case 'ArrowRight':
         case 'ArrowUp':
         case 'ArrowDown':
-        case 'Enter':
           if (this.displayState === DisplayState.HIDDEN) {
             this.onControlsActive(ControlsEvent.TMPACTIVE);
           }
