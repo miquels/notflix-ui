@@ -1,6 +1,6 @@
 <template>
   <div class="movie-container q-pt-md">
-    <div class="movie-header column q-mx-sm">
+    <div class="movie-header column q-ms-md">
       <Backdrop :poster="poster" :fanart="fanart"/>
 
         <div class="col">

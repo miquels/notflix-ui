@@ -256,6 +256,9 @@ export default class API {
   }
 
   isFavorite(itemId) {
+    if (this.favorites[itemId] === undefined) {
+      return null;
+    }
     return this.favorites[itemId] === true;
   }
 

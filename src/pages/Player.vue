@@ -61,8 +61,6 @@ export default defineComponent({
     const platform = quasar.platform;
     const iosSafari = platform.is.safari && quasar.platform.is.ios;
 
-    console.log('PagePlayer: setup');
-
     // https://allthingssmitty.com/2020/05/11/css-fix-for-100vh-in-mobile-webkit/
     // This will eventually change to 'height: stretch'.
     const fillAvailable = platform.is.mobile ? { 'max-height': '-webkit-fill-available' } : {};
@@ -72,7 +70,6 @@ export default defineComponent({
     onBeforeMount(async () => {
       const factory = new PlayerInfoFactory(quasar, store);
       playerInfo.value = await factory.fromRoute(router.currentRoute.value);
-      console.log('PagePlayer: playerInfo:', playerInfo.value);
     });
 
     return {

@@ -59,8 +59,9 @@ import { sxe } from '../lib/util.js';
 
 export function canCast() {
   const quasar = useQuasar();
+  const noMacCast = quasar.platform.is.mac && process.env.DEV;
   return quasar.platform.is.chrome &&
-    !(quasar.platform.is.ios || quasar.platform.is.tv)
+    !(quasar.platform.is.ios || quasar.platform.is.tv || noMacCast)
 }
 
 export const Chromecast = defineComponent({

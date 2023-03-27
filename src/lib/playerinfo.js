@@ -86,7 +86,6 @@ export class PlayerInfoFactory {
 
     // TvShow.
     const item = await api.getShow(route.params.collection, route.params.id);
-    console.log('playerinfo: item: ', item);
     // console.log('playerinfo: params: ', route.params);
     // console.log('playerinfo: query: ', route.query);
     if (!item) {

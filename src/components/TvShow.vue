@@ -2,82 +2,137 @@
   <lrud no-scroll-into-view ref="el" @xfocusout="doFocus()">
   <div class="tv-show-container q-pt-md">
     <div class="row justify-center">
-    <div class="col-12 col-sm-10 tv-show-inner">
-    <div class="tv-show-header">
-      <Backdrop :poster="poster" :fanart="fanart"/>
-      <div class="row text-h3 q-mb-md">
-        <div class="col stroke">{{ title }}</div>
-      </div>
-      <div class="row">
-        <div class="col" v-if="seasons && currentSeason">
-          <q-item @focusin="scrollToTop" class="col-xs-8 col-sm-auto relative q-pa-none">
-            <lrud no-scroll-into-view no-nav-inside steal-keys-outside>
-              <q-select
-                  filled
-                  dense
-                  options-dense
-                  :options="seasons"
-                  :hide-dropdown-icon="seasons.length === 1"
-                  option-label="name"
-                  :modelValue="currentSeason"
-                  @update:modelValue="s => { currentSeason = s; currentEpisode = null }"
-                  style="width=100%"
-                  bg-color="blue-grey-10"
-                  options-selected-class="q-select-active-option"
-                  data-autofocus="2"
-                  v-autofocus="'input'"
-                  ref="seasonsEl"
-              />
-            </lrud>
-          </q-item>
-        </div>
-        <div class="col self-center">
-          <q-btn
-            v-if="isFavorite() != null"
-            :icon="isFavorite() ? 'favorite' : 'favorite_border'"
-            round
-            icon-size="28px"
-            class="tvshow-favorite q-pa-sm float-right no-outline"
-            color="blue-grey-10"
-            :text-color="isFavorite() ? 'blue' : 'white'"
-            @click.stop="toggleFavorite()"
-            tabindex="0"
-          />
-        </div>
-        <div class="col-2 col-sm-6"></div>
-      </div>
-      <div class="row q-my-md">
-        <div class="col tvshow-plot">{{ plot }}
-        </div>
-        <div class="col-2 col-sm-6"></div>
-      </div>
-      <div class="row">
-        <div class="col">
-          <template v-for="(item, index) in nameValues" :key="index">
-          <div class="table-row">
-            <div class="table-cell q-pr-md">{{ item.name }}</div>
-            <div class="table-cell">{{ item.value }}</div>
+      <div class="col-12 col-sm-10 tv-show-inner">
+
+        <div class="tv-show-header column q-mx-sm">
+          <Backdrop :poster="poster" :fanart="fanart"/>
+
+          <div class="col">
+            <div class="row text-h3 q-mb-md">
+              <div class="col stroke">{{ title }}</div>
+            </div>
           </div>
+
+          <div class="col">
+            <div class="row q-my-md">
+              <div class="col tvshow-plot">{{ plot }}
+              </div>
+              <div class="col-2 col-sm-6"></div>
+            </div>
+          </div>
+
+          <div class="col">
+            <div class="row">
+              <div class="col">
+                <template v-for="(item, index) in nameValues" :key="index">
+                <div class="table-row">
+                  <div class="table-cell q-pr-md">{{ item.name }}</div>
+                  <div class="table-cell">{{ item.value }}</div>
+                </div>
+                </template>
+              </div>
+              <div class="col-2 col-sm-6"></div>
+            </div>
+          </div>
+
+          <div class="col" @focusin="{ scrollToTop(); currentEpisode = null }">
+            <div class="row items-start" v-if="seasons && currentSeason">
+              <div
+                class="col-xs-10 col-sm-auto relative q-pa-none q-pr-md"
+                style="height: 48px;"
+                v-if="resumeEpisode"
+              >
+                <q-btn
+                  no-caps
+                  no-wrap
+                  style="height: 40px; width: 100%"
+                  color="blue-grey-10"
+                  tabindex="0"
+                  @click="playEpisode(resumeEpisode)"
+                  v-autofocus
+                  data-autofocus="2"
+                  ref="resumeEpisodeEl"
+                >
+                  Resume {{ seasonEpisode(resumeEpisode) }}
+                </q-btn>
+              </div>
+              <div
+                class="col-xs-10 col-sm-auto relative q-pa-none q-pr-md"
+                style="height: 48px;"
+                v-if="nextEpisode"
+              >
+                <q-btn
+                  no-caps
+                  no-wrap
+                  style="height: 40px; width: 100%"
+                  color="blue-grey-10"
+                  tabindex="0"
+                  @click="playEpisode(nextEpisode)"
+                  v-autofocus
+                  data-autofocus="2"
+                  ref="nextEpisodeEl"
+                >
+                  Play {{ seasonEpisode(nextEpisode) }}
+                </q-btn>
+              </div>
+              <q-item
+                class="col-xs-10 col-sm-auto relative q-pa-none q-pr-md"
+              >
+                <lrud no-scroll-into-view no-nav-inside steal-keys-outside>
+                  <q-select
+                      filled
+                      dense
+                      options-dense
+                      :options="seasons"
+                      :hide-dropdown-icon="seasons.length === 1"
+                      option-label="name"
+                      :modelValue="currentSeason"
+                      @update:modelValue="s => { currentSeason = s; currentEpisode = null }"
+                      style="width: 100%"
+                      bg-color="blue-grey-10"
+                      options-selected-class="q-select-active-option"
+                      data-autofocus="2"
+                      v-autofocus="{ vIf: !resumeEpisode && !nextEpisode, selector: 'input' }"
+                      ref="seasonsEl"
+                      no-wrap
+                  />
+                </lrud>
+              </q-item>
+              <div class="col-2 relative q-pa-none">
+                <q-btn
+                  :icon="isFavorite() ? 'favorite' : 'favorite_border'"
+                  round
+                  icon-size="28px"
+                  class="tvshow-favorite q-pa-sm float-right no-outline"
+                  color="blue-grey-10"
+                  :text-color="isFavorite() ? 'blue' : 'white'"
+                  @click.stop="toggleFavorite()"
+                  tabindex="0"
+                />
+              </div>
+              <div class="col-2 col-sm-6"></div>
+            </div>
+          </div>
+        </div>
+
+        <lrud>
+        <div v-if="seasons && currentSeason" class="tv-show-episodes">
+          <template v-for="(episode, index) in currentSeason.episodes" :key="episode.name">
+            <lrud :center-x="5">
+            <Episode 
+              tabindex="-1"
+              ref="episodesEl"
+              :episode="episode"
+              @play="playEpisode(episode)"
+              @focusin="scrollIntoView($event, index)"
+            />
+            </lrud>
           </template>
         </div>
-        <div class="col-2 col-sm-6"></div>
+        </lrud>
+
       </div>
     </div>
-    <div v-if="seasons && currentSeason" class="tv-show-episodes">
-      <template v-for="(episode, index) in currentSeason.episodes" :key="episode.name">
-        <lrud :center-x="20">
-        <Episode 
-          tabindex="-1"
-          ref="episodesEl"
-          :episode="episode"
-          @play="playEpisode(episode)"
-          @focusin="scrollIntoView($event, index)"
-        />
-        </lrud>
-      </template>
-    </div>
-  </div>
-  </div>
   </div>
   </lrud>
 </template>
@@ -142,7 +197,7 @@ import { useStore } from 'vuex';
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useApi } from '../lib/api.js';
-import { decodeSE, encodeSE } from '../lib/util.js';
+import { decodeSE, encodeSE, whenTrue } from '../lib/util.js';
 import Backdrop from './Backdrop.vue';
 import Episode from './Episode.vue';
 import { PlayerInfoFactory } from '../lib/playerinfo.js';
@@ -167,16 +222,20 @@ const seasons = [];
 const el = ref(null);
 const episodesEl = ref(null);
 const seasonsEl = ref(null);
+const resumeEpisodeEl = ref(null);
+const nextEpisodeEl = ref(null);
 const currentShowId = route.params.id;
 const currentCollection = route.params.collection;
+
+// Currently selected season, and episode that has the focus.
 const currentSeason = ref(null);
 const currentEpisode = ref(null);
 
-// Did we come back here after playing an episode?
-// If so, we might pre-select the next episode.
-const { fromRoute } = defineProps({ fromRoute: Object });
-const backFromPlay = fromRoute && fromRoute.path.startsWith(route.path);
+// Episode to be resumed, and next episode to play (if any).
+const resumeEpisode = ref(null);
+const nextEpisode = ref(null);
 
+const { fromRoute } = defineProps({ fromRoute: Object });
 const readyFlag = ref(0);
 
 async function getShow() {
@@ -237,6 +296,7 @@ onBeforeMount(async () => {
   // Better to put up a spinner and/or report an error _before_
   // we navigate to the page.
   try {
+    console.log('TvShow: onBeforeMount: getShow()');
     await getShow();
   } catch(e) {
     // XXX FIXME.
@@ -293,11 +353,27 @@ function saveCurrentSeasonEpisode(onExit) {
   }
 }
 
+// Find the last episode that was watched.
+// If no episodes were watched yet, return the very first episode.
+function getLastEpisode() {
+  for (let sidx = seasons.length - 1; sidx >= 0; sidx -= 1) {
+    const season = seasons[sidx];
+    for (let eidx = season.episodes.length - 1; eidx >= 0; eidx -= 1) {
+      const episode = season.episodes[eidx];
+      if (episode.seen && episode.seen.currentTime > 0) {
+        return [season, episode];
+      }
+    }
+  }
+  const season = seasons[0];
+  return [ season, season.episodes[0] ];
+}
+
 // Find the next episode.
-function nextEpisode() {
-  let startEpisodeNo = currentEpisode.value.episodeno;
+function getNextEpisode(startSeason, startEpisode) {
+  let startEpisodeNo = startEpisode.episodeno;
   for (let season of seasons) {
-    if (season.seasonno < currentSeason.value.seasonno) {
+    if (season.seasonno < startSeason.seasonno) {
       continue;
     }
     for (let episode of season.episodes) {
@@ -314,31 +390,23 @@ function nextEpisode() {
   return null;
 }
 
-function initCurrentSeasonEpisode() {
-
-  // If this fails it's because someone entered a wrong URL manually.
-  const se = decodeSE(route.params.seasonEpisode);
-  if (!se) {
-    console.log('TvShow: failed to decodeSE', route.params.seasonEpisode);
-    router.replace({ name: '404'});
-    return false;
+// Helper for the template.
+function seasonEpisode(episode) {
+  if (episode.episodeno > 18000000) {
+    const e = episode.episodeno;
+    const y = Math.floor(e / 10000);
+    const m = (Math.floor(e / 100) % 100).toString().padStart(2, '0');
+    const d = (e % 100).toString().padStart(2, '0');
+    return `${y}.${m}.${d}`;
   }
-  let { season, episode } = se;
+  const se = episode.seasonno.toString().padStart(2, '0');
+  const ep = episode.episodeno.toString().padStart(2, '0');
+  return `S${se} E${ep}`;
+}
 
-  // If we don't have season/episode in the path, check the store
-  // and restore the season/episode we last focussed on.
-  if (season === null) {
-    const tvshow = store.getters.tvshow(currentShowId);
-    if (tvshow.focusSeason != null) {
-      season = tvshow.focusSeason;
-    }
-    if (tvshow.focusEpisode != null) {
-      episode = tvshow.focusEpisode;
-    }
-  }
-
+function setCurrentSeasonEpisode(season, episode) {
   // Resolve season.
-  if (season !== null) {
+  if (season != null) {
     const thisSeason = seasons.find((s) => s.seasonno === season);
     if (!thisSeason) {
       console.log('TvShow: cannot find seasonno', season, 'from', route.params.seasonEpisode);
@@ -351,7 +419,7 @@ function initCurrentSeasonEpisode() {
   }
 
   // Resolve episode.
-  if (episode !== null) {
+  if (episode != null) {
     const thisEpisode = currentSeason.value.episodes.find((e) => e.episodeno === episode);
     if (thisEpisode === null) {
       console.log('TvShow: cannot find episodeno', episode);
@@ -360,31 +428,93 @@ function initCurrentSeasonEpisode() {
     }
     currentEpisode.value = thisEpisode;
   }
+  return true;
+}
 
-  if (backFromPlay) {
-    const e = currentEpisode.value;
-    if (e.seen) {
+// We consider going to the next episode if we're at the
+// end of the current one. That means, more than 95% seen OR
+// less than 3 minutes left.
+function finishedEpisode(episode) {
+  if (!episode || !episode.seen) {
+    return false;
+  }
+  const progress = episode.seen.currentTime / episode.seen.duration;
+  const secsLeft = episode.seen.duration - episode.seen.currentTime;
+  return (progress >= 0.95 || secsLeft < 180);
+}
 
-      // We consider going to the next episode if we're at the
-      // end of the current one. That means, more than 95% seen OR
-      // less than 3 minutes left.
-      const progress = e.seen.currentTime / e.seen.duration;
-      const secsLeft = e.seen.duration - e.seen.currentTime;
-      if (progress >= 0.95 || secsLeft < 180) {
-        const next = nextEpisode();
-        if (next) {
+// We consider having seen the first few seconds of an episode as 'not started'.
+function startedEpisode(episode) {
+  if (!episode || !episode.seen) {
+    return false;
+  }
+  return episode.seen.currentTime >= 5;
+}
 
-          // We have a next episode. Only go to it if we haven't seen it yet.
-          const [ se, ep ] = next;
-          if (!ep.currentTime || ep.currentTime < 60) {
-            currentSeason.value = se;
-            currentEpisode.value = ep;
-          }
+// Initialize:
+//
+// - currentSeason
+// - currentEpisode
+// - resumeEpisde
+// - nextEpisode
+//
+function initCurrentSeasonEpisode() {
+
+  // If this fails it's because someone entered a wrong URL manually.
+  const se = decodeSE(route.params.seasonEpisode);
+  if (!se) {
+    console.log('TvShow: failed to decodeSE', route.params.seasonEpisode);
+    router.replace({ name: '404'});
+    return false;
+  }
+
+  // Set currentSeason and episode from the path parameters.
+  if (!setCurrentSeasonEpisode(se.season, se.episode)) {
+    return false;
+  }
+  let episode = currentEpisode.value;
+
+  // If we came back from 'play' and we have a season/episode in the
+  // path, then we want to focus on the episode to resume, or the next one.
+  const backFromPlay = fromRoute &&
+    fromRoute.path.startsWith(route.path) &&
+    fromRoute.path.endsWith('/play') &&
+    se.season &&
+    se.episode;
+
+  // If we're not focussing on a specific episode, find last episode played.
+  if (!backFromPlay) {
+    const last = getLastEpisode();
+    if (!last) {
+      return true;
+    }
+    const [ s, e ] = last;
+    currentSeason.value = s;
+    episode = e;
+  }
+
+  // If we have a current episode and it wasn't started: "play episode".
+  // If we have a current episode and it wasn't finished: "resume episode".
+  // If we have a current episode and it is finished: "play next episode".
+  if (!startedEpisode(episode)) {
+    nextEpisode.value = episode;
+  } else if (!finishedEpisode(episode)) {
+    resumeEpisode.value = episode;
+  } else {
+    const next = getNextEpisode(currentSeason.value, episode);
+    if (next) {
+      const [ se, ep ] = next;
+      if (!startedEpisode(ep)) {
+        currentSeason.value = se;
+        if (backFromPlay) {
+          currentEpisode.value = ep;
         }
+        nextEpisode.value = ep;
       }
     }
   }
 
+  // Update the path parameters.
   const e = currentEpisode.value;
   router.replace({
     name: 'tvshow',
@@ -415,12 +545,19 @@ function initCurrentSeasonEpisode() {
 }
 
 function doFocus() {
-  if (seasonsEl.value && !currentEpisode.value) {
-    seasonsEl.value.focus();
-    return;
-  }
-
   if (!currentEpisode.value) {
+    if (nextEpisodeEl.value) {
+      nextEpisodeEl.value.$el.focus();
+      return;
+    }
+    if (resumeEpisodeEl.value) {
+      resumeEpisodeEl.value.$el.focus();
+      return;
+    }
+    if (seasonsEl.value) {
+      seasonsEl.value.focus();
+      return;
+    }
     currentEpisode.value = currentSeason.value.episodes[0];
   }
 
@@ -432,17 +569,14 @@ function doFocus() {
 }
 
 onMounted(() => {
-  // console.log('TvShow: onMounted', route.path, route.id);
-  watch(readyFlag, () => {
+  console.log('TvShow: onMounted', route.path, route.id);
+  whenTrue(readyFlag, () => {
+    // console.log('TvShow: onMounted, initCurrentSeasonEpisode');
     if (initCurrentSeasonEpisode()) {
+      // console.log('TvShow: onMounted, done, calling doFocus');
       setTimeout(() => doFocus(), 0);
     }
   });
-  if (readyFlag.value) {
-    if (initCurrentSeasonEpisode()) {
-      doFocus();
-    }
-  }
 });
 
 function playEpisode(episode) {
@@ -477,14 +611,10 @@ function scrollToTop() {
 function scrollIntoView(ev, epIndex) {
   const target = ev.currentTarget;
   // console.log('TvShow: XXX: scrollIntoView', target, currentSeason.value.episodes[epIndex]);
-  if (epIndex === 0) {
-    scrollToTop();
-  } else {
-    setTimeout(() => target.scrollIntoView({
-      block: 'nearest',
-      behavior: 'smooth',
-    }), 0);
-  }
+  setTimeout(() => target.scrollIntoView({
+    block: 'nearest',
+    behavior: 'smooth',
+  }), 0);
   // console.log('updating currentEpisode.value to', epIndex);
   currentEpisode.value = currentSeason.value.episodes[epIndex];
 }

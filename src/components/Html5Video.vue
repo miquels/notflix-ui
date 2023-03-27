@@ -206,6 +206,8 @@ const DisplayState = {
 };
 Object.freeze(DisplayState);
 
+const DBG = false;
+
 export default defineComponent({
   name: 'Html5Video',
   components: {
@@ -228,7 +230,7 @@ export default defineComponent({
     const video = ref(0);
     const { playerInfo } = toRefs(props);
     const currentVideo = playerInfo;
-    console.log('Html5Video: currentVideo:', currentVideo);
+    if (DBG) console.log('Html5Video: currentVideo:', currentVideo);
 
     onBeforeMount(() => {
       const instance = getCurrentInstance();
@@ -270,7 +272,7 @@ export default defineComponent({
     });
 
     onUnmounted(() => {
-      // console.log('unmounted');
+      // if (DBG) console.log('unmounted');
 
       // leave full screen.
       if (!wasFullScreen && quasar.fullscreen.isActive) {
@@ -350,7 +352,7 @@ export default defineComponent({
       }
 
       this.video.addEventListener('loadedmetadata', () => {
-        // console.log('loaded metadata event');
+        // if (DBG) console.log('loaded metadata event');
         this.loaded_metadata = true;
         this.onLoadedmetadata();
       });
@@ -370,7 +372,7 @@ export default defineComponent({
         this.router.replace(newRoute);
         this.api
           .updateSeen(this.currentVideo, this.video.currentTime, this.video.duration)
-          .catch((e) => console.log('failed to updateSeen: ', e));
+          .catch((e) => { if (DBG) console.log('failed to updateSeen: ', e) });
       }).bind(this), 5000);
       this.video.addEventListener('timeupdate', () => {
         if (this.video) {
@@ -405,7 +407,7 @@ export default defineComponent({
       // Airplay support. For now, local to this component, not global as Chromecast.
       if (window.WebKitPlaybackTargetAvailabilityEvent) {
         this.video.addEventListener('webkitplaybacktargetavailabilitychanged', (ev) => {
-          console.log('Html5Video: airplay availaility: ', ev.availability);
+          if (DBG) console.log('Html5Video: airplay availaility: ', ev.availability);
           if (this.airplayAvailable < 2) {
             const airPlaying = this.video.webkitCurrentPlaybackTargetIsWireless;
             const isAvailable = ev.availability === 'available';
@@ -465,7 +467,7 @@ export default defineComponent({
         () => { this.info = info; },
         () => {
           // autoplay was prevented.
-          // console.log('Html5Video: autoplay prevented');
+          // if (DBG) console.log('Html5Video: autoplay prevented');
           this.setState('paused');
           this.bigPlayButton = true;
           this.info = info;
@@ -490,7 +492,7 @@ export default defineComponent({
       } else {
         this.currentTime = this.video.currentTime || 0;
       }
-      // console.log('Html5Video: duration now', this.duration, this.video.duration);
+      // if (DBG) console.log('Html5Video: duration now', this.duration, this.video.duration);
       if (!this.duration) {
         this.duration = this.video.duration;
       }
@@ -603,7 +605,7 @@ export default defineComponent({
       //   this.shaka.unload();
       // }
       if (!this.shaka) {
-        console.log('Html5Video: initializing shaka...');
+        if (DBG) console.log('Html5Video: initializing shaka...');
         this.shaka = new shaka.Player(this.$refs.video);
         window.player = this.shaka;
         this.shaka.configure({
@@ -612,12 +614,12 @@ export default defineComponent({
             enabled: false,
           },
         });
-        console.log('Html5Video: done!');
+        if (DBG) console.log('Html5Video: done!');
       }
     },
 
     load(item) {
-      console.log('Html5Video: load method called', item);
+      // if (DBG) console.log('Html5Video: load method called', item);
       if (this.video.src) {
         this.video.removeAttribute('src');
       }
@@ -627,25 +629,25 @@ export default defineComponent({
 
       if (url.endsWith('.m3u8') && !this.nativeHls) {
         this.initShaka();
-        console.log('Html5Video: shaka.load', url);
+        // if (DBG) console.log('Html5Video: shaka.load', url);
         this.shaka.load(url);
       } else {
-        // console.log('Html5Video: plain video load', url);
+        // if (DBG) console.log('Html5Video: plain video load', url);
         this.video.src = url;
       }
     },
 
     // Event: play / pause / reload was clicked.
     onPlay() {
-      console.log('Html5Video: play() state is', this.playState);
+      if (DBG) console.log('Html5Video: play() state is', this.playState);
       if (this.playState === 'ended') {
         this.video.currentTime = 0;
       }
       if (this.playState === 'playing') {
-        console.log('Html5Video: calling pause');
+        if (DBG) console.log('Html5Video: calling pause');
         this.video.pause();
       } else {
-        console.log('Html5Video: calling play');
+        if (DBG) console.log('Html5Video: calling play');
         this.video.play();
       }
       this.bigPlayButton = false;
@@ -661,17 +663,17 @@ export default defineComponent({
         this.setState('paused');
       }
       if (fast && this.video.fastSeek && !this.shaka) {
-        // console.log('Html5Video: onSeek: fastSeek to', newTime);
+        // if (DBG) console.log('Html5Video: onSeek: fastSeek to', newTime);
         this.video.fastSeek(newTime);
       } else {
-        // console.log('Html5Video: onSeek: updating currentTime to', newTime);
+        // if (DBG) console.log('Html5Video: onSeek: updating currentTime to', newTime);
         this.video.currentTime = newTime;
       }
       this.currentTime = newTime;
     },
 
     onTexttrack(val) {
-      console.log('Html5Video: onTexttrack', val);
+      if (DBG) console.log('Html5Video: onTexttrack', val);
       const textTracks = this.getTextTracks();
       if (this.shaka) {
         if (val !== null && val >= 0) {
@@ -702,7 +704,7 @@ export default defineComponent({
 
     onVolume() {
       if (!this.video) return;
-      console.log('Html5Video: onVolume: TODO');
+      if (DBG) console.log('Html5Video: onVolume: TODO');
     },
 
     onMute() {
@@ -732,7 +734,7 @@ export default defineComponent({
     },
 
     relSeek(offset) {
-      // console.log('Html5Video: relseek', offset);
+      // if (DBG) console.log('Html5Video: relseek', offset);
       if (!this.duration) {
         return;
       }
@@ -744,7 +746,7 @@ export default defineComponent({
         newTime = this.duration;
       }
       this.onSeek(newTime, true);
-      // console.log('Html5Video: seek from', this.video.currentTime, 'to', newTime);
+      // if (DBG) console.log('Html5Video: seek from', this.video.currentTime, 'to', newTime);
     },
 
     onKeyDown(ev) {
@@ -771,7 +773,7 @@ export default defineComponent({
         clearTimeout(this.displayTimer);
         this.displayTimer = null;
       }
-      // console.log('Html5Video: setDisplayState', state, timeout);
+      // if (DBG) console.log('Html5Video: setDisplayState', state, timeout);
 
       if (state === DisplayState.HIDDEN) {
         if (this.displayState !== DisplayState.HIDDEN) {
@@ -825,7 +827,7 @@ export default defineComponent({
       if (this.fromControls(nativeEv)) {
         return;
       }
-      // console.log('Html5Video: mouseEvent', ev, nativeEv);
+      // if (DBG) console.log('Html5Video: mouseEvent', ev, nativeEv);
       if (!document.hasFocus() && ev !== MouseEvent.LEAVE_CONTAINER) {
         return;
       }
@@ -833,9 +835,9 @@ export default defineComponent({
     },
 
     handleEvent(ev) {
-      // console.log('Html5Video: handleEvent', ev);
+      // if (DBG) console.log('Html5Video: handleEvent', ev);
       this.handleEvent2(ev);
-      // console.log('Html5Video:   --> displayState:', this.displayState);
+      // if (DBG) console.log('Html5Video:   --> displayState:', this.displayState);
     },
 
     handleEvent2(ev) {
@@ -857,7 +859,7 @@ export default defineComponent({
       }
 
       if (ev === ControlsEvent.IDLE || ev === ControlsEvent.OFF) {
-        // console.log('Html5Video: ControlsEvent.IDLE', canHide);
+        // if (DBG) console.log('Html5Video: ControlsEvent.IDLE', canHide);
         if (canHide) {
           const tmout = ev === ControlsEvent.IDLE ? 3000 : 500;
           this.setDisplayState(DisplayState.HIDDEN, tmout);

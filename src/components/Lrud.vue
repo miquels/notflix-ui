@@ -88,7 +88,7 @@ class FocussedElem {
       }
       // Make sure that elemens that are further away in the
       // Y direction are made more "expensive" to reach.
-      bias += Math.abs(this.y - y2) / 100;
+      bias += Math.abs(this.y - y2) / 20;
     }
 
     if (dir === 'up' || dir === 'down') {
@@ -108,7 +108,7 @@ class FocussedElem {
       }
       // Make sure that elemens that are further away in the
       // X direction are made more "expensive" to reach.
-      bias += Math.abs(this.x - x2) / 100;
+      bias += Math.abs(this.x - x2) / 200;
     }
 
     // Distance.
