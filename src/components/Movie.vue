@@ -210,6 +210,7 @@ export default defineComponent({
         const factory = new PlayerInfoFactory(quasar, store);
         const info = factory.movie(movie);
         emitter.emit('playCast', info);
+        return;
       }
 
       // Nope, local player.

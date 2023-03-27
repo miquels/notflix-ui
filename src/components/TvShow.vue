@@ -584,8 +584,9 @@ function playEpisode(episode) {
   // Chromecast?
   if (store.state.castState === 'connected') {
     const factory = new PlayerInfoFactory(quasar, store);
-    const info = factory.episode(show, currentSeason, episode);
+    const info = factory.episode(show, currentSeason.value, episode);
     emitter.emit('playCast', info);
+    return;
   }
 
   // Nope, local player.

@@ -275,6 +275,13 @@ export default class API {
 
   // The 'item' here is a PlayerInfo objecs .
   async updateSeen(info, currentTime, duration) {
+
+    // Should not happen, but the Chromecast component sometimes sends
+    // an update after the end of the video while its state has been reset.
+    if (!duration) {
+      return;
+    }
+
     let seen;
     const item = await this._getItem(info.collection, info.id);
     if (!item) {

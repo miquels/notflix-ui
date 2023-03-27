@@ -51,15 +51,17 @@ import {
   inject,
   onMounted,
   ref,
+  watch,
 } from 'vue';
 import { useStore } from 'vuex';
 import { useQuasar } from 'quasar';
 import VideoControls from 'components/VideoControls.vue';
 import { sxe } from '../lib/util.js';
+import { useApi } from '../lib/api.js';
 
 export function canCast() {
   const quasar = useQuasar();
-  const noMacCast = quasar.platform.is.mac && process.env.DEV;
+  const noMacCast = false; //quasar.platform.is.mac && process.env.DEV;
   return quasar.platform.is.chrome &&
     !(quasar.platform.is.ios || quasar.platform.is.tv || noMacCast)
 }
@@ -69,20 +71,25 @@ export const Chromecast = defineComponent({
   components: {
     VideoControls,
   },
-  props: {
-    item: {
-      type: String,
-      default: null,
-    },
-  },
 
   setup() {
+    const emitter = inject('emitter');
+    const store = useStore();
+    const currentTime = ref(0);
+    const duration = ref(null);
+    const currentVideo = ref(null);
+    const api = useApi();
+
     onMounted(() => {
+
+      watch(currentTime, () => {
+        api
+          .updateSeen(currentVideo.value, currentTime.value, duration.value)
+          .catch((e) => { console.log('Chromecast: failed to updateSeen: ', e) });
+      });
       const instance = getCurrentInstance();
       instance.ctx.onMounted();
     });
-    const emitter = inject('emitter');
-    const store = useStore();
 
     // Load the Cast framework.
     let cast = document.createElement('script');
@@ -91,9 +98,11 @@ export const Chromecast = defineComponent({
     document.body.appendChild(cast);
 
     return {
+      api,
       playState: ref('idle'),
-      currentTime: ref(0),
-      duration: ref(null),
+      currentVideo,
+      currentTime,
+      duration,
       volume: ref(1),
       muted: ref(false),
       textTracks: ref([]),
@@ -378,6 +387,8 @@ export const Chromecast = defineComponent({
     },
 
     load(item) {
+      this.currentVideo = item;
+
       // Make URL absolute.
       const src = new URL(item.src, window.location.origin).href;
       console.log('Chromecast: chromecast.load', src);
