@@ -93,11 +93,11 @@ export default defineComponent({
     const api = useApi();
     const el = ref(null);
     function toggleFavorite(fav) {
-      let isFav = api.isFavorite(fav.id);
+      let isFav = api.isFavorite(fav.id) === true;
       api.setFavorite(fav.id, !isFav);
     }
     function isFavorite(show) {
-      return api.isFavorite(show.id);
+      return api.isFavorite(show.id) === true;
     }
     return {
       el,
