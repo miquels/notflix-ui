@@ -18,15 +18,22 @@ const routes = [
       },
     ],
   },
+  /*
   {
     name: 'tvshow-play',
     path: '/tv-shows/:collection/:id/:seasonEpisode/play',
     component: () => import('pages/Player.vue'),
   },
+  */
   {
     path: '/tv-shows',
     component: () => import('layouts/MainLayout.vue'),
     children: [
+      {
+        name: 'tvshow-play',
+        path: '/tv-shows/:collection/:id/:seasonEpisode/play',
+        component: () => import('pages/Player.vue'),
+      },
       {
         name: 'tvshow',
         path: '/tv-shows/:collection/:id/:seasonEpisode?',
