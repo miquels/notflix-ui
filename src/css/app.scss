@@ -8,6 +8,11 @@ body {
   background-color: rgba(0,0,0,0);
 }
 
+// Hide the body scrollbar.
+body::-webkit-scrollbar {
+    display: none;
+}
+
 .hover-pointer:hover {
   cursor: pointer;
 }
