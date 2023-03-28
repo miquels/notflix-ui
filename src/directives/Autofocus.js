@@ -9,35 +9,37 @@
 // latest auto-focus element. This is especially important for
 // keyboard-only (or DPAD-only) navigation.
 
-var savedAutofocus;
-var savedSelector;
+/* eslint no-console: 0 */
+/* eslint no-continue: 0 */
+/* eslint no-console: 0 */
+
+let savedAutofocus;
+let savedSelector;
 
 function doFocus(el, selector, why) {
   const active = document.activeElement;
-  if (active !== document.body && !(el.contains(active) && selector))
-    return;
+  if (active !== document.body && !(el.contains(active) && selector)) return null;
 
   if (!selector && el === active) {
     console.log('v-autofocus: ', why, ': already is active element', { active });
     savedAutofocus = el;
     savedSelector = selector;
-    return;
+    return null;
   }
 
   if (selector && el !== active && el.contains(active)) {
     console.log('v-autofocus: ', why, ': already contains active element', { active });
     savedAutofocus = el;
     savedSelector = selector;
-    return;
+    return null;
   }
 
   let elem;
   if (!selector) {
     elem = el;
   } else {
-    elem = el.querySelector(':scope ' + selector);
-    if (!elem)
-      console.log('v-autofocus: ', why, `: not found: [${selector}]`, { el });
+    elem = el.querySelector(`:scope ${selector}`);
+    if (!elem) console.log('v-autofocus: ', why, `: not found: [${selector}]`, { el });
   }
   if (elem) {
     console.log('v-autofocus: ', why, ': focussing ', { elem });
@@ -49,9 +51,7 @@ function doFocus(el, selector, why) {
 }
 
 function mounted(el, binding, hook) {
-
-  if (!el.isConnected)
-    return;
+  if (!el.isConnected) return;
 
   let selector = binding.value;
   if (typeof binding.value === 'object') {
@@ -83,7 +83,7 @@ function mounted(el, binding, hook) {
 
   // Mark this element as autofocus.
   if (!el.dataset.autofocus) {
-    el.dataset.autofocus = "1"
+    el.dataset.autofocus = '1';
   }
 }
 
@@ -99,44 +99,44 @@ export const Autofocus = {
   mounted: (el, binding) => mounted(el, binding, 'mounted'),
   updated: (el, binding) => mounted(el, binding, 'updated'),
   unmounted,
-}
+};
 
 export function AutofocusInit() {
-
   // If the body EVER gets focus, refocus on an autofocus element.
   function onBodyFocus() {
-
     // First try to get back to the last autofocus.
-    if (savedAutofocus) try {
-      if (savedAutofocus.isConnected) {
-        if (doFocus(savedAutofocus, savedSelector, 'body-focus')) {
-          console.log('body-focus: set focus back to savedAutoFocus');
-          return;
+    if (savedAutofocus) {
+      try {
+        if (savedAutofocus.isConnected) {
+          if (doFocus(savedAutofocus, savedSelector, 'body-focus')) {
+            console.log('body-focus: set focus back to savedAutoFocus');
+            return;
+          }
+          console.log('body-focus: failed to set focus back to savedAutofocus');
         }
-        console.log('body-focus: failed to set focus back to savedAutofocus');
+      } catch (e) {
+        console.log('body-focus: failed to set focus back to savedAutofocus:', e);
       }
-    } catch(e) {
-      console.log('body-focus: failed to set focus back to savedAutofocus:', e);
     }
 
     // Nope, find the first autofocus and use that.
-    let elems = document.querySelectorAll('[data-autofocus]');
-    for (let i = 0; i < elems.length; i++) {
+    const elems = document.querySelectorAll('[data-autofocus]');
+    for (let i = 0; i < elems.length; i += 1) {
       const el = elems[i];
       // Must be visible.
       const rect = el.getBoundingClientRect();
-      if (rect.top > document.body.clientHeight ||
-          rect.left > document.body.clientWidth ||
-          rect.bottom < 0 ||
-          rect.right < 0 ||
-          rect.width === 0 ||
-          rect.height === 0) {
+      if (rect.top > document.body.clientHeight
+          || rect.left > document.body.clientWidth
+          || rect.bottom < 0
+          || rect.right < 0
+          || rect.width === 0
+          || rect.height === 0) {
         continue;
       }
-      var style = window.getComputedStyle(el);
-      if (style.display === 'none' ||
-          style.visibility === 'hidden' ||
-          !style.opacity) {
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none'
+          || style.visibility === 'hidden'
+          || !style.opacity) {
         continue;
       }
       // should be good enough to recover.
@@ -154,8 +154,8 @@ export function AutofocusInit() {
   // document.activeElement can sometimes point at the BODY, likely
   // the document is 'between focussed elements'. So check at the
   // next tick if the body is the active element.
-  var refocussing = false;
-  document.addEventListener('focusout', (ev) => {
+  let refocussing = false;
+  document.addEventListener('focusout', () => {
     setTimeout(() => {
       if (!refocussing && document.activeElement === document.body) {
         refocussing = true;
@@ -176,6 +176,8 @@ export function AutofocusInit() {
       case 'Tab':
         console.log('body: preventing default for', ev.key);
         ev.preventDefault();
+        break;
+      default:
         break;
     }
   });
