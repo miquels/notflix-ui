@@ -1,6 +1,6 @@
 <template>
 <lrud>
-<q-layout view="hHh lpR fFf">
+  <q-layout view="hHh lpR fFf">
 
     <q-header
       elevated
@@ -74,11 +74,11 @@
     </q-page-container>
 
     <q-footer
-      :modelValue="castActive()"
+      :modelValue="store.state.castActive"
       elevated
-      class="bg-grey-10 text-white cursor-pointer">
+      class="bg-grey-10 text-white cursor-pointer"
     >
-      <Chromecast v-if="canCast()"/>
+      <Chromecast v-if="canCast()" />
     </q-footer>
 
   </q-layout>
@@ -116,7 +116,8 @@ import { ref, inject, onMounted, onBeforeMount } from 'vue';
 import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
-import { Chromecast, canCast } from 'components/Chromecast.vue';
+import { canCast } from 'components/Chromecast.vue';
+import Chromecast from 'components/Chromecast.vue';
 import { hasSettings } from 'pages/Settings.vue';
 import CastButton from 'components/CastButton.vue';
 import { isMobile, addPrettyScrollBars } from '../lib/util.js';
@@ -169,10 +170,6 @@ export default {
   },
 
   methods: {
-    castActive() {
-      return this.store.state.castActive;
-    },
-
     showHeader() {
       if (!this.$q.platform.is.tv)
         return {};

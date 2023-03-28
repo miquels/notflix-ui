@@ -69,7 +69,12 @@ export function canCast() {
     !(quasar.platform.is.ios || quasar.platform.is.tv || noMacCast)
 }
 
-export const Chromecast = defineComponent({
+function unescapeHtml(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  return doc.documentElement.textContent;
+}
+
+export default defineComponent({
   name: 'Chromecast',
   components: {
     VideoControls,
@@ -208,7 +213,8 @@ export const Chromecast = defineComponent({
         const connected = this._player.isConnected && session !== null;
 
         if (session) {
-          this.deviceName = session.getCastDevice().friendlyName || this.deviceName;
+          const friendlyName = session.getCastDevice().friendlyName;
+          this.deviceName = friendlyName ? unescapeHtml(friendlyName) : this.deviceName;
         }
         // eslint-disable-next-line
         if (connected && session.getSessionState() === window.cast.framework.SessionState.SESSION_RESUMED) {
@@ -479,7 +485,7 @@ export const Chromecast = defineComponent({
         if (DBG) console.log('Chromecast: chromecast: no session');
         return;
       }
-      if (DBG) console.log(`Chromecast: chromecast: loadMedia. name is ${this.name}, deviceName is ${this.deviceName}`);
+      if (DBG) console.log(`Chromecast: chromecast: loadMedia. name is ${this.name}, deviceName is ${this.deviceName}. setting castActive = true.`);
       this.store.commit('castActive', true);
 
       session.loadMedia(request).then(
@@ -669,5 +675,4 @@ export const Chromecast = defineComponent({
     },
   },
 });
-export default Chromecast;
 </script>
