@@ -7,6 +7,7 @@
       :items="items"
       :collection="collection"
       :genres="genres"
+      :favoriteIcons="true"
       type="series"
       class="fit"
       @selectItem="show_clicked"

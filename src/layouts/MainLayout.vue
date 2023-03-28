@@ -176,7 +176,8 @@ export default {
     showHeader() {
       if (!this.$q.platform.is.tv)
         return {};
-      switch (this.$route.path) {
+      const path = this.$route.path.endsWith('/') ? this.$route.path : this.$route.path + '/';
+      switch (path) {
         case '/':
         case '/home/':
         case '/movies/':

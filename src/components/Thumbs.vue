@@ -30,6 +30,7 @@
               :imgHeight="imgHeight"
               :fontSize="fontSize"
               :hideImages="scrolling"
+              :favoriteIcons="favoriteIcons"
               @selectItem="selectItem($event)"
             />
           </div>
@@ -86,6 +87,7 @@ export default {
       default: null,
     },
     type: String,
+    favoriteIcons: Boolean,
   },
 
   data() {

@@ -87,9 +87,10 @@ export default defineComponent({
     hideImages: Boolean,
     padding: Number,
     fontSize: Number,
+    favoriteIcons: Boolean,
   },
 
-  setup() {
+  setup(props) {
     const api = useApi();
     const el = ref(null);
     function toggleFavorite(fav) {
@@ -97,6 +98,9 @@ export default defineComponent({
       api.setFavorite(fav.id, !isFav);
     }
     function isFavorite(show) {
+      if (!props.favoriteIcons) {
+        return null;
+      }
       return api.isFavorite(show.id) === true;
     }
     return {
