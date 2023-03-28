@@ -45,11 +45,14 @@
 /* eslint operator-linebreak: "off" */
 /* eslint no-console: "off" */
 
+const DBG = false;
+
 import {
   defineComponent,
   getCurrentInstance,
   inject,
   onMounted,
+  onUnmounted,
   ref,
   watch,
 } from 'vue';
@@ -80,22 +83,50 @@ export const Chromecast = defineComponent({
     const currentVideo = ref(null);
     const api = useApi();
 
-    onMounted(() => {
+    let onGCastApiAvailable = null;
 
+    onMounted(() => {
       watch(currentTime, () => {
         api
           .updateSeen(currentVideo.value, currentTime.value, duration.value)
-          .catch((e) => { console.log('Chromecast: failed to updateSeen: ', e) });
+          .catch((e) => { if (DBG) console.log('Chromecast: failed to updateSeen: ', e) });
       });
+
       const instance = getCurrentInstance();
-      instance.ctx.onMounted();
+      if (window.__isGCastApiAvailable) {
+        instance.ctx.init_player();
+      } else {
+        onGCastApiAvailable = () => {
+          instance.ctx.init_player();
+        }
+      }
+    });
+
+    onUnmounted(() => {
+      onGCastApiAvailable = null;
     });
 
     // Load the Cast framework.
-    let cast = document.createElement('script');
-    cast.setAttribute( 'src', 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1');
-    cast.async = true;
-    document.body.appendChild(cast);
+    const url = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
+    if (!document.querySelector(`script[src="${url}"]`)) {
+      let cast = document.createElement('script');
+      cast.setAttribute('src', url);
+      cast.async = true;
+      document.body.appendChild(cast);
+    }
+
+    // If the API becomes available before we have mounted, just set a flag.
+    // If we have already mounted, execute callback.
+    if (!window.__isGCastApiAvailable) {
+      window.__onGCastApiAvailable = (isAvailable) => {
+        if (isAvailable) {
+          window.__isGCastApiAvailable = true;
+          if (onGCastApiAvailable) {
+            onGCastApiAvailable();
+          }
+        }
+      }
+    }
 
     return {
       api,
@@ -118,21 +149,6 @@ export const Chromecast = defineComponent({
   },
 
   methods: {
-    // Initialize.
-    onMounted() {
-      console.log('Chromecast: onMounted');
-
-      if (!window.chrome || !chrome.cast || !chrome.cast.isAvailable) {
-        window.__onGCastApiAvailable = (isAvailable) => {
-          if (isAvailable) {
-            this.init_player();
-          }
-        };
-        return;
-      }
-      delete window.__onGCastApiAvailable;
-      this.init_player();
-    },
 
     receiverId() {
       const receiverIds = {
@@ -149,24 +165,24 @@ export const Chromecast = defineComponent({
       const apiConfig = new chrome.cast.ApiConfig(
         sessionRequest,
         (session) => {
-          console.log('Chromecast: new session:', session);
+          if (DBG) console.log('Chromecast: new session:', session);
           if (session.media.length !== 0) {
-            console.log('Chromecast: Found multiple sessions: ', session.media.length);
+            if (DBG) console.log('Chromecast: Found multiple sessions: ', session.media.length);
           }
         },
         (ev) => {
           if (ev === 'available') {
-            console.log('Chromecast: was found on the network.');
+            if (DBG) console.log('Chromecast: was found on the network.');
           } else {
-            console.log('Chromecast: There are no Chromecasts available.');
+            if (DBG) console.log('Chromecast: There are no Chromecasts available.');
           }
         },
         chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
       );
       chrome.cast.initialize(
         apiConfig,
-        () => { console.log('Chromecast: initialization succeeded'); },
-        () => { console.log('Chromecast: initialization failed'); },
+        () => { if (DBG) console.log('Chromecast: initialization succeeded'); },
+        () => { if (DBG) console.log('Chromecast: initialization failed'); },
       );
     },
 
@@ -200,7 +216,7 @@ export const Chromecast = defineComponent({
         }
       });
       const castState = instance.getCastState();
-      console.log('Chromecast: casState now', castState);
+      if (DBG) console.log('Chromecast: casState now', castState);
 
       const handleEvent = (eventType, func) => {
         const t = window.cast.framework.RemotePlayerEventType[eventType];
@@ -230,30 +246,30 @@ export const Chromecast = defineComponent({
 
       handleEvent('CURRENT_TIME_CHANGED', () => {
         this.currentTime = this._player.currentTime;
-        // console.log('Chromecast: current time changed');
+        // if (DBG) console.log('Chromecast: current time changed');
         this.active(true);
       });
 
       handleEvent('IS_PAUSED_CHANGED', () => {
-        console.log('Chromecast: is_paused changed');
+        if (DBG) console.log('Chromecast: is_paused changed');
         this.updateState();
         this.active(true);
       });
 
       handleEvent('IS_MUTED_CHANGED', () => {
-        console.log('Chromecast: is_muted changed');
+        if (DBG) console.log('Chromecast: is_muted changed');
         this.muted = this._player.isMuted;
         this.active(true);
       });
 
       handleEvent('VOLUME_LEVEL_CHANGED', () => {
-        console.log('Chromecast: volume_level changed', this._player.volumeLevel);
+        if (DBG) console.log('Chromecast: volume_level changed', this._player.volumeLevel);
         this.volume = this._player.volumeLevel;
         // Don't trigger active(true) here, the OS might have done this on connect.
       });
 
       this.emitter.on('playCast', (video) => {
-        console.log('Chromecast: playCast request', video);
+        if (DBG) console.log('Chromecast: playCast request', video);
         this.load(video);
       });
     },
@@ -261,7 +277,7 @@ export const Chromecast = defineComponent({
     setCastStateNative(state) {
       // eslint-disable-next-line
       const CastState = window.cast.framework.CastState;
-      console.log('Chromecast: setCastStateNative', state);
+      if (DBG) console.log('Chromecast: setCastStateNative', state);
       switch (state.castState) {
         case CastState.NO_DEVICES_AVAILABLE:
           this.setCastState('no_devices');
@@ -273,13 +289,13 @@ export const Chromecast = defineComponent({
           this.setCastState('connected');
           break;
         default:
-          console.log('Chromecast: setCastStateNative: unknown state', state);
+          if (DBG) console.log('Chromecast: setCastStateNative: unknown state', state);
           break;
       }
     },
 
     setCastState(newState) {
-      console.log('Chromecast: setCastState', newState);
+      if (DBG) console.log('Chromecast: setCastState', newState);
       if (this.store.state.castState !== newState) {
         this.store.commit('castState', newState);
       }
@@ -293,19 +309,19 @@ export const Chromecast = defineComponent({
     },
 
     mediaInfoChanged(id) {
-      console.log('Chromecast: mediaInfoChanged from', id);
+      if (DBG) console.log('Chromecast: mediaInfoChanged from', id);
       const session = this.getSession();
       if (!session) {
         return;
       }
-      console.log('Chromecast: mediaInfoChanged: getSessionObj: ', session.getSessionObj());
+      if (DBG) console.log('Chromecast: mediaInfoChanged: getSessionObj: ', session.getSessionObj());
       const media = session.getMediaSession();
       if (!media) {
-        console.log('Chromecast: mediaInfoChanged: no media');
+        if (DBG) console.log('Chromecast: mediaInfoChanged: no media');
         this.resetState();
         return;
       }
-      console.log('Chromecast: mediaInfoChanged:', media);
+      if (DBG) console.log('Chromecast: mediaInfoChanged:', media);
       const mediaInfo = media.media;
       // this.currentSrc = mediaInfo.contentId;
       // this.currentTitle = mediaInfo.metadata.title;
@@ -318,13 +334,13 @@ export const Chromecast = defineComponent({
       this.audioTracks = this.getTracks(media, 'AUDIO');
       this.audioTrack = this.getActiveTrack(media, 'AUDIO');
 
-      console.log('Chromecast: calling updateState');
+      if (DBG) console.log('Chromecast: calling updateState');
       this.updateState(media);
     },
 
     active(flag) {
       if (this.store.state.castActive !== flag) {
-        console.log('Chromecast: setting castActive', this.store.state.castActive, ' -> ', flag);
+        if (DBG) console.log('Chromecast: setting castActive', this.store.state.castActive, ' -> ', flag);
         this.store.commit('castActive', flag);
       }
     },
@@ -391,7 +407,7 @@ export const Chromecast = defineComponent({
 
       // Make URL absolute.
       const src = new URL(item.src, window.location.origin).href;
-      console.log('Chromecast: chromecast.load', src);
+      if (DBG) console.log('Chromecast: chromecast.load', src);
 
       const mediaInfo = new chrome.cast.media.MediaInfo(src, 'video/mp4');
       mediaInfo.streamType = chrome.cast.media.StreamType.BUFFERED;
@@ -457,25 +473,25 @@ export const Chromecast = defineComponent({
       request.currentTime = item.startAt || 0;
       request.autoplay = this.playState !== 'paused';
 
-      console.log('Chromecast: chromecast: getting session');
+      if (DBG) console.log('Chromecast: chromecast: getting session');
       const session = this.getSession();
       if (!session) {
-        console.log('Chromecast: chromecast: no session');
+        if (DBG) console.log('Chromecast: chromecast: no session');
         return;
       }
-      console.log(`Chromecast: chromecast: loadMedia. name is ${this.name}, deviceName is ${this.deviceName}`);
+      if (DBG) console.log(`Chromecast: chromecast: loadMedia. name is ${this.name}, deviceName is ${this.deviceName}`);
       this.store.commit('castActive', true);
 
       session.loadMedia(request).then(
         () => {
           // eslint-disable-next-line
-          console.log('chromecast: remote media loaded');
+          if (DBG) console.log('chromecast: remote media loaded');
           this.currentSrc = src;
         },
         (errorCode) => {
           const errorMessage = this.getErrorMessage(errorCode);
           // eslint-disable-next-line
-          console.log(`chromecast: media load error: ${errorMessage}`);
+          if (DBG) console.log(`chromecast: media load error: ${errorMessage}`);
           this.setPlayState('idle');
         },
       );
@@ -525,18 +541,18 @@ export const Chromecast = defineComponent({
           this.buffering = true;
           break;
         default:
-          console.log('Chromecast: unknown playerState', this._player.PlayerState);
+          if (DBG) console.log('Chromecast: unknown playerState', this._player.PlayerState);
           break;
       }
     },
 
     setPlayState(playState) {
       if (playState === 'idle') {
-        console.log('set castActive to', false);
+        if (DBG) console.log('set castActive to', false);
         this.store.commit('castActive', false);
       }
-      console.log('Chromecast: setPlayState', playState);
-      console.log('playState !== idle', playState !== 'idle');
+      if (DBG) console.log('Chromecast: setPlayState', playState);
+      if (DBG) console.log('playState !== idle', playState !== 'idle');
       this.active(playState !== 'idle');
       this.playState = playState;
     },
@@ -558,7 +574,7 @@ export const Chromecast = defineComponent({
           });
         }
       }
-      console.log('tracks:', type, ': ', tracks);
+      if (DBG) console.log('tracks:', type, ': ', tracks);
       return tracks;
     },
 
@@ -570,11 +586,11 @@ export const Chromecast = defineComponent({
       for (let i in mediaInfo.tracks) {
         const t = mediaInfo.tracks[i];
         if (t.type === type && active.includes(t.trackId)) {
-          console.log('activeTrack:', type, t.trackId);
+          if (DBG) console.log('activeTrack:', type, t.trackId);
           return t.trackId;
         }
       }
-      console.log('activeTrack:', type, null);
+      if (DBG) console.log('activeTrack:', type, null);
       return null;
     },
 
