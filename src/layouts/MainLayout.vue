@@ -32,25 +32,26 @@
           />
         </q-tabs>
         </lrud>
-      <div class="col"/>
-      <CastButton v-if="canCast()" class="on-right cursor-pointer" />
-      <q-btn
-        v-if="hasSettings()"
-        square dense
-        class="on-right"
-        @click="$router.push('/settings/');"
-      >
-        <q-icon
-          name="settings"
-          size="24px"
-        />
-      </q-btn>
-      <q-btn square dense class="on-right" @click="refresh()">
-        <q-icon
-          name="refresh"
-          size="24px"
-        />
-      </q-btn>
+        <div v-if="devel()" class="col text-center main-devel">DEVEL</div>
+        <div v-if="!devel()" class="col" />
+        <CastButton v-if="canCast()" class="on-right cursor-pointer" />
+        <q-btn
+          v-if="hasSettings()"
+          square dense
+          class="on-right"
+          @click="$router.push('/settings/');"
+        >
+          <q-icon
+            name="settings"
+            size="24px"
+          />
+        </q-btn>
+        <q-btn square dense class="on-right" @click="refresh()">
+          <q-icon
+            name="refresh"
+            size="24px"
+          />
+        </q-btn>
       </q-toolbar>
       </lrud>
     </q-header>
@@ -108,7 +109,10 @@
   position: fixed;
   z-index: 100;
 }
-
+.main-devel {
+  font-weight: 700;
+  color: red;
+}
 </style>
 
 <script>
@@ -170,6 +174,10 @@ export default {
   },
 
   methods: {
+    devel() {
+      return process.env.DEV;
+    },
+
     showHeader() {
       if (!this.$q.platform.is.tv)
         return {};
