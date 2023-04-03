@@ -23,7 +23,6 @@
             <PosterRow
               :style="{ width: `${item.width}px`, height: `${item.height}px` }"
               :items="item.row"
-              :collection="collection"
               :height="item.height"
               :padding="thumbPadding"
               :imgWidth="imgWidth"
@@ -82,10 +81,6 @@ export default {
       type: Array,
       default: () => [],
     },
-    collection: {
-      type: String,
-      default: null,
-    },
     type: String,
     favoriteIcons: Boolean,
   },
@@ -127,9 +122,10 @@ export default {
     if (this.selectedItem) {
       // We need to wait one tick for the redraw to have happened.
       setTimeout(() => {
-        const elem = this.$refs.el.querySelector(`:scope [data-item-id="${this.selectedItem}"`);
+        const id = this.selectedItem.id;
+        const elem = this.$refs.el.querySelector(`:scope [data-item-id="${id}"`);
         if (elem) {
-          // console.log('Thumbs: re-focussing on', this.selectedItem);
+          // console.log('Thumbs: re-focussing on', id);
           elem.focus();
         }
         this.selectedItem = null;
@@ -180,6 +176,7 @@ export default {
             key: theItem.id,
             name: theItem.name,
             id: theItem.id,
+            collection: theItem.collection,
           };
           if (theItem.poster) {
             item.url = `${theItem.path}/${theItem.poster}`;

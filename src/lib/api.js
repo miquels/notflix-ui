@@ -187,6 +187,9 @@ export default class API {
       return [];
     }
 
+    // Set collection id.
+    items.forEach((item) => item.collection = collId);
+
     // Add favorites.
     await this.loadFavorites();
     if (collId === '2') {

@@ -5,12 +5,11 @@
     </div>
     <Thumbs
       :items="items"
-      :collection="collection"
       :genres="genres"
       :favoriteIcons="true"
       type="series"
       class="fit"
-      @selectItem="show_clicked"
+      @selectItem="itemClicked"
    />
   </q-page>
 </template>
@@ -41,20 +40,21 @@ export default defineComponent({
     const haveFavorites = ref(null);
 
     // FIXME: hardcoded collection.
-    const collection = '2';
+    const collections = [ '1', '2' ];
+    const genreCollection = '2';
 
-    function getItems() {
-      api.getItems(collection).then((theItems) => {
-        // console.log('setting items', theItems);
-        // eslint-disable-next-line
-        items.value = theItems.filter((item) => api.isFavorite(item.id));
-        haveFavorites.value = items.value.length > 0;
-        console.log('haveFavorites', haveFavorites.value);
-      });
+    async function getItems() {
+      const newItems = [];
+      for (let collection of collections) {
+        const theItems = await api.getItems(collection);
+        newItems.push(...theItems.filter((item) => api.isFavorite(item.id)));
+      }
+      haveFavorites.value = newItems.length > 0;
+      items.value = newItems;
     }
     getItems();
 
-    api.getGenreNames(collection).then((theGenres) => {
+    api.getGenreNames(genreCollection).then((theGenres) => {
       genres.value = theGenres;
       if (store.state.currentView.type === 'series') {
         store.commit('currentView', { genres: theGenres });
@@ -76,7 +76,6 @@ export default defineComponent({
 
     return {
       api: null,
-      collection,
       genres,
       haveFavorites,
       items,
@@ -85,9 +84,10 @@ export default defineComponent({
   },
 
   methods: {
-    show_clicked(showName) {
-      // console.log('clicked on', showName);
-      this.$router.push(`/tv-shows/${this.collection}/${showName}`);
+    itemClicked(item) {
+      console.log('clicked on', item);
+      const colltype = item.collection === '1' ? 'movies' : 'tv-shows';
+      this.$router.push(`/${colltype}/${item.collection}/${item.id}`);
     },
   },
 });

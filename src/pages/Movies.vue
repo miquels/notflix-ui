@@ -4,7 +4,7 @@
       :items="items"
       :genres="genres"
       class="fit"
-      @selectItem="movie_clicked"/>
+      @selectItem="movieClicked"/>
   </q-page>
 </template>
 
@@ -75,8 +75,8 @@ export default defineComponent({
   },
 
   methods: {
-    movie_clicked(movieName) {
-      this.$router.push(`/movies/${this.collection}/${movieName}`);
+    movieClicked(item) {
+      this.$router.push(`/movies/${item.collection}/${item.id}`);
     },
   },
 });

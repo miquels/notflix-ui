@@ -168,7 +168,6 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
     const api = useApi();
-    const $q = useQuasar();
 
     const fanart = ref(null);
     const poster = ref(null);
@@ -255,7 +254,6 @@ export default defineComponent({
       plot,
       progress,
       title,
-      $q,
     };
   },
 });

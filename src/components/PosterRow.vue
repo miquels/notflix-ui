@@ -10,7 +10,7 @@
       :key="item.key"
       class="poster-row-thumb relative"
       :style="{ padding: `${padding}px` }"
-      @click="$emit('select-item', item.id)"
+      @click="$emit('select-item', item)"
       :data-item-id="item.id"
       tabindex="0"
     >
@@ -76,10 +76,6 @@ export default defineComponent({
     items: {
       type: Array,
       default: () => [],
-    },
-    collection: {
-      type: String,
-      default: null,
     },
     height: Number,
     imgWidth: Number,

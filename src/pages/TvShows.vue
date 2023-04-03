@@ -7,7 +7,7 @@
       :favoriteIcons="true"
       type="series"
       class="fit"
-      @selectItem="show_clicked"
+      @selectItem="showClicked"
    />
   </q-page>
 </template>
@@ -95,9 +95,9 @@ export default defineComponent({
   },
 
   methods: {
-    show_clicked(showName) {
-      // console.log('clicked on', showName);
-      this.$router.push(`/tv-shows/2/${showName}`);
+    showClicked(item) {
+      // console.log('clicked on', item);
+      this.$router.push(`/tv-shows/${item.collection}/${item.id}`);
     },
   },
 });
