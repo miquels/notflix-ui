@@ -77,6 +77,9 @@
 
 <style lang="scss">
 @import '~src/css/mixins.scss';
+body {
+  height: 100vh;
+}
 .html5video-container {
   display: flex;
   position: relative;

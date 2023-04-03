@@ -98,7 +98,7 @@
                   />
                 </lrud>
               </q-item>
-              <div class="col-2 relative q-pa-none">
+              <div class="col relative q-pa-none">
                 <q-btn
                   :icon="isFavorite() ? 'favorite' : 'favorite_border'"
                   round
@@ -110,7 +110,7 @@
                   tabindex="0"
                 />
               </div>
-              <div class="col-2 col-sm-6"></div>
+              <div class="col-12 col-sm-6"></div>
             </div>
           </div>
         </div>
@@ -200,6 +200,7 @@ import { useApi } from '../lib/api.js';
 import { decodeSE, encodeSE, whenTrue } from '../lib/util.js';
 import Backdrop from './Backdrop.vue';
 import Episode from './Episode.vue';
+// import WhatNext from './WhatNext.vue';
 import { PlayerInfoFactory } from '../lib/playerinfo.js';
 
 const emitter = inject('emitter');
@@ -431,24 +432,37 @@ function setCurrentSeasonEpisode(season, episode) {
   return true;
 }
 
-// We consider going to the next episode if we're at the
-// end of the current one. That means, more than 95% seen OR
-// less than 3 minutes left.
-function finishedEpisode(episode) {
+// Make a guess if we:
+//
+// 1. have to play from the start
+// 2. have to resume the episode
+// 3. can play the next episode.
+//
+// 2 and 3 can both be true.
+//
+function episodeState(episode) {
   if (!episode || !episode.seen) {
-    return false;
+    return { play: episode != null, resume: false, next: false };
   }
-  const progress = episode.seen.currentTime / episode.seen.duration;
-  const secsLeft = episode.seen.duration - episode.seen.currentTime;
-  return (progress >= 0.95 || secsLeft < 180);
+  const seen = episode.seen;
+  const progress = seen.currentTime / seen.duration;
+  const secsLeft = seen.duration - seen.currentTime;
+  const play = seen.currentTime < 5;
+  const resume = seen.currentTime >= 5 && (progress < 0.95 || secsLeft >= 60);
+  const next = progress >= 0.80 || secsLeft < 300;
+  return { play, resume, next };
 }
 
-// We consider having seen the first few seconds of an episode as 'not started'.
-function startedEpisode(episode) {
-  if (!episode || !episode.seen) {
+function backFromPlay() {
+  const se = decodeSE(route.params.seasonEpisode);
+  if (!se) {
     return false;
   }
-  return episode.seen.currentTime >= 5;
+  return fromRoute &&
+    fromRoute.path.startsWith(route.path) &&
+    fromRoute.path.endsWith('/play') &&
+    se.season &&
+    se.episode;
 }
 
 // Initialize:
@@ -476,14 +490,10 @@ function initCurrentSeasonEpisode() {
 
   // If we came back from 'play' and we have a season/episode in the
   // path, then we want to focus on the episode to resume, or the next one.
-  const backFromPlay = fromRoute &&
-    fromRoute.path.startsWith(route.path) &&
-    fromRoute.path.endsWith('/play') &&
-    se.season &&
-    se.episode;
+  const isBackFromPlay = backFromPlay();
 
   // If we're not focussing on a specific episode, find last episode played.
-  if (!backFromPlay) {
+  if (!isBackFromPlay) {
     const last = getLastEpisode();
     if (!last) {
       return true;
@@ -493,20 +503,24 @@ function initCurrentSeasonEpisode() {
     episode = e;
   }
 
-  // If we have a current episode and it wasn't started: "play episode".
-  // If we have a current episode and it wasn't finished: "resume episode".
-  // If we have a current episode and it is finished: "play next episode".
-  if (!startedEpisode(episode)) {
+  const state = episodeState(episode);
+  console.log('EPISODE STATE', state);
+  if (state.play) {
     nextEpisode.value = episode;
-  } else if (!finishedEpisode(episode)) {
+  }
+
+  if (state.resume) {
     resumeEpisode.value = episode;
-  } else {
+  }
+
+  if (state.next) {
     const next = getNextEpisode(currentSeason.value, episode);
     if (next) {
       const [ se, ep ] = next;
-      if (!startedEpisode(ep)) {
+      if (episodeState(ep).play) {
+        console.log('NEXT EPISODE', ep, 'backfromplay', isBackFromPlay, 'state.resume', state.resume);
         currentSeason.value = se;
-        if (backFromPlay) {
+        if (isBackFromPlay && !state.resume) {
           currentEpisode.value = ep;
         }
         nextEpisode.value = ep;

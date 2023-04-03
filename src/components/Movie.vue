@@ -1,7 +1,11 @@
 <template>
+  <div class="row justify-center">
+  <Backdrop v-if="$q.platform.is.tv" :poster="poster" :fanart="fanart"/>
+  <div class="col-12 col-sm-10">
+
   <div class="movie-container q-pt-md">
     <div class="movie-header column q-ms-md">
-      <Backdrop :poster="poster" :fanart="fanart"/>
+      <Backdrop v-if="!$q.platform.is.tv" :poster="poster" :fanart="fanart"/>
 
         <div class="col">
           <div class="row text-h4 q-mb-md">
@@ -30,35 +34,46 @@
           </div>
 
           <div class="row q-mb-sm q-mt-md">
-            <div class="col-12">
-              <q-btn
-              size="lg"
-              color="blue"
-              text-color="grey-5"
-              icon="play_arrow"
-              :label="progress ? 'Resume' : 'Play'"
-              class="movie-play"
-              @click="playMovie"
-              v-autofocus
-              />
-            </div>
+              <div class="col-auto movie-button no-outline">
+                <q-btn
+                  size="lg"
+                  color="blue"
+                  text-color="grey-5"
+                  icon="play_arrow"
+                  :label="progress ? 'Resume' : 'Play'"
+                  class="movie-play no-outline"
+                  @click="playMovie"
+                  v-autofocus
+                />
+                <q-linear-progress
+                  v-if="progress != null && $q.platform.is.tv"
+                  :value="progress"
+                  rounded
+                  instant-feedback
+                  color="red-14"
+                  class="movie-progress"
+                />
+              </div>
           </div>
 
           <div class="row">
-              <div class="col-12">
+            <div class="col-12">
                 <q-linear-progress
-                v-if="progress != null"
+                v-if="progress != null && !$q.platform.is.tv"
                 :value="progress"
                 rounded
                 instant-feedback
                 color="red-14"
-                class="q-mt-sm image-progress"
+                class="q-mt-sm movie-progress"
                 />
               </div>
           </div>
         </div>
 
     </div>
+  </div>
+
+  </div>
   </div>
 </template>
 
@@ -74,6 +89,7 @@
   font-size: 1.1em;
   max-width: 1000px;
   margin: 0 auto;
+  min-height: 100%;
 }
 .movie-header {
   position: relative;
@@ -102,9 +118,11 @@
 .movie-play:hover {
   color: #ffffff !important;
 }
-movie-play:focus {
+.movie-play:focus {
   color: #ffffff !important;
-  outline: solid red 2px !important;
+}
+.movie-progress {
+  background: $grey-6 !important;
 }
 .table {
   display: table;
@@ -125,6 +143,7 @@ import {
   onMounted,
   ref,
 } from 'vue';
+import { useQuasar } from 'quasar';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { useApi } from '../lib/api.js';
@@ -149,6 +168,7 @@ export default defineComponent({
     const store = useStore();
     const router = useRouter();
     const api = useApi();
+    const $q = useQuasar();
 
     const fanart = ref(null);
     const poster = ref(null);
@@ -235,6 +255,7 @@ export default defineComponent({
       plot,
       progress,
       title,
+      $q,
     };
   },
 });

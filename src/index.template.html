@@ -19,7 +19,8 @@
 	// - based on specific user agents, OR
 	// - "Android" in the user agent and no touch support.
 	const ua_detect = navigator.userAgent.match(/AOSP TV|Chromecast|Android TV/);
-	const tc_detect = navigator.userAgent.match(/Android/) && !('ontouchstart' in window);
+	const hasTouch = ('ontouchstart' in window) && navigator.maxTouchPoints > 0;
+	const tc_detect = navigator.userAgent.match(/Android/) && !hasTouch;
 	if (ua_detect || tc_detect) {
 	    const mvp = document.getElementById('viewport');
 	    mvp.setAttribute('content','user-scalable=no, width=1280');

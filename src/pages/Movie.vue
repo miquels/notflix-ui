@@ -1,10 +1,6 @@
 <template>
   <q-page class="flex-center">
-    <div class="row justify-center">
-      <div class="col-12 col-sm-10">
-        <Movie :collection="collection" :id="id"/>
-      </div>
-    </div>
+    <Movie :collection="collection" :id="id"/>
   </q-page>
 </template>
 
