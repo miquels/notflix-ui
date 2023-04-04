@@ -9,6 +9,7 @@
 import {
   withDirectives,
 } from 'vue';
+import { useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 
 // If there is a label attached to the element, use that.
@@ -182,6 +183,8 @@ export default {
     const { centerX } = props;
     const { centerY } = props;
 
+    const route = useRoute();
+
     const keys = props.keys || 'LRUDE';
     let hasMenu = false;
     let handler;
@@ -211,6 +214,9 @@ export default {
               && ev.isTrusted
               && !ev.defaultPrevented) {
             ev.stopPropagation();
+            if (route.meta.isRoot && window.androidApp && window.androidApp.exitApplication) {
+              window.androidApp.exitApplication();
+            }
             window.history.go(-1);
           }
 

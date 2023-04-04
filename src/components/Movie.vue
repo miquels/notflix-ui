@@ -224,6 +224,9 @@ export default defineComponent({
     });
 
     function playMovie() {
+      // Mark movie as favorite, so that we can resume from Favorites.
+      api.setFavorite(movie.id, true);
+
       // Chromecast?
       if (store.state.castState === 'connected') {
         const factory = new PlayerInfoFactory(quasar, store);

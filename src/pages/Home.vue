@@ -42,15 +42,56 @@ export default defineComponent({
     // FIXME: hardcoded collection.
     const collections = [ '1', '2' ];
     const genreCollection = '2';
+    const tvshowCollection = '2';
+
+    let getItemsTriggeredCount;
 
     async function getItems() {
-      const newItems = [];
-      for (let collection of collections) {
-        const theItems = await api.getItems(collection);
-        newItems.push(...theItems.filter((item) => api.isFavorite(item.id)));
+      // If we get called while already working, make sure we do another round.
+      if (getItemsTriggeredCount > 0) {
+        getItemsTriggeredCount = 2;
+        return;
       }
-      haveFavorites.value = newItems.length > 0;
-      items.value = newItems;
+
+      // Loop until we're not triggered anymore.
+      getItemsTriggeredCount = 1;
+      while (getItemsTriggeredCount > 0) {
+
+        // Loop over all collections and filter out favs.
+        const newItems = [];
+        for (let collection of collections) {
+          let theItems = await api.getItems(collection);
+          theItems = theItems.map((i) => structuredClone(i));
+          newItems.push(...theItems.filter((item) => api.isFavorite(item.id)));
+        }
+        haveFavorites.value = newItems.length > 0;
+        items.value = newItems;
+
+        // In the last iteration, also get a "new episodes" count for the badge.
+        if (getItemsTriggeredCount === 1) {
+          for (let idx = 0; idx < newItems.length; idx += 1) {
+            if (getItemsTriggeredCount === 0) {
+              break;
+            }
+            const item = newItems[idx];
+            if (item.collection === tvshowCollection) {
+              let newEpisodes = await api.getShowNewEpisodeCount(item.collection, item.id);
+              if (newEpisodes == null && item.badge == null) {
+                continue;
+              }
+              if (newEpisodes == 0) {
+                item.badge = '';
+              } else if (newEpisodes <= 99) {
+                item.badge = newEpisodes.toString();
+              } else {
+                item.badge = '99+';
+              }
+            }
+          }
+        }
+        items.value = [ ...newItems ];
+        getItemsTriggeredCount -= 1;
+      }
     }
     getItems();
 
@@ -72,6 +113,10 @@ export default defineComponent({
     });
     onDeactivated(() => {
       apiLastUpdate = api.apiLastUpdate();
+      if (getItemsTriggeredCount) {
+        getItemsTriggeredCount = 0;
+        apiLastUpdate = 0;
+      }
     });
 
     return {

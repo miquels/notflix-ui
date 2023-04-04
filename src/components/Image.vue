@@ -1,6 +1,7 @@
 <template>
   <div class="image-container relative" :style="style">
     <div v-if="name" class="image-background"><span class="image-name">{{ name }}</span></div>
+    <q-badge v-if="badge != null" rounded floating color="primary" :label="badge" />
     <img
       v-if="imgSrc && !hidden"
       :src="imgSrc"
@@ -56,6 +57,7 @@ export default defineComponent({
     width: Number,
     height: Number,
     progress: Number,
+    badge: String,
     favorite: {
       type: Boolean,
       default: null,

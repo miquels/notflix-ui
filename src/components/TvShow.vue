@@ -197,6 +197,7 @@ import { useStore } from 'vuex';
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useApi } from '../lib/api.js';
+import { getLastEpisode, getNextEpisode, episodeState } from '../lib/tvshow.js';
 import { decodeSE, encodeSE, whenTrue } from '../lib/util.js';
 import Backdrop from './Backdrop.vue';
 import Episode from './Episode.vue';
@@ -297,7 +298,6 @@ onBeforeMount(async () => {
   // Better to put up a spinner and/or report an error _before_
   // we navigate to the page.
   try {
-    console.log('TvShow: onBeforeMount: getShow()');
     await getShow();
   } catch(e) {
     // XXX FIXME.
@@ -354,43 +354,6 @@ function saveCurrentSeasonEpisode(onExit) {
   }
 }
 
-// Find the last episode that was watched.
-// If no episodes were watched yet, return the very first episode.
-function getLastEpisode() {
-  for (let sidx = seasons.length - 1; sidx >= 0; sidx -= 1) {
-    const season = seasons[sidx];
-    for (let eidx = season.episodes.length - 1; eidx >= 0; eidx -= 1) {
-      const episode = season.episodes[eidx];
-      if (episode.seen && episode.seen.currentTime > 0) {
-        return [season, episode];
-      }
-    }
-  }
-  const season = seasons[0];
-  return [ season, season.episodes[0] ];
-}
-
-// Find the next episode.
-function getNextEpisode(startSeason, startEpisode) {
-  let startEpisodeNo = startEpisode.episodeno;
-  for (let season of seasons) {
-    if (season.seasonno < startSeason.seasonno) {
-      continue;
-    }
-    for (let episode of season.episodes) {
-      if (startEpisodeNo != null) {
-        if (episode.episodeno === startEpisodeNo) {
-          startEpisodeNo = null;
-        }
-        continue;
-      }
-      return [ season, episode ];
-    }
-    startEpisodeNo = null;
-  }
-  return null;
-}
-
 // Helper for the template.
 function seasonEpisode(episode) {
   if (episode.episodeno > 18000000) {
@@ -430,27 +393,6 @@ function setCurrentSeasonEpisode(season, episode) {
     currentEpisode.value = thisEpisode;
   }
   return true;
-}
-
-// Make a guess if we:
-//
-// 1. have to play from the start
-// 2. have to resume the episode
-// 3. can play the next episode.
-//
-// 2 and 3 can both be true.
-//
-function episodeState(episode) {
-  if (!episode || !episode.seen) {
-    return { play: episode != null, resume: false, next: false };
-  }
-  const seen = episode.seen;
-  const progress = seen.currentTime / seen.duration;
-  const secsLeft = seen.duration - seen.currentTime;
-  const play = seen.currentTime < 5;
-  const resume = seen.currentTime >= 5 && (progress < 0.95 || secsLeft >= 60);
-  const next = progress >= 0.80 || secsLeft < 300;
-  return { play, resume, next };
 }
 
 function backFromPlay() {
@@ -494,7 +436,7 @@ function initCurrentSeasonEpisode() {
 
   // If we're not focussing on a specific episode, find last episode played.
   if (!isBackFromPlay) {
-    const last = getLastEpisode();
+    const last = getLastEpisode(seasons);
     if (!last) {
       return true;
     }
@@ -504,7 +446,6 @@ function initCurrentSeasonEpisode() {
   }
 
   const state = episodeState(episode);
-  console.log('EPISODE STATE', state);
   if (state.play) {
     nextEpisode.value = episode;
   }
@@ -514,11 +455,10 @@ function initCurrentSeasonEpisode() {
   }
 
   if (state.next) {
-    const next = getNextEpisode(currentSeason.value, episode);
+    const next = getNextEpisode(seasons, currentSeason.value, episode);
     if (next) {
       const [ se, ep ] = next;
       if (episodeState(ep).play) {
-        console.log('NEXT EPISODE', ep, 'backfromplay', isBackFromPlay, 'state.resume', state.resume);
         currentSeason.value = se;
         if (isBackFromPlay && !state.resume) {
           currentEpisode.value = ep;
@@ -583,7 +523,6 @@ function doFocus() {
 }
 
 onMounted(() => {
-  console.log('TvShow: onMounted', route.path, route.id);
   whenTrue(readyFlag, () => {
     // console.log('TvShow: onMounted, initCurrentSeasonEpisode');
     if (initCurrentSeasonEpisode()) {

@@ -17,6 +17,7 @@ const routes = [
         component: () => import('pages/Home.vue')
       },
     ],
+    meta: { isRoot: true },
   },
   {
     name: 'tvshow-play',
@@ -41,6 +42,7 @@ const routes = [
         path: '',
         component: () => import('pages/TvShows.vue'),
         name: 'tvshows',
+        meta: { isRoot: true },
       }
     ],
   },
@@ -75,6 +77,7 @@ const routes = [
         name: 'movies',
         path: '',
         component: () => import('pages/Movies.vue'),
+        meta: { isRoot: true },
       },
     ],
   },

@@ -50,6 +50,7 @@ import { scroll } from 'quasar';
 import VirtualScroll from 'components/VirtualScroll.vue';
 import PosterRow from 'components/PosterRow.vue';
 import FilterBar from 'components/FilterBar.vue';
+import { cyrb53 } from '../lib/util.js';
 // import { isMobile } from '../lib/util.js';
 
 function gMatch(item, genres) {
@@ -170,25 +171,28 @@ export default {
 
       for (let base = 0; base < nrItems; base += thumbsPerRow) {
         const row = [];
+        let data = `${nrItems}.${base}.${thumbsPerRow}.${sortById}`;
         for (let r = 0; r < thumbsPerRow && base + r < nrItems; r += 1) {
           const theItem = items[base + r];
           const item = {
-            key: theItem.id,
+            key: `${theItem.id}:${theItem.badge}`,
             name: theItem.name,
             id: theItem.id,
+            badge: theItem.badge,
             collection: theItem.collection,
           };
           if (theItem.poster) {
             item.url = `${theItem.path}/${theItem.poster}`;
           }
           row.push(item);
+          data += `.${item.key}`;
         }
         rows.push({
           row,
           type: 'thumbs',
           width,
           height,
-          key: `${nrItems}.${base}.${thumbsPerRow}.${sortById}`,
+          key: cyrb53(data),
         });
       }
       return rows;

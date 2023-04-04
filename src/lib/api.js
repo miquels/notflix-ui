@@ -17,6 +17,7 @@
 import { reactive } from 'vue';
 import { useStore } from 'vuex';
 import { joinpath, encodeSE } from './util.js';
+import { getNewEpisodeCount } from './tvshow.js';
 import * as localforage from 'localforage';
 
 // XXX
@@ -212,9 +213,7 @@ export default class API {
     return genres;
   }
 
-  // Get tvshow details.
-  // Note: this returns a cloned, non-reactive object.
-  async getShow(collId, showId) {
+  async _getShow(collId, showId) {
     const show = await this._getItem(collId, showId);
     if (!show) {
       return null;
@@ -233,6 +232,21 @@ export default class API {
       }
       show._retrievedSeens = true;
     }
+    return show;
+  }
+
+  async getShowNewEpisodeCount(collId, showId) {
+    const show = await this._getShow(collId, showId);
+    if (!show.seasons) {
+      return null;
+    }
+    return getNewEpisodeCount(show.seasons);
+  }
+
+  // Get tvshow details.
+  // Note: this returns a cloned, non-reactive object.
+  async getShow(collId, showId) {
+    const show = await this._getShow(collId, showId);
     const showClone = JSON.parse(JSON.stringify(show));
     showClone.collection = collId;
     return updateShow(showClone);

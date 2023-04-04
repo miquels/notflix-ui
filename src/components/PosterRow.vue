@@ -22,6 +22,7 @@
         :height="imgHeight"
         :hidden="hideImages"
         :favorite="isFavorite(item)"
+        :badge="item.badge"
         @favorite="toggleFavorite($event)"
       />
       <div
