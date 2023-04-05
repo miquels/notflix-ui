@@ -50,14 +50,60 @@ export default class API {
     this.lastUpdate = 1;
   }
 
-  _getObject(path) {
+  async _getObjectFromServer(path) {
+    const reqUrl = joinpath(this.url, path);
+    // console.log('getObj url path req', this.url, path, reqUrl)
+    // console.log('DBG: api._getObject: requesting', reqUrl)
+
+    const resp = await fetch(reqUrl, { redirect: 'follow' });
+    if (!resp.ok) {
+      throw new RangeError(`unexpected HTTP code: ${resp.status}`);
+    }
+    const obj = await resp.json();
+
+    const updateObj = (theObj) => {
+      //
+      // Give each object an id, and a timestamp.
+      theObj.timestamp = Date.now();
+      if (!theObj.id) {
+        theObj.id = this.idCounter;
+        this.idCounter += 1;
+      }
+
+      // Make obj.path absolute.
+      if (theObj.baseurl && theObj.path) {
+        theObj.path = joinpath(this.url, theObj.baseurl, theObj.path);
+        delete theObj.baseurl;
+      }
+    };
+
+    if (Array.isArray(obj)) {
+      obj.forEach(updateObj);
+    } else {
+      updateObj(obj);
+    }
+
+    return obj;
+  }
+
+  _getObject(path, noNfo) {
 
     // If it's in the cache and younger than MAX_CACHE_AGE, use cache.
+    // However, if we have cached the 'noNfo' version and this request did
+    // _not_ set 'noNfo', then we need to get a full object from the server
     let cached = this.objectCache[path];
     if (cached !== undefined) {
       if (!cached.timestamp || cached.timestamp > Date.now() - MAX_CACHE_AGE) {
-        return Promise.resolve(cached);
+        if (!cached._noNfo || noNfo) {
+          return Promise.resolve(cached);
+        }
       }
+    }
+    const cacheId = path;
+
+    // If we have a non-noNfo request pending, fine.
+    if (!this.requestsPending[path] && noNfo) {
+      path += '?nonfo';
     }
 
     // If there's already a request outstanding, piggy back on that.
@@ -68,49 +114,24 @@ export default class API {
       });
     }
 
-    const reqUrl = joinpath(this.url, path);
-    // console.log('getObj url path req', this.url, path, reqUrl)
     pending = [];
     this.requestsPending[path] = pending;
-    // console.log('DBG: api._getObject: requesting', reqUrl)
 
     return new Promise((resolve, reject) => {
       pending.push({ resolve, reject });
 
-      fetch(reqUrl, {
-        redirect: 'follow',
-      }).then((resp) => {
-        if (!resp.ok) {
-          throw new RangeError(`unexpected HTTP code: ${resp.status}`);
-        }
-        resp.json().then((obj) => {
-          const updateObj = (theObj) => {
-            //
-            // Give each object an id, and a timestamp.
-            theObj.timestamp = Date.now();
-            if (!theObj.id) {
-              theObj.id = this.idCounter;
-              this.idCounter += 1;
-            }
-
-            // Make obj.path absolute.
-            if (theObj.baseurl && theObj.path) {
-              theObj.path = joinpath(this.url, theObj.baseurl, theObj.path);
-              delete theObj.baseurl;
-            }
-          };
-          if (Array.isArray(obj)) {
-            obj.forEach(updateObj);
-          } else {
-            updateObj(obj);
-          }
+      this._getObjectFromServer(path).then((obj) => {
+        if (!noNfo || !this.objectCache[cacheId] || !this.objectCache[cacheId]._noNfo) {
           // Object.freeze(obj);
-          this.objectCache[path] = obj;
-          while (pending.length > 0) {
-            const p = pending.shift();
-            p.resolve(obj);
+          if (noNfo) {
+            obj._noNfo = true;
           }
-        });
+          this.objectCache[cacheId] = obj;
+        }
+        while (pending.length > 0) {
+          const p = pending.shift();
+          p.resolve(obj);
+        }
       }).catch((err) => {
         while (pending.length > 0) {
           const p = pending.shift();
@@ -120,8 +141,8 @@ export default class API {
     });
   }
 
-  _getItem(collId, item) {
-    return this._getObject(joinpath('/api/collection', collId, 'item', item));
+  _getItem(collId, item, noNfo) {
+    return this._getObject(joinpath('/api/collection', collId, 'item', item), noNfo);
   }
 
   // Get an array of collections.
@@ -213,8 +234,8 @@ export default class API {
     return genres;
   }
 
-  async _getShow(collId, showId) {
-    const show = await this._getItem(collId, showId);
+  async _getShow(collId, showId, noNfo) {
+    const show = await this._getItem(collId, showId, noNfo);
     if (!show) {
       return null;
     }
@@ -236,7 +257,7 @@ export default class API {
   }
 
   async getShowNewEpisodeCount(collId, showId) {
-    const show = await this._getShow(collId, showId);
+    const show = await this._getShow(collId, showId, true);
     if (!show.seasons) {
       return null;
     }
