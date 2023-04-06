@@ -26,9 +26,6 @@ export default route((/* { store, ssrContext } */) => {
   // quasar.conf.js -> build -> publicPath
   const ssr = process.env.MODE === 'ssr';
   const history = createHistory(ssr ? void 0 : process.env.VUE_ROUTER_BASE);
-  history.listen(() => {
-    // console.log('HISTORY', history.state);
-  });
 
   const Router = createRouter({
     scrollBehavior(to, from, savedPosition) {
@@ -38,29 +35,32 @@ export default route((/* { store, ssrContext } */) => {
       return { x: 0, y: 0 };
     },
     routes,
-
-    history: createHistory(process.env.MODE === 'ssr' ? void 0 : process.env.VUE_ROUTER_BASE),
+    history,
   });
 
+  // We want to prevent the user from using the 'back' button on
+  // the root level.
+  //
+  // The below beforeEach and afterEach work together to snoop on the
+  // "position" member of the history.state object. This way, we can
+  // detect if the "back" button was pressed.
+  //
+  // Yes, we are depending on vue-router internals and that is bad.
   Router.afterEach((to, from) => {
-    console.log('afterEach:', to, from);
     if (!blocked) {
-      console.log('afterEach: change historyPosition from', historyPosition, 'to', window.history.state.position);
       historyPosition = window.history.state.position;
     }
     blocked = false;
   });
 
   Router.beforeEach((to, from) => {
-    console.log('historyPosition', historyPosition, 'history.state.position', window.history.state.position, 'meta', from.meta);
     if (window.history.state.position === historyPosition - 1) {
       if (from.meta.isRoot) {
-        console.log('BLOCKED');
+        // console.log('BLOCKED');
         blocked = true;
         return false;
       }
     }
-    // historyPosition = window.history.state.position;
   });
 
   return Router;

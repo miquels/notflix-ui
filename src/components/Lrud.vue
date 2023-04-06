@@ -214,10 +214,18 @@ export default {
               && ev.isTrusted
               && !ev.defaultPrevented) {
             ev.stopPropagation();
-            if (route.meta.isRoot && window.androidApp && window.androidApp.exitApplication) {
-              window.androidApp.exitApplication();
+
+            // At the root, stop and exit app.
+            if (route.meta.isRoot) {
+              if (window.androidApp && window.androidApp.exitApplication) {
+                window.androidApp.exitApplication();
+              }
+              return;
             }
+
+            // Go back.
             window.history.go(-1);
+            return;
           }
 
           // If the 'filter-keys' prop was set, and this key matches that
