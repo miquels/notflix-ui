@@ -11,6 +11,9 @@ import {
 } from 'vue';
 import { useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
+import ConfirmExit from '../components/ConfirmExit.vue';
+
+var hasConfirmOpen = false;
 
 // If there is a label attached to the element, use that.
 function labelFor(el) {
@@ -159,6 +162,10 @@ const keymap = {
 
 let hasMenuOpen = false;
 
+export function setMenuState(state) {
+  hasMenuOpen = state;
+}
+
 export default {
   name: 'Lrud',
   props: {
@@ -211,6 +218,7 @@ export default {
                || hasMenu)
               && ev.key === 'Escape'
               && !hasMenuOpen
+              && !hasConfirmOpen
               && ev.isTrusted
               && !ev.defaultPrevented) {
             ev.stopPropagation();
@@ -218,7 +226,15 @@ export default {
             // At the root, stop and exit app.
             if (route.meta.isRoot) {
               if (window.androidApp && window.androidApp.exitApplication) {
-                window.androidApp.exitApplication();
+                hasConfirmOpen = true;
+                quasar.dialog({
+                  component: ConfirmExit,
+                }).onOk(() => {
+                  hasConfirmOpen = false;
+                  window.androidApp.exitApplication();
+                }).onCancel(() => {
+                  hasConfirmOpen = false;
+                });
               }
               return;
             }
