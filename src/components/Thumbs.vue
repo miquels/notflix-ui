@@ -199,7 +199,7 @@ export default {
     },
 
     filterItems(items) {
-      const filteredItems = [];
+      let filteredItems = [];
       let sortById;
 
       // First, the search filter.
@@ -224,6 +224,11 @@ export default {
         case 'updated':
           sortById = 1;
           filteredItems.sort((a, b) => (b.lastvideo || 0) - (a.lastvideo || 0));
+          const badged = filteredItems.filter((i) => i.badge != null);
+          if (badged.length > 0 && badged.length !== filteredItems.length) {
+            const notBadged = filteredItems.filter((i) => i.badge == null);
+            filteredItems = [ ...badged, ...notBadged ];
+          }
           break;
         case 'added':
           sortById = 2;

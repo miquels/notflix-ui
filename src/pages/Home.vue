@@ -65,31 +65,48 @@ export default defineComponent({
           newItems.push(...theItems.filter((item) => api.isFavorite(item.id)));
         }
         haveFavorites.value = newItems.length > 0;
-        items.value = newItems;
+        // items.value = newItems;
 
-        // In the last iteration, also get a "new episodes" count for the badge.
+        // If this is the final (or only) iteration, get the 'new episodes' count.
         if (getItemsTriggeredCount === 1) {
-          for (let idx = 0; idx < newItems.length; idx += 1) {
+          const PARALLELISM = 24;
+
+          for (let idx2 = 0; idx2 < newItems.length; idx2 += PARALLELISM) {
             if (getItemsTriggeredCount === 0) {
               break;
             }
-            const item = newItems[idx];
-            if (item.collection === tvshowCollection) {
-              let newEpisodes = await api.getShowNewEpisodeCount(item.collection, item.id);
-              if (newEpisodes == null && item.badge == null) {
+            const end = Math.min(newItems.length, idx2 + PARALLELISM);
+            const tasks = [];
+
+            for (let idx = idx2; idx < end; idx += 1) {
+              const item = newItems[idx];
+              if (item.collection !== tvshowCollection) {
                 continue;
               }
-              if (newEpisodes == 0) {
-                item.badge = '';
-              } else if (newEpisodes <= 99) {
-                item.badge = newEpisodes.toString();
-              } else {
-                item.badge = '99+';
+              tasks.push(api.getShowNewEpisodeCount(item.collection, item.id));
+              const results = await Promise.allSettled(tasks);
+              for (let result of results) {
+                if (result.status === 'rejected') {
+                  continue;
+                }
+                const newEpisodes = result.value;
+                if (newEpisodes == null && item.badge == null) {
+                  continue;
+                }
+                if (newEpisodes == null) {
+                  item.badge = null;
+                } else if (newEpisodes == 0) {
+                  item.badge = '';
+                } else if (newEpisodes <= 99) {
+                  item.badge = newEpisodes.toString();
+                } else {
+                  item.badge = '99+';
+                }
               }
             }
           }
         }
-        items.value = [ ...newItems ];
+        items.value = newItems;
         getItemsTriggeredCount -= 1;
       }
     }
