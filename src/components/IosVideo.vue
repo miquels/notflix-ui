@@ -14,6 +14,12 @@
     autoplay
     preload="metadata"
     ref="video"
+    :src="currentVideo.src"
+    @webkitendfullscreen="onEndFullScreen"
+    @canplay="onCanPlay"
+    @timeupdate="onTimeUpdate"
+    @seeked="updateSeen"
+    @loadedmetadata="onLoadedmetadata"
   />
 </template>
 
@@ -28,6 +34,7 @@
 
 <script>
 /* eslint no-console: "off" */
+import { throttle } from 'quasar';
 import {
   defineComponent,
   getCurrentInstance,
@@ -35,58 +42,83 @@ import {
   onMounted,
   ref,
 } from 'vue';
+import { toRefs } from 'vue';
 import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useApi } from '../lib/api.js';
+
+const DBG = false;
 
 export default defineComponent({
   name: 'IosVideo',
-  setup() {
+  props: {
+    'player-info': Object,
+    'end-video-go-back': Boolean,
+  },
+  setup(props) {
+    const route = useRoute();
     const router = useRouter();
-    const store = useStore();
+    const api = useApi();
     const video = ref(null);
+    const { playerInfo } = toRefs(props);
+    const currentVideo = playerInfo.value;
 
     let exiting = false;
-    const exit = () => {
+    const onEndFullScreen = () => {
       if (!exiting) {
         exiting = true;
         router.go(-1);
       }
     };
 
-    onMounted(() => {
-      const instance = getCurrentInstance();
-
-      // This might happen after a reload. Go back.
-      if (!store.state.currentVideo) {
-        exit();
-        return;
+    const onCanPlay = () => {
+      try {
+        if (DBG) console.log('IosVideo: onCanPlay: enter full screen');
+        video.value.webkitEnterFullScreen();
+      } catch(err) {
+        if (DBG) console.log('IosVideo: onCanPlay: failed to enter full screen', err);
       }
-      window.video = video.value;
+    };
 
-      video.value.addEventListener("webkitendfullscreen", () => {
-        exit();
-      });
+    const onLoadedmetadata = () => {
+      if (currentVideo.currentTime) {
+        video.value.currentTime = currentVideo.currentTime;
+      }
+    };
 
-      // Need to wait for canplay when requesting full screen.
-      video.value.addEventListener('canplay', () => {
-        try {
-          video.value.webkitEnterFullScreen();
-        } catch(err) { /* ignore */}
-      });
+    const updateSeen = (noRouteUpdate) => {
+      if (!noRouteUpdate) {
+        // Update URL in case of a reload, so we can continue.
+        const newRoute = {
+          path: route.path,
+          query: { t: Math.floor(video.value.currentTime) },
+        };
+        router.replace(newRoute);
+      }
+      // And update stored value.
+      api.updateSeen(currentVideo, video.value.currentTime, video.value.duration)
+          .catch((e) => { if (DBG) console.log('failed to updateSeen: ', e) });
+    };
+    const updateSeenThrottled = throttle(updateSeen, 5000);
 
-      // Or maybe, when the video starts playing.
-      video.value.addEventListener('timeupdate', () => {
+    let triedEnterFullScreen = false;
+    const onTimeUpdate = () => {
+
+      if (!triedEnterFullScreen) {
+        // When the video starts playing try entering fullscreen mode.
         if (!video.value.webkitDisplayingFullscreen) {
           try {
+            if (DBG) console.log('IosVideo: onTimeUpdate: enter full screen');
             video.value.webkitEnterFullScreen();
-          } catch(err) { /* ignore */}
+          } catch(err) {
+            if (DBG) console.log('IosVideo: onTimeUpdate: failed to enter full screen', err);
+          }
         }
-      }, { once: true });
+        triedEnterFullScreen = true;
+      }
 
-      // start playing.
-      video.value.src = store.state.currentVideo.src;
-
-    });
+      updateSeenThrottled();
+    };
 
     onBeforeUnmount(() => {
       // Clean up video before unmount.
@@ -102,9 +134,17 @@ export default defineComponent({
           window.video = null;
         }
       } catch (err) { /* ignore */ }
+
+      updateSeen(true);
     });
 
     return {
+      currentVideo,
+      onCanPlay,
+      onEndFullScreen,
+      onLoadedmetadata,
+      onTimeUpdate,
+      updateSeen,
       video,
     };
   },
