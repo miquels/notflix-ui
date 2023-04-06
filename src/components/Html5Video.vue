@@ -258,6 +258,9 @@ export default defineComponent({
       if (video.value) {
         video.value.pause();
       }
+
+      instance.ctx.updateSeenCurrentTime();
+
       if (instance.ctx.shaka) {
         instance.ctx.shaka.unload();
       } else if (video.value) {
@@ -367,20 +370,13 @@ export default defineComponent({
           window.history.back();
         }
       });
-      const updateStoreVideoCurrentTime = throttle((() => {
-        const newRoute = {
-          path: this.route.path,
-          query: { t: Math.floor(this.video.currentTime) },
-        };
-        this.router.replace(newRoute);
-        this.api
-          .updateSeen(this.currentVideo, this.video.currentTime, this.video.duration)
-          .catch((e) => { if (DBG) console.log('failed to updateSeen: ', e) });
-      }).bind(this), 5000);
+      const updateSeenCurrentTimeThrottled = throttle(() => {
+        this.updateSeenCurrentTime();
+      }, 5000);
       this.video.addEventListener('timeupdate', () => {
         if (this.video) {
           this.currentTime = this.video.currentTime;
-          updateStoreVideoCurrentTime();
+          updateSeenCurrentTimeThrottled();
         }
       });
       this.video.addEventListener('volumechange', () => {
@@ -430,6 +426,17 @@ export default defineComponent({
 
       // Debug.
       window.video = this.video;
+    },
+
+    updateSeenCurrentTime() {
+      const newRoute = {
+        path: this.route.path,
+        query: { t: Math.floor(this.video.currentTime) },
+      };
+      this.router.replace(newRoute);
+      this.api
+        .updateSeen(this.currentVideo, this.currentTime, this.duration)
+        .catch((e) => { if (DBG) console.log('failed to updateSeen: ', e) });
     },
 
     setState(state) {

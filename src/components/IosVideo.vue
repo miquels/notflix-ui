@@ -16,10 +16,10 @@
     ref="video"
     :src="currentVideo.src"
     @webkitendfullscreen="onEndFullScreen"
-    @canplay="onCanPlay"
     @timeupdate="onTimeUpdate"
     @seeked="updateSeen"
     @loadedmetadata="onLoadedmetadata"
+    @playing="goFullScreen('onPlaying')"
   />
 </template>
 
@@ -71,12 +71,14 @@ export default defineComponent({
       }
     };
 
-    const onCanPlay = () => {
-      try {
-        if (DBG) console.log('IosVideo: onCanPlay: enter full screen');
-        video.value.webkitEnterFullScreen();
-      } catch(err) {
-        if (DBG) console.log('IosVideo: onCanPlay: failed to enter full screen', err);
+    const goFullScreen = (msg) => {
+      if (!video.value.webkitDisplayingFullscreen) {
+        try {
+          if (DBG) console.log(`IosVideo: ${msg}: enter full screen`);
+          video.value.webkitEnterFullScreen();
+        } catch(err) {
+          if (DBG) console.log(`IosVideo: ${msg}: failed to enter full screen`, err);
+        }
       }
     };
 
@@ -99,26 +101,11 @@ export default defineComponent({
       api.updateSeen(currentVideo, video.value.currentTime, video.value.duration)
           .catch((e) => { if (DBG) console.log('failed to updateSeen: ', e) });
     };
-    const updateSeenThrottled = throttle(updateSeen, 5000);
+    const onTimeUpdate = throttle(updateSeen, 5000);
 
-    let triedEnterFullScreen = false;
-    const onTimeUpdate = () => {
-
-      if (!triedEnterFullScreen) {
-        // When the video starts playing try entering fullscreen mode.
-        if (!video.value.webkitDisplayingFullscreen) {
-          try {
-            if (DBG) console.log('IosVideo: onTimeUpdate: enter full screen');
-            video.value.webkitEnterFullScreen();
-          } catch(err) {
-            if (DBG) console.log('IosVideo: onTimeUpdate: failed to enter full screen', err);
-          }
-        }
-        triedEnterFullScreen = true;
-      }
-
-      updateSeenThrottled();
-    };
+    onMounted(() => {
+      goFullScreen('onMounted');
+    });
 
     onBeforeUnmount(() => {
       // Clean up video before unmount.
@@ -140,7 +127,7 @@ export default defineComponent({
 
     return {
       currentVideo,
-      onCanPlay,
+      goFullScreen,
       onEndFullScreen,
       onLoadedmetadata,
       onTimeUpdate,
