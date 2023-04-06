@@ -173,6 +173,7 @@
   position: relative;
   width: 100%;
   color: #bbbbbb;
+  touch-action: none;
 }
 .videocontrols-slider-div {
   position: relative;
