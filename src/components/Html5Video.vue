@@ -19,6 +19,7 @@
       disablepictureinpicture
       x-webkit-airplay="allow"
       crossorigin="anonymous"
+      poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
     ></video>
     <div class="html5video-overlay column fit" v-if="overlay()">
       <div class="row justify-center items-center fit absolute">
@@ -262,7 +263,8 @@ export default defineComponent({
       instance.ctx.updateSeenCurrentTime();
 
       if (instance.ctx.shaka) {
-        instance.ctx.shaka.unload();
+        const _shaka = instance.ctx.shaka;
+        _shaka.detach().then(() => _shaka.destroy());
       } else if (video.value) {
         if (video.value.srcObject) {
           video.value.srcObject = null;
@@ -630,9 +632,6 @@ export default defineComponent({
 
     load(item) {
       // if (DBG) console.log('Html5Video: load method called', item);
-      if (this.video.src) {
-        this.video.removeAttribute('src');
-      }
 
       // We need an absolute URL (for airplay).
       const url = new URL(item.src, window.location.origin).href;
@@ -642,7 +641,7 @@ export default defineComponent({
         // if (DBG) console.log('Html5Video: shaka.load', url);
         this.shaka.load(url);
       } else {
-        // if (DBG) console.log('Html5Video: plain video load', url);
+        // if (DBG) console.log('Html5Video: native video load', url);
         this.video.src = url;
       }
     },
