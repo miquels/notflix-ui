@@ -1,5 +1,5 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide">
+  <q-dialog ref="dialogRef" @hide="onDialogHide" @keydown.capture.stop.escape=''>
     <lrud>
     <q-card class="q-dialog-plugin">
       <q-card-section class="row items-center">
