@@ -1,6 +1,6 @@
 <template>
   <lrud>
-  <div class="fullscreen bg-blue text-white text-center q-pa-md flex flex-center">
+  <div class="fullscreen bg-blue text-white text-center q-pa-md flex flex-center" v-autofocus>
     <div>
       <div style="font-size: 30vh">
         404
@@ -22,7 +22,7 @@
         to="/"
         label="Go Home"
         no-caps
-        v-autofocus
+        v-focus="1"
       />
     </div>
   </div>

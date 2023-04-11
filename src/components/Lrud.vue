@@ -162,8 +162,26 @@ const keymap = {
 
 let hasMenuOpen = false;
 
-export function setMenuState(state) {
-  hasMenuOpen = state;
+// One time global initialization.
+if (!window.__preventDefaultKeys) {
+  window.__preventDefaultKeys = true;
+
+  // Prevent default action on body for navigation keys.
+  document.body.addEventListener('keydown', (ev) => {
+    switch (ev.key) {
+      case 'ArrowLeft':
+      case 'ArrowRight':
+      case 'ArrowUp':
+      case 'ArrowDown':
+      case 'Enter':
+      case 'Tab':
+        // if (DBG) console.log('body: preventing default for', ev.key);
+        ev.preventDefault();
+        break;
+      default:
+        break;
+    }
+  });
 }
 
 export default {
@@ -394,4 +412,5 @@ export default {
     };
   },
 };
+
 </script>

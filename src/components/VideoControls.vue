@@ -263,9 +263,7 @@ export default defineComponent({
 
     onMounted(() => {
       // console.log('sliderEl', sliderEl.value);
-      // console.log('mounted');
       nextTick(() => {
-        // console.log('will focus on', sliderEl.value);
         if (sliderEl.value) {
           sliderEl.value.$el.focus();
         }

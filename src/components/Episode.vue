@@ -45,16 +45,17 @@
   margin-bottom: 1em;
   background: #19192c;
   position: relative;
-  border-left: solid 1px #00000000;
-  border-right: solid 1px #00000000;
+  border: solid 2px black;
 }
 .episode-container:hover {
   background: #282835;
 }
 .episode-container:focus-within {
   background: #282835;
-  border-left: solid 1px white;
-  border-right: solid 1px white;
+  // border: solid 2px white;
+  // border-radius: 5px;
+  border-left: solid 2px white;
+  border-right: solid 2px white;
 }
 .episode-left {
   background: black;
@@ -75,7 +76,7 @@
 .episode-right {
 }
 .episode-play {
-  color: #dddddd;
+  color: #bbbbbb;
 }
 .episode-play:hover {
   color: #ffffff;

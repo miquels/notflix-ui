@@ -1,5 +1,5 @@
 <template>
-  <div class="row justify-center">
+  <div class="row justify-center" v-autofocus>
   <Backdrop v-if="$q.platform.is.tv" :poster="poster" :fanart="fanart"/>
   <div class="col-12 col-sm-10">
 
@@ -43,7 +43,7 @@
                   :label="progress ? 'Resume' : 'Play'"
                   class="movie-play no-outline"
                   @click="playMovie"
-                  v-autofocus
+                  v-focus="1"
                 />
                 <q-linear-progress
                   v-if="progress != null && $q.platform.is.tv"

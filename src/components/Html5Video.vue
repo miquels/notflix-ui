@@ -10,9 +10,10 @@
     @keydown="onKeyDown"
     @keyup.f="onFullscreen()"
     @keyup.space="onPlay()"
+    v-autofocus
     ref="el"
   >
-    <div class="html5video-focus" tabindex="0" v-autofocus>&nbsp;</div>
+    <div class="html5video-focus" tabindex="0" v-focus="1">&nbsp;</div>
     <video
       class="html5video-video"
       ref="video"
@@ -62,6 +63,7 @@
           @airplay="onAirplay"
           @keyup.prevent="true"
           @controlsActive="onControlsActive"
+          v-focus="2"
         />
       </div>
     </q-slide-transition>

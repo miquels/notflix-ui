@@ -124,8 +124,8 @@ export default defineComponent({
       store.commit('currentView', { type: 'series', genres: genres.value });
       if (api.apiLastUpdate() != apiLastUpdate) {
         getItems();
-        const instance = getCurrentInstance();
-        instance.ctx.$forceUpdate();
+        // const instance = getCurrentInstance();
+        // instance.ctx.$forceUpdate();
       }
     });
     onDeactivated(() => {

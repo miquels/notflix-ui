@@ -1,6 +1,6 @@
 <template>
 <lrud>
-  <q-layout view="hHh lpR fFf">
+  <q-layout view="hHh lpR fFf" v-autofocus>
 
     <q-header
       elevated
@@ -12,7 +12,7 @@
       <lrud>
       <q-toolbar>
         <lrud no-nav-inside steal-keys-outside keys="LR">
-        <q-tabs shrink class="col" v-autofocus="'.q-tab--active'">
+        <q-tabs shrink class="col" v-focus="{ prio: 3, selector: '.q-tab--active' }">
           <q-route-tab name="home" to="/home/">
             <q-toolbar-title class="col-auto q-pa-none q-ma-none">
               <span class="reverse-n">&#7438;</span>otflix

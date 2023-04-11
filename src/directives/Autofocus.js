@@ -1,191 +1,146 @@
-// This directive makes the element in the page auto-focus on mount.
+// This directive makes sure that there's always an element that has the
+// focus on a page. It checks for that on mount, at every update, and
+// every time it receives the 'focusout' event.
 //
-// On mount and on update it will check if there is no focussed
-// element and if not, it will focus the element. We also keep
-// a global reference to the last active autofocus element.
+// If there's no focussed element, one of the elements in its scope that
+// is marked with a "v-focus" attribute will receive focus.
 //
-// There are also event listeners that detect if focus is lost
-// to the BODY element. If so, it tries to set focus back to the
-// latest auto-focus element. This is especially important for
-// keyboard-only (or DPAD-only) navigation.
+// If the modifier 'strict' is set, then it's not enough that some
+// element on the page has focus, it has to be in this scope - if not,
+// an element in the scope will be given focus.
+//
+// See the "v-focus" attribute for more.
+//
 
 /* eslint no-console: 0 */
 /* eslint no-continue: 0 */
-/* eslint no-console: 0 */
 
-let savedAutofocus;
-let savedSelector;
+const DBG = false;
 
-function doFocus(el, selector, why) {
-  const active = document.activeElement;
-  if (active !== document.body && !(el.contains(active) && selector)) return null;
-
-  if (!selector && el === active) {
-    console.log('v-autofocus: ', why, ': already is active element', { active });
-    savedAutofocus = el;
-    savedSelector = selector;
-    return null;
-  }
-
-  if (selector && el !== active && el.contains(active)) {
-    console.log('v-autofocus: ', why, ': already contains active element', { active });
-    savedAutofocus = el;
-    savedSelector = selector;
-    return null;
-  }
-
-  let elem;
-  if (!selector) {
-    elem = el;
-  } else {
-    elem = el.querySelector(`:scope ${selector}`);
-    if (!elem) console.log('v-autofocus: ', why, `: not found: [${selector}]`, { el });
-  }
-  if (elem) {
-    console.log('v-autofocus: ', why, ': focussing ', { elem });
-    elem.focus();
-    savedAutofocus = elem;
-    savedSelector = selector;
-  }
-  return elem;
-}
-
-function mounted(el, binding, hook) {
-  if (!el.isConnected) return;
-
-  let selector = binding.value;
-  if (typeof binding.value === 'object') {
-    if (!binding.value.v_if && !binding.value.vIf) {
-      return;
-    }
-    selector = binding.value.selector;
-  }
-
-  if (hook !== 'mounted') {
-    if (document.activeElement === document.body) {
-      setTimeout(() => doFocus(el, selector, hook), 0);
-    }
-    savedAutofocus = el;
-    savedSelector = selector;
+function updateFocus(el, what, lostFrom, lostTo) {
+  if (!el.isConnected || !isActive(el)) {
     return;
   }
 
-  // On mount, focus.
-  setTimeout(() => doFocus(el, selector, 'mounted'), 0);
-
-  // On focus, focus on the internal element.
-  function onFocus() {
-    if (selector) {
-      doFocus(el, selector, 'focus on selector');
-    }
-  }
-  el.addEventListener('focus', onFocus);
-
-  // Mark this element as autofocus.
-  if (!el.dataset.autofocus) {
-    el.dataset.autofocus = '1';
-  }
-}
-
-function unmounted(el) {
-  // On umount, set curAutofocus back to what it was.
-  if (el.contains(savedAutofocus)) {
-    savedAutofocus = null;
-    savedSelector = null;
-  }
-}
-
-export const Autofocus = {
-  mounted: (el, binding) => mounted(el, binding, 'mounted'),
-  updated: (el, binding) => mounted(el, binding, 'updated'),
-  unmounted,
-};
-
-export function AutofocusInit() {
-  // If the body EVER gets focus, refocus on an autofocus element.
-  function onBodyFocus() {
-    // First try to get back to the last autofocus.
-    if (savedAutofocus) {
-      try {
-        if (savedAutofocus.isConnected) {
-          if (doFocus(savedAutofocus, savedSelector, 'body-focus')) {
-            console.log('body-focus: set focus back to savedAutoFocus');
-            return;
-          }
-          console.log('body-focus: failed to set focus back to savedAutofocus');
+  // First, check if there's an inner v-autofocus.
+  if (lostFrom && lostFrom.isConnected) {
+    let elem = lostFrom;
+    while (elem && elem !== el) {
+      if (elem.dataset.autofocus != null && elem.dataset.autofocus === '') {
+        // It does have to have focusable autofocus elements.
+        if (elem.querySelector(':scope div [data-autofocus]')) {
+          return;
         }
-      } catch (e) {
-        console.log('body-focus: failed to set focus back to savedAutofocus:', e);
       }
+      elem = elem.parentNode;
     }
+  }
 
-    // Nope, find the first autofocus and use that.
-    const elems = document.querySelectorAll('[data-autofocus]');
-    for (let i = 0; i < elems.length; i += 1) {
-      const el = elems[i];
-      // Must be visible.
-      const rect = el.getBoundingClientRect();
-      if (rect.top > document.body.clientHeight
-          || rect.left > document.body.clientWidth
-          || rect.bottom < 0
-          || rect.right < 0
-          || rect.width === 0
-          || rect.height === 0) {
-        continue;
-      }
-      const style = window.getComputedStyle(el);
-      if (style.display === 'none'
-          || style.visibility === 'hidden'
-          || !style.opacity) {
-        continue;
-      }
-      // should be good enough to recover.
-      console.log('body-focus: recovering, re-focussing on autofocus element:', { el });
-      setTimeout(() => {
-        el.focus();
-      }, 0);
+  // Check if lostTo is in scope.
+  if (lostTo == null) {
+    lostTo = document.activeElement;
+  }
+  if (!isStrict(el)) {
+    // as long as any element has focus, it's fine.
+    if (lostTo !== document.body) {
       return;
     }
-    console.log('body-focus: lost focus, failed to recover');
+  } else {
+    // the element needs to be in scope.
+    let elem = lostTo;
+    while (elem) {
+      if (elem === el) {
+        return;
+      }
+      elem = elem.parentNode;
+    }
+  }
+  if (DBG) console.log('Autofocus: updateFocus: need refocus, lost focus to', lostTo);
+
+  // Right, we need to (re-) focus.
+  // First, find all elements with a data-autofocus attribute.
+  const elems = el.querySelectorAll(':scope [data-autofocus]');
+  let toFocus = { prio: -1 };
+  for (let elem of elems) {
+    let prio = 0;
+    if (elem.dataset.autofocus) {
+      if (DBG) console.log('Autofocus: candidate', elem, elem.dataset.autofocus);
+      // It's in the form of { prio: 3, selector: 'input' }
+      const ds = JSON.parse(elem.dataset.autofocus);
+      prio = ds.prio;
+      if (ds.selector) {
+        elem = elem.querySelector(`:scope ${ds.selector}`);
+      }
+    }
+    if (prio > toFocus.prio) {
+      toFocus.prio = prio;
+      toFocus.elem = elem;
+    }
   }
 
-  // No 'focus' or 'focusin' event gets fired when the focus is lost
-  // to the body, but there is a 'focusout' event and at that point
-  // document.activeElement can sometimes point at the BODY, likely
-  // the document is 'between focussed elements'. So check at the
-  // next tick if the body is the active element.
-  let refocussing = false;
-  document.addEventListener('focusout', () => {
-    setTimeout(() => {
-      if (!refocussing && document.activeElement === document.body) {
-        refocussing = true;
-        onBodyFocus();
-        refocussing = false;
-      }
-    }, 100);
-  });
-
-  // Prevent default action on body for navigation keys.
-  document.body.addEventListener('keydown', (ev) => {
-    switch (ev.key) {
-      case 'ArrowLeft':
-      case 'ArrowRight':
-      case 'ArrowUp':
-      case 'ArrowDown':
-      case 'Enter':
-      case 'Tab':
-        console.log('body: preventing default for', ev.key);
-        ev.preventDefault();
-        break;
-      default:
-        break;
+  // If we did find one, focus on it.
+  if (toFocus.elem) {
+    let elem = toFocus.elem.querySelector(
+      ':is([tabindex]:not([tabindex="-1"]), ' +
+      '    input:not([disabled]):not([tabindex="-1"]))'
+    );
+    if (!elem) {
+      elem = toFocus.elem;
     }
-  });
-
-  // Catch any key early and if we lost focus, refocus.
-  document.body.addEventListener('keydown', () => {
-    if (document.activeElement === document.body) {
-      onBodyFocus();
-    }
-  }, true);
+    if (DBG) console.log('Autofocus: (re)focussing on', elem);
+    elem.focus();
+  }
 }
+
+function isActive(el) {
+  if (!el.__autofocus || el.__autofocus.active == null) {
+    return true;
+  }
+  return el.__autofocus.active;
+}
+
+function isStrict(el) {
+  el && el.__autofocus && el.__autofocus.strict;
+}
+
+function onFocusOut(ev) {
+  const el = ev.currentTarget;
+  const lostFrom = ev.target;
+  const lostTo = ev.relatedTarget;
+  // If the element losing focus is leaving the DOM, then we need to wait
+  // one tick to prevent it from being selected as a focussable candidate.
+  setTimeout(() => updateFocus(el, 'focusout', lostFrom, lostTo), 0);
+}
+
+function updated(el, binding) {
+  const val = binding.value;
+  if (val !== binding.oldValue && val !== undefined) {
+    el.__autofocus ||= {};
+    el.__autofocus.active = val ? true : false;
+  }
+  updateFocus(el, 'updated');
+}
+
+function mounted(el, binding) {
+  el.dataset.autofocus = '';
+  if (binding.value !== undefined) {
+    el.__autofocus ||= {};
+    el.__autofocus.active = binding.value ? true : false;
+  }
+  if (binding.modifiers.strict) {
+    el.__autofocus ||= {};
+    el.__autofocus.strict = true;
+  }
+  el.addEventListener('focusout', onFocusOut);
+  setTimeout(() => updateFocus(el, 'mounted'), 0);
+}
+
+function unmounted(el, binding) {
+  el.removeEventListener('focusout', onFocusOut);
+}
+
+export default {
+  mounted,
+  unmounted,
+  updated,
+};

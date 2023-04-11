@@ -1,5 +1,5 @@
 <template>
-  <lrud no-scroll-into-view ref="el" @xfocusout="doFocus()">
+  <lrud no-scroll-into-view ref="el" v-autofocus="autoFocus">
   <div class="tv-show-container q-pt-md">
     <div class="row justify-center">
       <div class="col-12 col-sm-10 tv-show-inner">
@@ -48,9 +48,8 @@
                   style="height: 40px; width: 100%"
                   color="blue-grey-10"
                   tabindex="0"
-                  @click="playEpisode(resumeEpisode)"
-                  v-autofocus
-                  data-autofocus="2"
+                  @click="playEpisode(resumeEpisode, false)"
+                  v-focus="10"
                   ref="resumeEpisodeEl"
                 >
                   Resume {{ seasonEpisode(resumeEpisode) }}
@@ -67,9 +66,8 @@
                   style="height: 40px; width: 100%"
                   color="blue-grey-10"
                   tabindex="0"
-                  @click="playEpisode(nextEpisode)"
-                  v-autofocus
-                  data-autofocus="2"
+                  @click="playEpisode(nextEpisode, false)"
+                  v-focus="10"
                   ref="nextEpisodeEl"
                 >
                   Play {{ seasonEpisode(nextEpisode) }}
@@ -91,14 +89,13 @@
                       style="width: 100%"
                       bg-color="blue-grey-10"
                       options-selected-class="q-select-active-option"
-                      data-autofocus="2"
-                      v-autofocus="{ vIf: !resumeEpisode && !nextEpisode, selector: 'input' }"
+                      v-focus="{ prio: 10, selector: 'input'}"
                       ref="seasonsEl"
                       no-wrap
                   />
                 </lrud>
               </q-item>
-              <div class="col relative q-pa-none">
+              <div class="col-auto relative q-pa-none">
                 <q-btn
                   :icon="isFavorite() ? 'favorite' : 'favorite_border'"
                   round
@@ -110,7 +107,7 @@
                   tabindex="0"
                 />
               </div>
-              <div class="col-12 col-sm-6"></div>
+              <div class="col-12 col-sm"></div>
             </div>
           </div>
         </div>
@@ -120,10 +117,10 @@
           <template v-for="(episode, index) in currentSeason.episodes" :key="episode.name">
             <lrud :center-x="5">
             <Episode 
-              tabindex="-1"
+              xtabindex="-1"
               ref="episodesEl"
               :episode="episode"
-              @play="playEpisode(episode)"
+              @play="playEpisode(episode, true)"
               @focusin="scrollIntoView($event, index)"
             />
             </lrud>
@@ -186,6 +183,7 @@
 import {
   computed,
   inject,
+  nextTick,
   onBeforeMount,
   onBeforeUnmount,
   onMounted,
@@ -226,6 +224,7 @@ const episodesEl = ref(null);
 const seasonsEl = ref(null);
 const resumeEpisodeEl = ref(null);
 const nextEpisodeEl = ref(null);
+const autoFocus = ref(false);
 const currentShowId = route.params.id;
 const currentCollection = route.params.collection;
 
@@ -403,8 +402,8 @@ function backFromPlay() {
   return fromRoute &&
     fromRoute.path.startsWith(route.path) &&
     fromRoute.path.endsWith('/play') &&
-    se.season &&
-    se.episode;
+    se.season != null &&
+    se.episode != null;
 }
 
 // Initialize:
@@ -428,13 +427,12 @@ function initCurrentSeasonEpisode() {
   if (!setCurrentSeasonEpisode(se.season, se.episode)) {
     return false;
   }
-  let episode = currentEpisode.value;
 
   // If we came back from 'play' and we have a season/episode in the
   // path, then we want to focus on the episode to resume, or the next one.
   const isBackFromPlay = backFromPlay();
 
-  // If we're not focussing on a specific episode, find last episode played.
+  let episode = currentEpisode.value;
   if (!isBackFromPlay) {
     const last = getLastEpisode(seasons);
     if (!last) {
@@ -444,8 +442,8 @@ function initCurrentSeasonEpisode() {
     currentSeason.value = s;
     episode = e;
   }
-
   const state = episodeState(episode);
+
   if (state.play) {
     nextEpisode.value = episode;
   }
@@ -458,9 +456,10 @@ function initCurrentSeasonEpisode() {
     const next = getNextEpisode(seasons, currentSeason.value, episode);
     if (next) {
       const [ se, ep ] = next;
-      if (episodeState(ep).play) {
+      const eState = episodeState(ep);
+      if (eState.play || eState.resume) {
         currentSeason.value = se;
-        if (isBackFromPlay && !state.resume) {
+        if (isBackFromPlay) {
           currentEpisode.value = ep;
         }
         nextEpisode.value = ep;
@@ -526,13 +525,24 @@ onMounted(() => {
   whenTrue(readyFlag, () => {
     // console.log('TvShow: onMounted, initCurrentSeasonEpisode');
     if (initCurrentSeasonEpisode()) {
-      // console.log('TvShow: onMounted, done, calling doFocus');
-      setTimeout(() => doFocus(), 0);
+      // After the DOM has updated, focus, then enable autofocus.
+      nextTick(() => {
+        doFocus();
+        autoFocus.value = true;
+      });
     }
   });
 });
 
-function playEpisode(episode) {
+function playEpisode(episode, clickedOnEpisode) {
+
+  // If we clicked on the play button of the episode, remember that
+  // for backFromPlay() later on.
+  if (clickedOnEpisode) {
+    currentEpisode.value = episode;
+    playEpisode(episode, false);
+    return;
+  }
 
   // Chromecast?
   if (store.state.castState === 'connected') {
@@ -559,7 +569,9 @@ function playEpisode(episode) {
 }
 
 function scrollToTop() {
-  el.value.$el.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
+  if (el.value) {
+    el.value.$el.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
+  }
 }
 
 function scrollIntoView(ev, epIndex) {

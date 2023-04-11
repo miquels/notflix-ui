@@ -1,5 +1,5 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide" @keydown.capture.stop.escape=''>
+  <q-dialog ref="dialogRef" @hide="onDialogHide" @keydown.capture.stop.escape='' v-autofocus>
     <lrud>
     <q-card class="q-dialog-plugin">
       <q-card-section class="row items-center">
@@ -8,7 +8,7 @@
       </q-card-section>
 
       <q-card-actions align="right">
-        <q-btn color="primary" tabindex="0" label="OK" @click="onDialogOK" v-autofocus />
+        <q-btn color="primary" tabindex="0" label="OK" @click="onDialogOK" v-focus="1" />
         <q-btn color="primary" tabindex="0" label="Cancel" @click="onDialogCancel" />
       </q-card-actions>
     </q-card>
