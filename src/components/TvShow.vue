@@ -117,7 +117,7 @@
           <template v-for="(episode, index) in currentSeason.episodes" :key="episode.name">
             <lrud :center-x="5">
             <Episode 
-              xtabindex="-1"
+              tabindex="-1"
               ref="episodesEl"
               :episode="episode"
               @play="playEpisode(episode, true)"
