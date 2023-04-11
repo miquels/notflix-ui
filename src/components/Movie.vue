@@ -43,7 +43,7 @@
                   :label="progress ? 'Resume' : 'Play'"
                   class="movie-play no-outline"
                   @click="playMovie"
-                  v-focus="1"
+                  v-focus="10"
                 />
                 <q-linear-progress
                   v-if="progress != null && $q.platform.is.tv"

@@ -8,7 +8,7 @@
       </q-card-section>
 
       <q-card-actions align="right">
-        <q-btn color="primary" tabindex="0" label="OK" @click="onDialogOK" v-focus="1" />
+        <q-btn color="primary" tabindex="0" label="OK" @click="onDialogOK" v-focus="99" />
         <q-btn color="primary" tabindex="0" label="Cancel" @click="onDialogCancel" />
       </q-card-actions>
     </q-card>

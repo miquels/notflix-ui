@@ -22,7 +22,7 @@
         to="/"
         label="Go Home"
         no-caps
-        v-focus="1"
+        v-focus="99"
       />
     </div>
   </div>
