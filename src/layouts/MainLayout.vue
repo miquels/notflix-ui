@@ -32,8 +32,8 @@
           />
         </q-tabs>
         </lrud>
-        <div v-if="devel()" class="col text-center main-devel">DEVEL</div>
-        <div v-if="!devel()" class="col" />
+        <div v-if="devel" class="col text-center main-devel">{{ devel }}</div>
+        <div v-if="!devel" class="col" />
         <CastButton v-if="canCast()" class="on-right cursor-pointer" />
         <q-btn
           v-if="hasSettings()"
@@ -138,6 +138,15 @@ export default {
     const route = useRoute();
     const emitter = inject('emitter');
     const progress = ref(false);
+    const devel = ref(null);
+
+    if (process.env.DEV) {
+      devel.value = 'DEVEL';
+    } else if (window.location.pathname.match('^/dev/*$')) {
+      devel.value = '[/dev]';
+    } else if (window.location.pathname.match('^/test/*$')) {
+      devel.value = '[/test]';
+    }
 
     // XXX DEBUG
     window.store = store;
@@ -164,6 +173,7 @@ export default {
 
     return {
       canCast,
+      devel,
       keepAlive,
       emitter,
       store,
@@ -174,10 +184,6 @@ export default {
   },
 
   methods: {
-    devel() {
-      return process.env.DEV;
-    },
-
     showHeader() {
       if (!this.$q.platform.is.tv)
         return {};
@@ -198,9 +204,8 @@ export default {
     },
 
     refresh() {
-      const url = new URL(window.location.origin);
-      url.searchParams.set('reloadTime', Date.now().toString());
-      window.location.href = url.toString();
+      const pathname = window.location.pathname.replace(/\/*$/, '/');
+      window.location.href = `${window.origin}${pathname}`;
     },
 
     // If the user clicks on 'TV Shows' or 'Movies' and that is already
