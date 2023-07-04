@@ -350,6 +350,7 @@ export default defineComponent({
       m: MouseEvent,
       route,
       router,
+      store,
     };
   },
 
@@ -369,7 +370,7 @@ export default defineComponent({
       }
 
       if (this.isSafari()) {
-        if (!store.state.config.iosNativeVideo) {
+        if (!this.store.state.config.iosNativeVideo) {
           // Need to set this, otherwise the native player starts on iPhone.
           this.video.setAttribute("playsinline", "");
         }
