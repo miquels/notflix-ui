@@ -33,8 +33,9 @@ export default store(() => {
         // 'notflix', 'default', or a custom receiver id.
         castReceiver: 'notflix',
 
-        // use the native <video> element and controls on ioS.
-        iosNativeVideo: true,
+        // use the native <video> element and controls on iOS in the browser,
+        // but our own player if we're a PWA.
+        iosNativeVideo: !window.navigator.standalone,
       },
 
       // What shows / movies are marked as 'favorite'.
