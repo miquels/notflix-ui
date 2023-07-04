@@ -80,6 +80,13 @@ export default defineComponent({
           if (DBG) console.log(`IosVideo: ${msg}: failed to enter full screen`, err);
         }
       }
+      if (screen.orientation.lock) {
+        if (DBG) console.log(`IosVideo: ${msg}: enter landscape mode`);
+        screen.orientation.lock('landscape')
+          .catch((err) => {
+            if (DBG) console.log('IosVideo: ${msg}: cannot force landscape mode:', err);
+          });
+      }
     };
 
     const onLoadedmetadata = () => {
@@ -121,6 +128,10 @@ export default defineComponent({
           window.video = null;
         }
       } catch (err) { /* ignore */ }
+
+      if (screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
 
       updateSeen(true);
     });
