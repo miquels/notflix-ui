@@ -268,11 +268,25 @@ export default defineComponent({
         const _shaka = instance.ctx.shaka;
         _shaka.detach().then(() => _shaka.destroy());
       } else if (video.value) {
+        let reload = false;
+        // this is not needed, I think.
         if (video.value.srcObject) {
           video.value.srcObject = null;
+          reload = true;
         }
+        // remove <source src="..."> children.
+        if (video.value.firstChild) {
+          while (video.value.firstChild) {
+            video.value.removeChild(video.value.firstChild);
+          }
+          reload = true;
+        }
+        // remove src="..." attribute.
         if (video.value.src) {
           video.value.removeAttribute('src');
+          reload = true;
+        }
+        if (reload) {
           video.value.load();
         }
       }
@@ -633,18 +647,26 @@ export default defineComponent({
     },
 
     load(item) {
-      // if (DBG) console.log('Html5Video: load method called', item);
+      if (DBG) console.log('Html5Video: load method called', item);
 
       // We need an absolute URL (for airplay).
       const url = new URL(item.src, window.location.origin).href;
 
       if (url.endsWith('.m3u8') && !this.nativeHls) {
         this.initShaka();
-        // if (DBG) console.log('Html5Video: shaka.load', url);
+        if (DBG) console.log('Html5Video: shaka.load', url);
         this.shaka.load(url);
       } else {
-        // if (DBG) console.log('Html5Video: native video load', url);
-        this.video.src = url;
+        if (this.nativeHls) {
+          if (DBG) console.log('Html5Video: native HLS video load', url);
+          const source = document.createElement('source');
+          source.type = 'application/vnd.apple.mpegURL';
+          source.src = url;
+          this.video.appendChild(source);
+        } else {
+          if (DBG) console.log('Html5Video: native video load', url);
+          this.video.src = url;
+        }
       }
     },
 
